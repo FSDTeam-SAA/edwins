@@ -123,7 +123,8 @@ final class AvatarPlatformView: NSObject, FlutterPlatformView {
             }
         case "stopAudioViseme":
             scheduler?.clear()
-
+            audioPlayer.stop()
+            
         default: result(FlutterMethodNotImplemented)
         }
     }
@@ -152,5 +153,7 @@ final class AvatarPlatformView: NSObject, FlutterPlatformView {
         let now = CACurrentMediaTime()
         blinkCtl?.tick(dt: dt, now: now)
     }
+    
+    
 }
 
