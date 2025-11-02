@@ -42,8 +42,9 @@ final class AvatarCameraController {
         scnView?.pointOfView = cameraNode
     }
 
-    func frame(of root: SCNNode,
-                       showTopFraction: CGFloat = 0.6) {  // 0.6 = upper 60% visible
+    
+ 
+    func frame(of root: SCNNode, showTopFraction: CGFloat = 0.6) {
         guard let v = scnView else { return }
         if v.bounds.width <= 0 || v.bounds.height <= 0 {
             DispatchQueue.main.async { [weak self] in
@@ -54,44 +55,44 @@ final class AvatarCameraController {
         if cameraNode == nil, let scene = v.scene { ensureCamera(in: scene) }
         guard let cam = cameraNode?.camera, let scene = v.scene else { return }
 
+        // Ortho-Kamera (Zoom nur über orthographicScale)
         cam.usesOrthographicProjection = true
-        cam.wantsExposureAdaptation = false
         cam.zNear = 0.001
         cam.zFar  = 10000
 
+        // 1) Robuste Bounds
+        // Wichtig: der 'root' hier sollte der Node sein, der alle Meshes enthält (nicht nur die Armature)!
+        let sphere = root.presentation.boundingSphere   // (center: SCNVector3, radius: CGFloat)
+        let center = sphere.center
+        let radius = max(0.001, sphere.radius)
 
-        let (minB, maxB) = root.boundingBox
-        let corners = [
-            SCNVector3(minB.x, minB.y, minB.z), SCNVector3(maxB.x, minB.y, minB.z),
-            SCNVector3(minB.x, maxB.y, minB.z), SCNVector3(maxB.x, maxB.y, minB.z),
-            SCNVector3(minB.x, minB.y, maxB.z), SCNVector3(maxB.x, minB.y, maxB.z),
-            SCNVector3(minB.x, maxB.y, maxB.z), SCNVector3(maxB.x, maxB.y, maxB.z),
-        ].map { root.convertPosition($0, to: scene.rootNode) }
-
-        var minW = corners[0], maxW = corners[0]
-        for c in corners {
-            minW.x = min(minW.x, c.x); minW.y = min(minW.y, c.y); minW.z = min(minW.z, c.z)
-            maxW.x = max(maxW.x, c.x); maxW.y = max(maxW.y, c.y); maxW.z = max(maxW.z, c.z)
-        }
-        let size  = SCNVector3(maxW.x - minW.x, maxW.y - minW.y, maxW.z - minW.z)
-        let midX  = (minW.x + maxW.x)/2
-        let midZ  = (minW.z + maxW.z)/2
-
-        
-        let h = CGFloat(size.y)
+        // 2) Sichtbarer Anteil der Höhe
         let frac = max(0.1, min(1.0, showTopFraction))
-        let visibleH = h * frac
-        
-        
-        let yCenter = minW.y + Float(h - visibleH * 0.5)
+        let visibleHeight = CGFloat(radius) * 2.0 * frac
 
-        
-        cam.orthographicScale = Double(visibleH * 0.5)
+        // SceneKit: orthographicScale = halbe Sicht-Höhe
+        cam.orthographicScale = Double(visibleHeight * 0.5)
 
-        
-        let focus = SCNVector3(midX, yCenter, midZ)
+        // 3) Fokus: leicht oberhalb der Mitte, damit oben mehr sichtbar ist
+        let yCenter = center.y + Float(radius * (1.0 - Float(frac)))
+        let focus   = SCNVector3(center.x, yCenter, center.z)
+
+        // 4) Kamera-Position: einfach vor das Modell (Distanz > Radius, Ortho ist egal)
+        let distance: Float = Float(radius * 3.0 + 0.25) // sicher außerhalb der Kugel
         lookAtNode?.position = focus
-        cameraNode?.position = SCNVector3(focus.x, focus.y, midZ + max(1.0, size.z + 0.5))
+        cameraNode?.position = SCNVector3(focus.x, focus.y, focus.z + distance)
+
+        // Optional: Up-Vektor stabilisieren
+        let up = SCNBillboardConstraint() // verhindert Roll; alternativ SCNTransformConstraint mit fixem Up
+        up.freeAxes = []
+        cameraNode?.constraints = [
+            {
+                let c = SCNLookAtConstraint(target: lookAtNode!)
+                c.isGimbalLockEnabled = true
+                return c
+            }(),
+            up
+        ]
 
         scnView?.pointOfView = cameraNode
     }

@@ -12,6 +12,8 @@ final class AvatarRig: MorphWeighter {
 
     // Scene & Morpher
     let scene: SCNScene
+    let wrapper: SCNNode
+    
     let morpher: SCNMorpher
     let node: SCNNode
 
@@ -22,22 +24,42 @@ final class AvatarRig: MorphWeighter {
     
     enum Component { case viseme, blink, emotion }
     private var components: [Component: [CGFloat]] = [:]
+    
+
 
     // MARK: Init / Loading
     init(modelURL: URL) throws {
-        self.scene = try SCNScene(url: modelURL, options: nil)
+        let srcScene = try SCNScene(url: modelURL, options: nil)
+        
+        guard let container = AvatarRig.findAvatarContainer(in: srcScene.rootNode) else {
+            throw NSError(domain:"AvatarRig", code:2,
+                          userInfo:[NSLocalizedDescriptionKey:"No visible container found"])
+        }
 
-        guard let best = AvatarRig.findBestMorpherNode(in: scene.rootNode),
+        // normalize the avatar
+        let wrapper = AvatarRig.normalize(container)
+        let clean = SCNScene()
+        clean.rootNode.addChildNode(wrapper)
+        
+        self.scene = clean
+        self.wrapper = wrapper
+        
+        
+        // find morpher
+        guard let best = AvatarRig.findBestMorpherNode(in: wrapper),
               let m = best.morpher
-        else { throw NSError(domain: "AvatarRig", code: 1, userInfo: [NSLocalizedDescriptionKey: "No morpher found"]) }
-
+        else { throw NSError(domain:"AvatarRig", code:1,
+                             userInfo:[NSLocalizedDescriptionKey:"No morpher found"]) }
+        
         self.node = best
         self.morpher = m
+        
 
         // Mapping
         for (i, t) in m.targets.enumerated() {
             if let nm = t.name { indexByName[nm] = i }
         }
+        
 
         let count = m.targets.count
         components[.viseme]  = Array(repeating: 0, count: count)
@@ -88,21 +110,52 @@ final class AvatarRig: MorphWeighter {
         root.enumerateChildNodes { node, _ in
             guard let m = node.morpher else { return }
             var score = 0
-            let name = (node.name ?? "").lowercased()
-            if name.contains("head")  { score += 20 }
-            if name.contains("teeth") { score += 10 }
-            if name.contains("eye")   { score -= 5 }
-
-            let tnames = m.targets.compactMap { $0.name?.lowercased() }
-            if tnames.contains("jawopen") { score += 10 }
-            if tnames.contains("mouthclose") { score += 8 }
-            if tnames.contains("viseme_aa") { score += 10 }
-            if tnames.contains("viseme_o") || tnames.contains("viseme_u") { score += 6 }
-
+            let nm = (node.name ?? "").lowercased()
+            if nm.contains("head")  { score += 100 }   // wichtigster Bonus
+            if nm.contains("wolf3d_head") { score += 200 } // ReadyPlayerMe sicher erkennen
+            if nm.contains("teeth") { score += 10 }
+            if nm.contains("eye")   { score -= 5 }
             if best == nil || score > best!.score { best = (node, score) }
         }
         return best?.node
     }
+
+    
+    static func findAvatarContainer(in root: SCNNode) -> SCNNode? {
+        var best: SCNNode?
+        root.enumerateChildNodes { n, stop in
+            let nm = (n.name ?? "").lowercased()
+            if nm.contains("armature") { // egal ob .001, .002 ...
+                best = n
+                stop.pointee = true
+            }
+        }
+        return best
+    }
+
+
+    
+    static func normalize(_ container: SCNNode) -> SCNNode {
+            let wrapper = SCNNode(); wrapper.name = "AvatarWrapper"
+            wrapper.addChildNode(container)
+
+    
+            container.scale = SCNVector3(1,1,1)
+            container.eulerAngles = SCNVector3Zero
+
+            
+            let (minB, maxB) = container.boundingBox
+            let size = SCNVector3(maxB.x - minB.x, maxB.y - minB.y, maxB.z - minB.z)
+            if size.z > size.y { container.eulerAngles.x = -.pi/2 } // Z -> Y
+
+            
+            let sphere = container.presentation.boundingSphere
+            container.position.x -= sphere.center.x
+            container.position.z -= sphere.center.z
+            container.position.y -= minB.y
+
+            return wrapper
+        }
 }
 
 private extension Array where Element == CGFloat {

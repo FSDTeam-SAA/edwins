@@ -44,8 +44,8 @@ final class AvatarPlatformView: NSObject, FlutterPlatformView {
     
     private func loadAvatarAndSetupCamera() {
         
-        let url = Bundle.main.url(forResource: "avatar_new2", withExtension: "usdz")
-
+        let url = Bundle.main.url(forResource: "Clara_Avatar", withExtension: "usdz")
+        //let url = Bundle.main.url(forResource: "avatar_new2", withExtension: "usdz")
         guard let modelURL = url else {
             print("avatar_new.usdz/usdc not found in bundle")
             return
@@ -89,9 +89,9 @@ final class AvatarPlatformView: NSObject, FlutterPlatformView {
 
             // focus on face and upper body
             DispatchQueue.main.async { [weak self] in
-                guard let self else { return }
-                self.cameraCtl.frame(of: loadedRig.scene.rootNode, showTopFraction: 0.45)
-            }
+                 guard let self else { return }
+                 self.cameraCtl.frame(of: loadedRig.wrapper, showTopFraction: 0.45)
+             }
 
         } catch {
             print("USD load failed: \(error)")
