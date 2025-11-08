@@ -28,12 +28,19 @@ class AvatarDemoPage extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(title: const Text('Avatar Demo')),
-      body: Center(
-        child: AspectRatio(
-          aspectRatio: 1,
-          child: AvatarView(
-            controller: avatarController,
-            backgroundImagePath: "assets/images/background.png",
+      body: AspectRatio(
+        aspectRatio: 1,
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              AvatarView(
+                20,
+                controller: avatarController,
+                backgroundImagePath: "assets/images/background.png",
+              ),
+            ],
           ),
         ),
       ),

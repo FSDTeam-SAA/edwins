@@ -17,11 +17,13 @@ final class AvatarPlatformView: NSObject, FlutterPlatformView {
     
     private var animCtl: AvatarAnimationController?
     
+    private let cornerRadius: CGFloat
     
 
 
-    init(frame: CGRect, viewId: Int64, messenger: FlutterBinaryMessenger, backgroundImagePath: String?, registrar: FlutterPluginRegistrar) {
+    init(frame: CGRect, viewId: Int64, messenger: FlutterBinaryMessenger, backgroundImagePath: String?,cornerRadius: CGFloat, registrar: FlutterPluginRegistrar) {
         self.registrar = registrar
+        self.cornerRadius = cornerRadius
  
         super.init()
         
@@ -32,6 +34,12 @@ final class AvatarPlatformView: NSObject, FlutterPlatformView {
         scnView.allowsCameraControl = false
         scnView.autoenablesDefaultLighting = false
         scnView.scene?.lightingEnvironment.intensity = 1.0
+        
+        scnView.layer.cornerRadius = cornerRadius
+         scnView.layer.masksToBounds = true
+         if #available(iOS 13.0, *) {
+             scnView.layer.cornerCurve = .continuous
+         }
 
         // Audio
         do { audioPlayer = try AvatarAudioPlayer() }

@@ -7,8 +7,10 @@ import 'avatar_controller.dart';
 class AvatarView extends StatefulWidget {
   final AvatarController? controller;
   final String? backgroundImagePath;
+  final double? borderRadius;
 
-  const AvatarView({super.key, this.controller, this.backgroundImagePath});
+  const AvatarView(this.borderRadius,
+      {super.key, this.controller, this.backgroundImagePath});
 
   @override
   State<AvatarView> createState() => _AvatarViewState();
@@ -36,30 +38,30 @@ class _AvatarViewState extends State<AvatarView> {
       return const SizedBox.shrink();
     }
 
-    return Column(
-      children: [
-        Expanded(
-          child: UiKitView(
-            viewType: 'AvatarView',
-            onPlatformViewCreated: _onPlatformViewCreated,
-            creationParams: {
-              'backgroundImagePath': widget.backgroundImagePath,
-            },
-            creationParamsCodec: const StandardMessageCodec(),
-          ),
-        ),
-        ElevatedButton(
-          onPressed: () async {
-            final visemes = await _visemeHelper
-                .loadVisemesFromAsset('test/data/viseme.txt');
-            await _controller.playAudioViseme(
-              'test/test_assets/russian_sample.wav',
-              visemes,
-            );
-          },
-          child: const Text('Start Dummy'),
-        ),
-      ],
+    return SizedBox(
+      height: 220,
+      child: UiKitView(
+        viewType: 'AvatarView',
+        onPlatformViewCreated: _onPlatformViewCreated,
+        creationParams: {
+          'backgroundImagePath': widget.backgroundImagePath,
+          'borderRadius': widget.borderRadius,
+        },
+        creationParamsCodec: const StandardMessageCodec(),
+      ),
     );
   }
 }
+
+
+   // ElevatedButton(
+        //   onPressed: () async {
+        //     final visemes = await _visemeHelper
+        //         .loadVisemesFromAsset('test/data/viseme.txt');
+        //     await _controller.playAudioViseme(
+        //       'test/test_assets/russian_sample.wav',
+        //       visemes,
+        //     );
+        //   },
+        //   child: const Text('Start Dummy'),
+        // ),

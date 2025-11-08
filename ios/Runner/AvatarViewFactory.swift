@@ -25,6 +25,8 @@ public class AvatarViewFactory: NSObject, FlutterPlatformViewFactory {
 
         let bgPath = params?["backgroundImagePath"] as? String
         
+        let cornerRadius = (params?["borderRadius"] as? NSNumber)?.doubleValue ?? 0.0
+        
  
 
         return AvatarPlatformView(
@@ -32,6 +34,7 @@ public class AvatarViewFactory: NSObject, FlutterPlatformViewFactory {
             viewId: viewId,
             messenger: messenger,
             backgroundImagePath: bgPath,
+            cornerRadius: CGFloat(cornerRadius),
             registrar: registrar
         )
     }
