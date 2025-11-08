@@ -17,10 +17,16 @@ final class AvatarPlatformView: NSObject, FlutterPlatformView {
     
     private var animCtl: AvatarAnimationController?
     
+    private let avatarPath: String?
+    private let animations: [String: String]
+    
 
 
-    init(frame: CGRect, viewId: Int64, messenger: FlutterBinaryMessenger, backgroundImagePath: String?, registrar: FlutterPluginRegistrar) {
+    init(frame: CGRect, viewId: Int64, messenger: FlutterBinaryMessenger, backgroundImagePath: String?, avatarPath: String?,
+         animations: [String: String], registrar: FlutterPluginRegistrar,) {
         self.registrar = registrar
+        self.avatarPath = avatarPath
+        self.animations = animations
         super.init()
         
         // SCNView setup
@@ -58,6 +64,8 @@ final class AvatarPlatformView: NSObject, FlutterPlatformView {
               pendingBackgroundPath = nil
           }
       }
+    
+    
     func loadAndPlayCombinedAnimation(from daeName: String, on rootNode: SCNNode) {
         guard let sceneURL = Bundle.main.url(forResource: daeName, withExtension: "dae") else {
             print("DAE file not found.")
@@ -98,10 +106,14 @@ final class AvatarPlatformView: NSObject, FlutterPlatformView {
     
     private func loadAvatarAndSetupCamera() {
         
-        let url = Bundle.main.url(forResource: "Clara_Avatar_NoA", withExtension: "usdz")
+        /*let url = Bundle.main.url(forResource: "Clara_Avatar_NoA", withExtension: "usdz")
         //let url = Bundle.main.url(forResource: "avatar_new2", withExtension: "usdz")
         guard let modelURL = url else {
             print("avatar_new.usdz/usdc not found in bundle")
+            return
+        }*/
+        guard let modelURL = resolveURL(from: avatarPath) else {
+            print("Avatar model URL not resolved (avatarPath='\(avatarPath ?? "nil")')")
             return
         }
 
@@ -162,6 +174,44 @@ final class AvatarPlatformView: NSObject, FlutterPlatformView {
 
 
     func view() -> UIView { scnView }
+    
+    private func resolveURL(from assetOrPath: String?) -> URL? {
+        guard let assetOrPath, !assetOrPath.isEmpty else { return nil }
+
+        // absolute ath
+        if assetOrPath.hasPrefix("/") || assetOrPath.hasPrefix("file://") {
+            if assetOrPath.hasPrefix("file://"), let u = URL(string: assetOrPath) { return u }
+            return URL(fileURLWithPath: assetOrPath)
+        }
+
+        // 2) assets key flutter
+        let key = registrar.lookupKey(forAsset: assetOrPath)
+
+        if let bundleRoot = Bundle.main.bundleURL as URL? {
+            let urlA = bundleRoot.appendingPathComponent("flutter_assets").appendingPathComponent(key)
+            if FileManager.default.fileExists(atPath: urlA.path) { return urlA }
+        }
+
+
+        if let bundleRoot = Bundle.main.bundleURL as URL? {
+            let urlB = bundleRoot
+                .appendingPathComponent("Frameworks")
+                .appendingPathComponent("App.framework")
+                .appendingPathComponent("flutter_assets")
+                .appendingPathComponent(key)
+            if FileManager.default.fileExists(atPath: urlB.path) { return urlB }
+        }
+
+        if let url = Bundle.main.url(forResource: (key as NSString).lastPathComponent,
+                                     withExtension: nil,
+                                     subdirectory: (key as NSString).deletingLastPathComponent) {
+            return url
+        }
+
+        return nil
+    }
+
+
     
     
 

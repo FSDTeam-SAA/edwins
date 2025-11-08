@@ -26,12 +26,24 @@ public class AvatarViewFactory: NSObject, FlutterPlatformViewFactory {
         let params = args as? [AnyHashable: Any]
 
         let bgPath = params?["backgroundImagePath"] as? String
+        
+        var avatarPath: String?
+        var animations: [String: String] = [:]
+
+        if let avatar = params?["avatar"] as? [AnyHashable: Any] {
+            avatarPath = avatar["avatarPath"] as? String
+            if let map = avatar["animations"] as? [String: String] {
+                animations = map
+            }
+        }
 
         return AvatarPlatformView(
             frame: frame,
             viewId: viewId,
             messenger: messenger,
             backgroundImagePath: bgPath,
+            avatarPath: avatarPath,
+            animations: animations,
             registrar: registrar
         )
     }
