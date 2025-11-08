@@ -73,8 +73,7 @@ flutter:
     - test/test_assets/russian_sample.wav  
     - test/data/viseme.txt
     - assets/images/background.png
-    - assets/avatar/clara/ClaraAvatar.usdz
-    - assets/avatar/clara/Idle.dae
+
 
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/assets-and-images/#resolution-aware

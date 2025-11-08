@@ -44,11 +44,6 @@ class _AvatarViewState extends State<AvatarView> {
             onPlatformViewCreated: _onPlatformViewCreated,
             creationParams: {
               'backgroundImagePath': widget.backgroundImagePath,
-              'avatar': const {
-                'name': 'Clara',
-                'avatarPath': 'assets/avatar/clara/ClaraAvatar.usdz',
-                'animations': {'Idle': 'assets/avatar/clara/Idle.dae'}
-              },
             },
             creationParamsCodec: const StandardMessageCodec(),
           ),
