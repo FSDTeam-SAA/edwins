@@ -7,8 +7,10 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		144470642EB7486E00EB2749 /* Clara_Avatar.usdz in Resources */ = {isa = PBXBuildFile; fileRef = 144470632EB7486E00EB2749 /* Clara_Avatar.usdz */; };
-		144470652EB7486E00EB2749 /* Clara_Avatar.usdz in Resources */ = {isa = PBXBuildFile; fileRef = 144470632EB7486E00EB2749 /* Clara_Avatar.usdz */; };
+		143270312EBDFE1E00062F66 /* Clara_Avatar_NoA.usdz in Resources */ = {isa = PBXBuildFile; fileRef = 143270302EBDFE1E00062F66 /* Clara_Avatar_NoA.usdz */; };
+		143270322EBDFE1E00062F66 /* Clara_Avatar_NoA.usdz in Resources */ = {isa = PBXBuildFile; fileRef = 143270302EBDFE1E00062F66 /* Clara_Avatar_NoA.usdz */; };
+		143270382EBE05A400062F66 /* Idle.dae in Resources */ = {isa = PBXBuildFile; fileRef = 143270372EBE05A400062F66 /* Idle.dae */; };
+		143270392EBE05A400062F66 /* Idle.dae in Resources */ = {isa = PBXBuildFile; fileRef = 143270372EBE05A400062F66 /* Idle.dae */; };
 		1498D2341E8E89220040F4C2 /* GeneratedPluginRegistrant.m in Sources */ = {isa = PBXBuildFile; fileRef = 1498D2331E8E89220040F4C2 /* GeneratedPluginRegistrant.m */; };
 		14A453132EAFA19000D88198 /* AvatarPlatformView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 14A453122EAFA19000D88198 /* AvatarPlatformView.swift */; };
 		14A453152EAFA1AA00D88198 /* AvatarViewFactory.swift in Sources */ = {isa = PBXBuildFile; fileRef = 14A453142EAFA1AA00D88198 /* AvatarViewFactory.swift */; };
@@ -45,8 +47,9 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
+		143270302EBDFE1E00062F66 /* Clara_Avatar_NoA.usdz */ = {isa = PBXFileReference; lastKnownFileType = file; path = Clara_Avatar_NoA.usdz; sourceTree = "<group>"; };
+		143270372EBE05A400062F66 /* Idle.dae */ = {isa = PBXFileReference; lastKnownFileType = text.xml.dae; path = Idle.dae; sourceTree = "<group>"; };
 		14446FDA2EB64EF500EB2749 /* RunnerTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = RunnerTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
-		144470632EB7486E00EB2749 /* Clara_Avatar.usdz */ = {isa = PBXFileReference; lastKnownFileType = file; path = Clara_Avatar.usdz; sourceTree = "<group>"; };
 		1498D2321E8E86230040F4C2 /* GeneratedPluginRegistrant.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = GeneratedPluginRegistrant.h; sourceTree = "<group>"; };
 		1498D2331E8E89220040F4C2 /* GeneratedPluginRegistrant.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = GeneratedPluginRegistrant.m; sourceTree = "<group>"; };
 		14A453122EAFA19000D88198 /* AvatarPlatformView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AvatarPlatformView.swift; sourceTree = "<group>"; };
@@ -95,6 +98,14 @@
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
+		143270332EBE015F00062F66 /* Assets.scnassets */ = {
+			isa = PBXGroup;
+			children = (
+				143270372EBE05A400062F66 /* Idle.dae */,
+			);
+			path = Assets.scnassets;
+			sourceTree = "<group>";
+		};
 		9740EEB11CF90186004384FC /* Flutter */ = {
 			isa = PBXGroup;
 			children = (
@@ -130,6 +141,7 @@
 		97C146F01CF9000F007C117D /* Runner */ = {
 			isa = PBXGroup;
 			children = (
+				143270332EBE015F00062F66 /* Assets.scnassets */,
 				14446FC92EB631C900EB2749 /* avatar */,
 				14446FC22EB6101F00EB2749 /* visemes */,
 				14446FBB2EB60C2E00EB2749 /* audio */,
@@ -144,7 +156,7 @@
 				74858FAE1ED2DC5600515810 /* AppDelegate.swift */,
 				74858FAD1ED2DC5600515810 /* Runner-Bridging-Header.h */,
 				14CBA1362EB3BA7D00B62CE4 /* avatar_new2.usdz */,
-				144470632EB7486E00EB2749 /* Clara_Avatar.usdz */,
+				143270302EBDFE1E00062F66 /* Clara_Avatar_NoA.usdz */,
 			);
 			path = Runner;
 			sourceTree = "<group>";
@@ -262,7 +274,8 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				144470642EB7486E00EB2749 /* Clara_Avatar.usdz in Resources */,
+				143270382EBE05A400062F66 /* Idle.dae in Resources */,
+				143270322EBDFE1E00062F66 /* Clara_Avatar_NoA.usdz in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -271,10 +284,11 @@
 			buildActionMask = 2147483647;
 			files = (
 				97C147011CF9000F007C117D /* LaunchScreen.storyboard in Resources */,
+				143270392EBE05A400062F66 /* Idle.dae in Resources */,
 				3B3967161E833CAA004F5970 /* AppFrameworkInfo.plist in Resources */,
 				14CBA1372EB3BA7D00B62CE4 /* avatar_new2.usdz in Resources */,
+				143270312EBDFE1E00062F66 /* Clara_Avatar_NoA.usdz in Resources */,
 				97C146FE1CF9000F007C117D /* Assets.xcassets in Resources */,
-				144470652EB7486E00EB2749 /* Clara_Avatar.usdz in Resources */,
 				97C146FC1CF9000F007C117D /* Main.storyboard in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;

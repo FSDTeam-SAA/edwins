@@ -3,9 +3,16 @@ import UIKit
 
 public class AvatarViewFactory: NSObject, FlutterPlatformViewFactory {
     private let messenger: FlutterBinaryMessenger
-    init(messenger: FlutterBinaryMessenger) {
+    private let registrar: FlutterPluginRegistrar
+
+    init(messenger: FlutterBinaryMessenger, registrar: FlutterPluginRegistrar) {
         self.messenger = messenger
+        self.registrar = registrar
         super.init()
+    }
+
+    public func createArgsCodec() -> (FlutterMessageCodec & NSObjectProtocol) {
+        return FlutterStandardMessageCodec.sharedInstance()
     }
 
     public func create(
@@ -13,7 +20,19 @@ public class AvatarViewFactory: NSObject, FlutterPlatformViewFactory {
         viewIdentifier viewId: Int64,
         arguments args: Any?
     ) -> FlutterPlatformView {
+        print("➡️ create() aufgerufen mit args: \(String(describing: args))")
 
-        return AvatarPlatformView(frame: frame, viewId: viewId, messenger: messenger)
+        
+        let params = args as? [AnyHashable: Any]
+
+        let bgPath = params?["backgroundImagePath"] as? String
+
+        return AvatarPlatformView(
+            frame: frame,
+            viewId: viewId,
+            messenger: messenger,
+            backgroundImagePath: bgPath,
+            registrar: registrar
+        )
     }
 }

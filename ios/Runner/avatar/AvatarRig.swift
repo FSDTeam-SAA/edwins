@@ -30,7 +30,7 @@ final class AvatarRig: MorphWeighter {
     // MARK: Init / Loading
     init(modelURL: URL) throws {
         let srcScene = try SCNScene(url: modelURL, options: nil)
-        
+
         guard let container = AvatarRig.findAvatarContainer(in: srcScene.rootNode) else {
             throw NSError(domain:"AvatarRig", code:2,
                           userInfo:[NSLocalizedDescriptionKey:"No visible container found"])
@@ -130,6 +130,7 @@ final class AvatarRig: MorphWeighter {
                 stop.pointee = true
             }
         }
+        
         return best
     }
 

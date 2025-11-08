@@ -6,8 +6,11 @@ final class AvatarCameraController {
     private weak var scnView: SCNView?
     private(set) var cameraNode: SCNNode?
     private var lookAtNode: SCNNode?
+    private let registrar: FlutterPluginRegistrar?
 
-    init(scnView: SCNView) { self.scnView = scnView }
+    init(scnView: SCNView, registrar: FlutterPluginRegistrar? = nil) { self.scnView = scnView
+        self.registrar = registrar
+    }
 
     func configureDefaults(in scene: SCNScene) {
         ensureCamera(in: scene)
@@ -113,12 +116,56 @@ final class AvatarCameraController {
         v.backgroundColor = .clear
         v.scene?.background.contents = colorFromHex(hex)
     }
-    func setBackgroundImage(named: String) {
+    
+    func setBackgroundImage(named assetOrPath: String) {
+        print("setbackground")
         guard let v = scnView else { return }
-        v.isOpaque = true
+        v.isOpaque = false
         v.backgroundColor = .black
-        v.scene?.background.contents = UIImage(named: named)
+
+        // 1) Filepfad direkt?
+        if assetOrPath.hasPrefix("/") || assetOrPath.hasPrefix("file://") {
+            var p = assetOrPath
+            if p.hasPrefix("file://"), let url = URL(string: p) { p = url.path }
+            if let img = UIImage(contentsOfFile: p) {
+                v.scene?.background.contents = img
+                return
+            } else {
+                print("⚠️ BG: Disk image not found at \(p)")
+            }
+        }
+
+        // 2) Flutter-Asset laden
+        let key = registrar?.lookupKey(forAsset: assetOrPath) ?? assetOrPath
+        let bundle = Bundle.main
+
+        // a) Bevorzugt: über `flutter_assets`-Unterverzeichnis
+        if let url = bundle.url(forResource: key, withExtension: nil, subdirectory: "flutter_assets"),
+           let img = UIImage(contentsOfFile: url.path) {
+            v.scene?.background.contents = img
+            return
+        }
+
+        // b) Alternativ: manueller Pfadbau
+        if let root = bundle.resourceURL {
+            let url = root.appendingPathComponent("flutter_assets").appendingPathComponent(key)
+            if FileManager.default.fileExists(atPath: url.path),
+               let img = UIImage(contentsOfFile: url.path) {
+                v.scene?.background.contents = img
+                return
+            }
+        }
+
+        // c) Letzter Versuch (selten erfolgreich, aber schadet nicht)
+        if let img = UIImage(named: key, in: bundle, compatibleWith: nil) {
+            v.scene?.background.contents = img
+            return
+        }
+
+        print("❌ BG: Flutter-Asset nicht gefunden. key='\(key)' (original='\(assetOrPath)')")
+        v.scene?.background.contents = UIColor.clear
     }
+
 
     private func colorFromHex(_ hex: String) -> UIColor {
         var s = hex.trimmingCharacters(in: .whitespacesAndNewlines).uppercased()

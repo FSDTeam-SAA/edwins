@@ -31,7 +31,10 @@ class AvatarDemoPage extends StatelessWidget {
       body: Center(
         child: AspectRatio(
           aspectRatio: 1,
-          child: AvatarView(controller: avatarController),
+          child: AvatarView(
+            controller: avatarController,
+            backgroundImagePath: "assets/images/background.png",
+          ),
         ),
       ),
     );
