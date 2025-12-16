@@ -35,13 +35,22 @@ final class AvatarAudioPlayer {
     }
 
     func play(url: URL) throws {
+        print("PLAY" + url.absoluteString)
+        let path = url.path
+        print("fileExists: \(FileManager.default.fileExists(atPath: path))")
+
+        
+  
+
         if player.isPlaying { player.stop() }
 
         let f = try AVAudioFile(forReading: url)
         self.file = f
+        print("sampleRate: \(f.processingFormat.sampleRate), channels: \(f.processingFormat.channelCount), length: \(f.length) frames")
 
         let format = f.processingFormat
         self.sampleRate = format.sampleRate
+        
 
         // Sicherstellen, dass PlayerNode mit passendem Format verbunden ist
         engine.disconnectNodeOutput(player)

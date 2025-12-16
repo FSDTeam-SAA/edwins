@@ -3,14 +3,18 @@
 	archiveVersion = 1;
 	classes = {
 	};
-	objectVersion = 54;
+	objectVersion = 70;
 	objects = {
 
 /* Begin PBXBuildFile section */
-		143270382EBE05A400062F66 /* Idle.dae in Resources */ = {isa = PBXBuildFile; fileRef = 143270372EBE05A400062F66 /* Idle.dae */; };
-		143270392EBE05A400062F66 /* Idle.dae in Resources */ = {isa = PBXBuildFile; fileRef = 143270372EBE05A400062F66 /* Idle.dae */; };
 		1432703B2EBF63CF00062F66 /* ClaraAvatar.usdz in Resources */ = {isa = PBXBuildFile; fileRef = 1432703A2EBF63CF00062F66 /* ClaraAvatar.usdz */; };
 		1432703C2EBF63CF00062F66 /* ClaraAvatar.usdz in Resources */ = {isa = PBXBuildFile; fileRef = 1432703A2EBF63CF00062F66 /* ClaraAvatar.usdz */; };
+		149071652EF16D8600819A36 /* KarlAvatar.usdz in Resources */ = {isa = PBXBuildFile; fileRef = 149071642EF16D8600819A36 /* KarlAvatar.usdz */; };
+		149071662EF16D8600819A36 /* KarlAvatar.usdz in Resources */ = {isa = PBXBuildFile; fileRef = 149071642EF16D8600819A36 /* KarlAvatar.usdz */; };
+		149071A22EF1F2A300819A36 /* ClaraIdle.dae in Resources */ = {isa = PBXBuildFile; fileRef = 149071A12EF1F2A300819A36 /* ClaraIdle.dae */; };
+		149071A32EF1F2A300819A36 /* ClaraIdle.dae in Resources */ = {isa = PBXBuildFile; fileRef = 149071A12EF1F2A300819A36 /* ClaraIdle.dae */; };
+		149071A52EF1F67100819A36 /* KarlIdle.dae in Resources */ = {isa = PBXBuildFile; fileRef = 149071A42EF1F67100819A36 /* KarlIdle.dae */; };
+		149071A62EF1F67100819A36 /* KarlIdle.dae in Resources */ = {isa = PBXBuildFile; fileRef = 149071A42EF1F67100819A36 /* KarlIdle.dae */; };
 		1498D2341E8E89220040F4C2 /* GeneratedPluginRegistrant.m in Sources */ = {isa = PBXBuildFile; fileRef = 1498D2331E8E89220040F4C2 /* GeneratedPluginRegistrant.m */; };
 		14A453132EAFA19000D88198 /* AvatarPlatformView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 14A453122EAFA19000D88198 /* AvatarPlatformView.swift */; };
 		14A453152EAFA1AA00D88198 /* AvatarViewFactory.swift in Sources */ = {isa = PBXBuildFile; fileRef = 14A453142EAFA1AA00D88198 /* AvatarViewFactory.swift */; };
@@ -46,9 +50,11 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
-		143270372EBE05A400062F66 /* Idle.dae */ = {isa = PBXFileReference; lastKnownFileType = text.xml.dae; path = Idle.dae; sourceTree = "<group>"; };
 		1432703A2EBF63CF00062F66 /* ClaraAvatar.usdz */ = {isa = PBXFileReference; lastKnownFileType = file; path = ClaraAvatar.usdz; sourceTree = "<group>"; };
 		14446FDA2EB64EF500EB2749 /* RunnerTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = RunnerTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		149071642EF16D8600819A36 /* KarlAvatar.usdz */ = {isa = PBXFileReference; lastKnownFileType = file; path = KarlAvatar.usdz; sourceTree = "<group>"; };
+		149071A12EF1F2A300819A36 /* ClaraIdle.dae */ = {isa = PBXFileReference; lastKnownFileType = text.xml.dae; path = ClaraIdle.dae; sourceTree = "<group>"; };
+		149071A42EF1F67100819A36 /* KarlIdle.dae */ = {isa = PBXFileReference; lastKnownFileType = text.xml.dae; path = KarlIdle.dae; sourceTree = "<group>"; };
 		1498D2321E8E86230040F4C2 /* GeneratedPluginRegistrant.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = GeneratedPluginRegistrant.h; sourceTree = "<group>"; };
 		1498D2331E8E89220040F4C2 /* GeneratedPluginRegistrant.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = GeneratedPluginRegistrant.m; sourceTree = "<group>"; };
 		14A453122EAFA19000D88198 /* AvatarPlatformView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AvatarPlatformView.swift; sourceTree = "<group>"; };
@@ -71,50 +77,10 @@
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
-		14446FBB2EB60C2E00EB2749 /* audio */ = {
-			isa = PBXFileSystemSynchronizedRootGroup;
-			exceptions = (
-			);
-			explicitFileTypes = {
-			};
-			explicitFolders = (
-			);
-			path = audio;
-			sourceTree = "<group>";
-		};
-		14446FC22EB6101F00EB2749 /* visemes */ = {
-			isa = PBXFileSystemSynchronizedRootGroup;
-			exceptions = (
-			);
-			explicitFileTypes = {
-			};
-			explicitFolders = (
-			);
-			path = visemes;
-			sourceTree = "<group>";
-		};
-		14446FC92EB631C900EB2749 /* avatar */ = {
-			isa = PBXFileSystemSynchronizedRootGroup;
-			exceptions = (
-			);
-			explicitFileTypes = {
-			};
-			explicitFolders = (
-			);
-			path = avatar;
-			sourceTree = "<group>";
-		};
-		14446FDB2EB64EF500EB2749 /* RunnerTests */ = {
-			isa = PBXFileSystemSynchronizedRootGroup;
-			exceptions = (
-			);
-			explicitFileTypes = {
-			};
-			explicitFolders = (
-			);
-			path = RunnerTests;
-			sourceTree = "<group>";
-		};
+		14446FBB2EB60C2E00EB2749 /* audio */ = {isa = PBXFileSystemSynchronizedRootGroup; explicitFileTypes = {}; explicitFolders = (); path = audio; sourceTree = "<group>"; };
+		14446FC22EB6101F00EB2749 /* visemes */ = {isa = PBXFileSystemSynchronizedRootGroup; explicitFileTypes = {}; explicitFolders = (); path = visemes; sourceTree = "<group>"; };
+		14446FC92EB631C900EB2749 /* avatar */ = {isa = PBXFileSystemSynchronizedRootGroup; explicitFileTypes = {}; explicitFolders = (); path = avatar; sourceTree = "<group>"; };
+		14446FDB2EB64EF500EB2749 /* RunnerTests */ = {isa = PBXFileSystemSynchronizedRootGroup; explicitFileTypes = {}; explicitFolders = (); path = RunnerTests; sourceTree = "<group>"; };
 /* End PBXFileSystemSynchronizedRootGroup section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -139,8 +105,10 @@
 		143270332EBE015F00062F66 /* Assets.scnassets */ = {
 			isa = PBXGroup;
 			children = (
-				143270372EBE05A400062F66 /* Idle.dae */,
 				1432703A2EBF63CF00062F66 /* ClaraAvatar.usdz */,
+				149071642EF16D8600819A36 /* KarlAvatar.usdz */,
+				149071A12EF1F2A300819A36 /* ClaraIdle.dae */,
+				149071A42EF1F67100819A36 /* KarlIdle.dae */,
 			);
 			path = Assets.scnassets;
 			sourceTree = "<group>";
@@ -311,8 +279,10 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				149071A52EF1F67100819A36 /* KarlIdle.dae in Resources */,
+				149071662EF16D8600819A36 /* KarlAvatar.usdz in Resources */,
 				1432703B2EBF63CF00062F66 /* ClaraAvatar.usdz in Resources */,
-				143270382EBE05A400062F66 /* Idle.dae in Resources */,
+				149071A22EF1F2A300819A36 /* ClaraIdle.dae in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -321,9 +291,11 @@
 			buildActionMask = 2147483647;
 			files = (
 				97C147011CF9000F007C117D /* LaunchScreen.storyboard in Resources */,
-				143270392EBE05A400062F66 /* Idle.dae in Resources */,
 				1432703C2EBF63CF00062F66 /* ClaraAvatar.usdz in Resources */,
 				3B3967161E833CAA004F5970 /* AppFrameworkInfo.plist in Resources */,
+				149071A32EF1F2A300819A36 /* ClaraIdle.dae in Resources */,
+				149071A62EF1F67100819A36 /* KarlIdle.dae in Resources */,
+				149071652EF16D8600819A36 /* KarlAvatar.usdz in Resources */,
 				97C146FE1CF9000F007C117D /* Assets.xcassets in Resources */,
 				97C146FC1CF9000F007C117D /* Main.storyboard in Resources */,
 			);
@@ -371,9 +343,13 @@
 			inputFileListPaths = (
 				"${PODS_ROOT}/Target Support Files/Pods-Runner/Pods-Runner-frameworks-${CONFIGURATION}-input-files.xcfilelist",
 			);
+			inputPaths = (
+			);
 			name = "[CP] Embed Pods Frameworks";
 			outputFileListPaths = (
 				"${PODS_ROOT}/Target Support Files/Pods-Runner/Pods-Runner-frameworks-${CONFIGURATION}-output-files.xcfilelist",
+			);
+			outputPaths = (
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;

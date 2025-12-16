@@ -1,6 +1,6 @@
-import Flutter
-import UIKit
+
 import SceneKit
+import Flutter
 
 final class AvatarPlatformView: NSObject, FlutterPlatformView {
     private let scnView = SCNView()
@@ -8,7 +8,7 @@ final class AvatarPlatformView: NSObject, FlutterPlatformView {
     private var pendingBackgroundPath: String?
     private let registrar: FlutterPluginRegistrar
     
-    private var cameraCtl: AvatarCameraController!
+    private var cameraController: AvatarCameraController!
     private var rig: AvatarRig?
     private var audioPlayer: AvatarAudioPlayer!
     private var scheduler: VisemeScheduler?
@@ -21,7 +21,7 @@ final class AvatarPlatformView: NSObject, FlutterPlatformView {
     
 
 
-    init(frame: CGRect, viewId: Int64, messenger: FlutterBinaryMessenger, backgroundImagePath: String?,cornerRadius: CGFloat, registrar: FlutterPluginRegistrar) {
+    init(frame: CGRect, viewId: Int64, messenger: FlutterBinaryMessenger, backgroundImagePath: String?,cornerRadius: CGFloat, registrar: FlutterPluginRegistrar, avatarName: String) {
         self.registrar = registrar
         self.cornerRadius = cornerRadius
  
@@ -34,6 +34,7 @@ final class AvatarPlatformView: NSObject, FlutterPlatformView {
         scnView.allowsCameraControl = false
         scnView.autoenablesDefaultLighting = false
         scnView.scene?.lightingEnvironment.intensity = 1.0
+    
         
         scnView.layer.cornerRadius = cornerRadius
          scnView.layer.masksToBounds = true
@@ -46,7 +47,7 @@ final class AvatarPlatformView: NSObject, FlutterPlatformView {
         catch { print("AvatarAudioPlayer init failed: \(error)") }
         
         // Camera
-        cameraCtl = AvatarCameraController(scnView: scnView, registrar: registrar)
+        cameraController = AvatarCameraController(scnView: scnView, registrar: registrar)
         
         pendingBackgroundPath = backgroundImagePath
 
@@ -58,23 +59,23 @@ final class AvatarPlatformView: NSObject, FlutterPlatformView {
         displayLink = CADisplayLink(target: self, selector: #selector(tick))
         displayLink?.add(to: .main, forMode: .common)
         
-        loadAvatarAndSetupCamera()
+        loadAvatarAndSetupCamera(avatarName: avatarName)
     }
     
     private func applyPendingBackgroundIfAny() {
           if let p = pendingBackgroundPath {
-              cameraCtl.setBackgroundImage(named: p)
+              cameraController.setBackgroundImage(named: p)
               pendingBackgroundPath = nil
           }
       }
     
     func loadAndPlayCombinedAnimation(from daeName: String,on rootNode: SCNNode) {
-        guard let sceneURL = Bundle.main.url(forResource: daeName, withExtension: "dae") else { print("DAE file not found."); return
+        guard let sceneURL = Bundle.main.url(forResource: daeName, withExtension: "dae",) else { print("DAE file not found."); return
         }
         guard let sceneSource = SCNSceneSource(url: sceneURL, options: nil) else { print("Failed to load SCNSceneSource."); return }
 
         let animationIDs = sceneSource.identifiersOfEntries(withClass: CAAnimation.self)
-        print("Gefundene Animationen: \(animationIDs)")
+        //print("Gefundene Animationen: \(animationIDs)")
 
         // Leere Gruppe, um alle Einzelanimationen zusammenzufassen
         let animationGroup = CAAnimationGroup()
@@ -100,64 +101,98 @@ final class AvatarPlatformView: NSObject, FlutterPlatformView {
 
 
     
-    private func loadAvatarAndSetupCamera() {
-        guard let modelURL = Bundle.main.url(forResource: "ClaraAvatar", withExtension: "usdz") else {
+    
+    private func loadAvatarAndSetupCamera(avatarName: String) {
+        
+        let avatarFile = "\(avatarName)Avatar"
+        guard let modelURL = Bundle.main.url(
+            forResource: avatarFile,
+            withExtension: "usdz"
+        ) else {
+            print("❌ \(avatarFile).usdz not found")
             return
         }
 
-
         do {
-            // Avatar Rig
             let loadedRig = try AvatarRig(modelURL: modelURL)
-            
-
             self.rig = loadedRig
 
-            scnView.scene = loadedRig.scene
-            
-            loadAndPlayCombinedAnimation(from: "Idle", on: loadedRig.scene.rootNode)
+            let scene = loadedRig.scene
+            scnView.scene = scene
+            scnView.autoresizingMask = [.flexibleWidth, .flexibleHeight]
 
-            // set light
+            // Sicherstellen, dass das Lighting nicht unser Problem ist
+            scnView.autoenablesDefaultLighting = true
+
+            // Debug-Hintergrund, damit wir sicher sehen, dass gerendert wird
+            scene.background.contents = UIColor.black
+            print("\(avatarName)Idle")
+
+        
+            // Idle-Animation, Licht, Blink wie bisher
+            loadAndPlayCombinedAnimation(from: "\(avatarName)Idle", on: scene.rootNode)
+
             let ambient = SCNNode()
             ambient.light = SCNLight()
             ambient.light?.type = .ambient
             ambient.light?.intensity = 200
-            loadedRig.scene.rootNode.addChildNode(ambient)
-            
+            scene.rootNode.addChildNode(ambient)
 
             let key = SCNNode()
             key.light = SCNLight()
             key.light?.type = .directional
             key.light?.intensity = 700
             key.eulerAngles = SCNVector3(-Float.pi/6, Float.pi/8, 0)
-            loadedRig.scene.rootNode.addChildNode(key)
+            scene.rootNode.addChildNode(key)
 
-            // set camera
-            cameraCtl.configureDefaults(in: loadedRig.scene)
-            
-            applyPendingBackgroundIfAny()
-            // blinking setup
-            if let rig,
+            if let rig = self.rig,
                let left = rig.index(of: "eyeBlinkLeft"),
-               let right = rig.index(of: "eyeBlinkRight")
-            {
+               let right = rig.index(of: "eyeBlinkRight") {
                 blinkCtl = BlinkController(
                     morpher: rig,
                     leftIdx: left,
                     rightIdx: right
                 )
             }
-            
-            // focus on face and upper body
-            DispatchQueue.main.async { [weak self] in
-                 guard let self else { return }
-                 self.cameraCtl.frame(of: loadedRig.wrapper, showTopFraction: 0.45)
-             }
+
+            let wrapper = loadedRig.wrapper
+            let localSphere = wrapper.boundingSphere
+            let radius = max(0.01, localSphere.radius)
+
+            // Wir wollen eher auf den Kopf zielen, nicht auf die Mitte
+            // Füße sind bei ~0, Kopf ca. bei ~2 * radius
+            let headY = radius * 150.6          // bisschen unter der Spitze
+            let target = SCNVector3(0, headY, 0)
+
+            // Kamera etwas über Kopfhöhe, davor
+            let distance: Float = radius * 110.0
+
+            let cameraNode = SCNNode()
+            let camera = SCNCamera()
+            cameraNode.camera = camera
+
+            camera.zNear = 0.01
+            camera.zFar  = 1000
+            camera.fieldOfView = 35
+
+            cameraNode.position = SCNVector3(0, headY + radius * 0.2, distance)
+            cameraNode.look(at: target)
+
+            wrapper.addChildNode(cameraNode)
+            scnView.pointOfView = cameraNode
+            scnView.allowsCameraControl = false
+
+            // Wenn das funktioniert, kannst du hier wieder dein Bild setzen
+            applyPendingBackgroundIfAny()
 
         } catch {
             print("USD load failed: \(error)")
         }
     }
+
+
+  
+
 
 
     func view() -> UIView { scnView }
@@ -174,7 +209,6 @@ final class AvatarPlatformView: NSObject, FlutterPlatformView {
 
             do {
                 try audioPlayer.play(path: audioPath)
-                // Scheduler erst erstellen, wenn Clock vorhanden
                 if scheduler == nil, let rig, let clock = audioPlayer.clock {
                     scheduler = VisemeScheduler(clock: clock, morpher: rig)
                 }
@@ -187,10 +221,50 @@ final class AvatarPlatformView: NSObject, FlutterPlatformView {
         case "stopAudioViseme":
             scheduler?.clear()
             audioPlayer.stop()
+        case "dispose":
+            print("[NATIVE] AvatarPlatformView.dispose() called")
+            dispose()
+            result(nil)
+
             
         default: result(FlutterMethodNotImplemented)
         }
     }
+    private func dispose() {
+        print("dispose")
+            // Wichtig: DisplayLink invalidieren (sonst starker Retain-Cycle!)
+            displayLink?.invalidate()
+            displayLink = nil
+
+            // Audio & Scheduler stoppen
+            scheduler?.clear()
+            scheduler = nil
+            //audioPlayer?.stop()
+            //audioPlayer = nil
+
+            // Blinker & Controller lösen
+            blinkCtl = nil
+
+            // Scene freigeben
+            scnView.scene = nil
+            scnView.delegate = nil
+            scnView.isPlaying = false
+            scnView.removeFromSuperview()
+
+            // Channel lösen
+            channel.setMethodCallHandler(nil)
+            rig = nil
+            cameraController = nil
+        }
+
+        deinit {
+            print("[NATIVE] AvatarPlatformView.deinit")
+            // Fallback, falls dispose nicht manuell aufgerufen wurde
+            dispose()
+        }
+
+
+
 
     private func enqueueVisemes(_ list: [[String: Any]]) {
         guard let scheduler, let rig, let sr = audioPlayer?.sampleRate else { return }
@@ -215,8 +289,9 @@ final class AvatarPlatformView: NSObject, FlutterPlatformView {
         let dt = CGFloat(displayLink?.duration ?? 1.0/60.0)
         let now = CACurrentMediaTime()
         blinkCtl?.tick(dt: dt, now: now)
+        
+
     }
-    
     
 }
 

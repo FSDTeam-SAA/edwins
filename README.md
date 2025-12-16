@@ -1,16 +1,83 @@
-# language_app
+# AvatarView (iOS / Flutter)
 
-A new Flutter project.
+  
 
-## Getting Started
+## Overview
 
-This project is a starting point for a Flutter application.
+  
 
-A few resources to get you started if this is your first Flutter project:
+`AvatarView` is a Flutter widget that displays a 3D avatar rendered **natively on iOS (Swift / SceneKit)**.
 
-- [Lab: Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Cookbook: Useful Flutter samples](https://docs.flutter.dev/cookbook)
+All avatar logic (model, animation, lip-sync) runs on the native side via **MethodChannels**.
 
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+  
+
+Switching avatars is done by passing an `avatarName`. Everything else is resolved automatically.
+
+  
+
+---
+
+  
+
+## Usage
+
+  
+
+```dart
+
+AvatarView(
+
+avatarName: "Karl" or "Clara",
+
+controller: _controller,
+
+height: 400,
+
+backgroundImagePath: "assets/images/background.png",
+
+borderRadius: 0,
+
+),
+```
+
+  
+
+## Test Data
+
+  
+
+There is a test viseme file and matching audio under:
+
+  
+
+- `test/viseme.txt`
+
+- `test/` (audio file)
+
+  
+  
+
+## Current UI State
+
+  
+
+Some UI elements are already implemented.
+
+  
+
+- The **speaker icon** in the speech bubble currently triggers the **test playback** (audio + visemes).
+
+  
+
+## How It Works
+
+  
+
+- This behaves like a normal Flutter project, but avatar rendering is **iOS-only**
+
+- The avatar system runs **natively in Swift**
+
+- Flutter communicates with the native layer via **MethodChannels**
+
+- Avatar model and animations are **separate files**

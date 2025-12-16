@@ -8,44 +8,61 @@ class AvatarView extends StatefulWidget {
   final AvatarController? controller;
   final String? backgroundImagePath;
   final double? borderRadius;
+  final double? height;
+  final String? avatarName;
 
-  const AvatarView(this.borderRadius,
-      {super.key, this.controller, this.backgroundImagePath});
+  const AvatarView({
+    super.key,
+    this.controller,
+    this.height,
+    this.backgroundImagePath,
+    this.borderRadius,
+    this.avatarName,
+  });
 
   @override
   State<AvatarView> createState() => _AvatarViewState();
 }
 
 class _AvatarViewState extends State<AvatarView> {
-  late final AvatarController _controller;
   final _visemeHelper = VisemeHelper();
+  late final AvatarController _controller;
 
   @override
   void initState() {
     super.initState();
+
     _controller = widget.controller ?? AvatarController();
   }
 
   void _onPlatformViewCreated(int id) {
     _controller.attach(id);
-    debugPrint('AvatarView channel ready: AvatarView/$id');
+    debugPrint('[FLUTTER] AvatarView attached $id');
+  }
+
+  @override
+  void dispose() {
+    debugPrint('[FLUTTER] AvatarView.dispose()');
+    // Entsorge nur, wenn wir wirklich attached waren
+
+    super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    // Nur auf iOS rendern – sonst Platzhalter
     if (defaultTargetPlatform != TargetPlatform.iOS) {
       return const SizedBox.shrink();
     }
 
     return SizedBox(
-      height: 220,
+      height: widget.height ?? 220,
       child: UiKitView(
         viewType: 'AvatarView',
         onPlatformViewCreated: _onPlatformViewCreated,
         creationParams: {
           'backgroundImagePath': widget.backgroundImagePath,
           'borderRadius': widget.borderRadius,
+          'avatarName': widget.avatarName,
         },
         creationParamsCodec: const StandardMessageCodec(),
       ),

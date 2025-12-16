@@ -19,6 +19,14 @@ class AvatarController {
 
   bool get isAttached => _channel != null;
 
+  Future<void> disposeView() async {
+    try {
+      await _channel?.invokeMethod('dispose'); // native aufräumen
+    } catch (_) {}
+    print("channel weg: ${_channel?.name}");
+    _channel = null;
+  }
+
   Future<void> playAudioViseme(
     String audioPath,
     List<Map<String, dynamic>> visemeEvents,

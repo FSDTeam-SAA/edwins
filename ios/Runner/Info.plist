@@ -49,8 +49,14 @@
 	<true/>
 	<key>io.flutter.embedded_views_preview</key><true />
 	<key>NSAppTransportSecurity</key>
-<dict>
+	<dict>
   <key>NSAllowsArbitraryLoadsInWebContent</key><true/>
 </dict>
+	<key>NSMicrophoneUsageDescription</key>
+    <string>Das Mikrofon wird für die Spracherkennung benötigt.</string>
+    <key>NSSpeechRecognitionUsageDescription</key>
+    <string>Die Spracherkennung wird benötigt, um deine Sprache in Text umzuwandeln.</string>
+
+
 </dict>
 </plist>
