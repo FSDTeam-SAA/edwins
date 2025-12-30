@@ -1,21 +1,29 @@
 import 'dart:async';
-
-import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
-import 'package:language_app/Screens/onbording_screen.dart';
+import 'package:language_app/Mainhomepage/home_view.dart';
 import 'package:language_app/Screens/splash.dart';
+// import 'package:language_app/Screens/splash.dart';
 import 'package:language_app/avatar/avatar_controller.dart';
 import 'package:language_app/avatar/avatar_view.dart';
 import 'package:language_app/components/message_bubble.dart';
 import 'package:language_app/components/progess_visual.dart';
 import 'package:language_app/gradient_button.dart';
 import 'package:language_app/helper/viseme_helper.dart';
+import 'package:language_app/provider/avatar_provider.dart';
+import 'package:provider/provider.dart';
 import 'package:speech_to_text/speech_recognition_error.dart' as stt;
 import 'package:speech_to_text/speech_recognition_result.dart' as stt;
 import 'package:speech_to_text/speech_to_text.dart' as stt;
 
 void main() {
-  runApp(const MyApp());
+  runApp(
+    MultiProvider(
+      providers: [
+        ChangeNotifierProvider(create: (_) => AvatarProvider()),
+      ],
+      child: const MyApp(),
+    ),
+  );
 }
 
 class MyApp extends StatelessWidget {
@@ -25,11 +33,13 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
+      debugShowCheckedModeBanner: false,
         title: 'Talknizr',
         theme: ThemeData(
           primarySwatch: Colors.blue,
         ),
-        home: const SplashScreen()); // AvatarDemoPage());
+        home: const SplashScreen());
+        // home: const HomeView()); // AvatarDemoPage());
   }
 }
 
