@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:language_app/Screens/onbording_screen.dart';
 
 import 'sign_in.dart';
 import 'sign_up.dart';
@@ -13,14 +14,22 @@ class LoginPage extends StatelessWidget {
       appBar: AppBar(
         backgroundColor: Colors.white,
         elevation: 0,
-        leading: IconButton(
-          icon: const Icon(
-            Icons.arrow_back_ios,
-            color: Color(0xFFFF8000),
-            size: 20,
-          ),
-          onPressed: () => Navigator.pop(context),
-        ),
+      leading: IconButton(
+      icon: const Icon(
+    Icons.arrow_back_ios,
+    color: Color(0xFFFF8000),
+    size: 20,
+  ),
+  onPressed: () {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => OnboardingScreen(),
+      ),
+    );
+  },
+    ),
+
       ),
       body: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 24.0),
