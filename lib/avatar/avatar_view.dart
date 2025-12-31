@@ -1,7 +1,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:language_app/helper/viseme_helper.dart';
+// import 'package:language_app/helper/viseme_helper.dart';
 import 'avatar_controller.dart';
 
 class AvatarView extends StatefulWidget {
@@ -25,7 +25,7 @@ class AvatarView extends StatefulWidget {
 }
 
 class _AvatarViewState extends State<AvatarView> {
-  final _visemeHelper = VisemeHelper();
+  // final _visemeHelper = VisemeHelper();
   late final AvatarController _controller;
 
   @override

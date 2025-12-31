@@ -71,7 +71,7 @@ class LessonCompletionView extends StatelessWidget {
                 /// Buttons
                 _buildOutlineButton(
                   context,
-                  "⬅ Back Home",
+                  "Back Home",
                   onTap: () => Navigator.push(
                     context,
                     MaterialPageRoute(builder: (_) => const HomeView()),
@@ -81,7 +81,7 @@ class LessonCompletionView extends StatelessWidget {
                 const SizedBox(height: 15),
                 _buildGradientButton(
                   context,
-                  "🔁 Repeat Vocabulary",
+                  "Repeat Vocabulary",
                   gradient: AppColors.primaryGradient,
                   onTap: () => Navigator.push(
                     context,

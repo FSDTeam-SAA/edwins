@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:language_app/Mainhomepage/view/conversation/conversation_view.dart';
+import 'package:language_app/Mainhomepage/view/conversation/conversation_chat.dart';
 import 'package:language_app/Mainhomepage/view/conversation/select_avatar.dart';
 import 'package:language_app/Mainhomepage/view/vocabulary/vocab_loop_view.dart';
+import 'package:language_app/providers/avatar_provider.dart';
+import 'package:provider/provider.dart';
 import '../../utils/app_style.dart';
 import '../../utils/mock_data.dart';
 import '../../widgets/radar_chart.dart';
@@ -88,32 +90,43 @@ class _HomeViewState extends State<HomeView> {
                 const SizedBox(height: 20),
 
                 // 5. Green "Continue Learning" Button
-                ElevatedButton(
-                  onPressed: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                          builder: (context) => const SelectAvatar()),
-                    );
-                  },
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF4CAF50), // Green color
-                    minimumSize: const Size(double.infinity, 56),
-                    elevation: 0,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(16),
-                    ),
-                  ),
-                  child: const Text(
-                    "Continue Learning",
-                    style: TextStyle(
-                      fontSize: 18,
-                      color: Colors.white,
-                      fontWeight: FontWeight.w600,
-                      letterSpacing: 0.5,
-                    ),
-                  ),
-                ),
+                Container(
+  width: double.infinity,
+  height: 56,
+  decoration: BoxDecoration(
+    // Your gradient implementation
+    gradient: const LinearGradient(
+      colors: [Color(0xFF4CAF50), Color(0xFF2E7D32)],
+      begin: Alignment.centerLeft,
+      end: Alignment.centerRight,
+    ),
+    borderRadius: BorderRadius.circular(16),
+  ),
+  child: ElevatedButton(
+    onPressed: () {
+      Navigator.push(
+        context,
+        MaterialPageRoute(builder: (context) => const SelectAvatar()),
+      );
+    },
+    style: ElevatedButton.styleFrom(
+      backgroundColor: Colors.transparent, // Make button transparent
+      shadowColor: Colors.transparent,     // Remove default shadow
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16),
+      ),
+    ),
+    child: const Text(
+      "Continue Learning",
+      style: TextStyle(
+        fontSize: 18,
+        color: Colors.white,
+        fontWeight: FontWeight.w600,
+        letterSpacing: 0.5,
+      ),
+    ),
+  ),
+),
                 const SizedBox(height: 30),
               ],
             ),
@@ -152,7 +165,7 @@ class _HomeViewState extends State<HomeView> {
           gradient: const LinearGradient(
             colors: [
               Color.fromRGBO(255, 240, 245, 1), // Very light pink
-              Color.fromRGBO(255, 248, 240, 1)  // Very light orange
+              Color.fromRGBO(255, 248, 240, 1) // Very light orange
             ],
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
@@ -174,10 +187,9 @@ class _HomeViewState extends State<HomeView> {
                     Text(
                       "Your progress after 5 lessons",
                       style: TextStyle(
-                        fontSize: 13, 
-                        color: Colors.grey, 
-                        fontWeight: FontWeight.w400
-                      ),
+                          fontSize: 13,
+                          color: Colors.grey,
+                          fontWeight: FontWeight.w400),
                     ),
                   ],
                 ),
@@ -218,7 +230,8 @@ class _HomeViewState extends State<HomeView> {
         border: Border.all(color: const Color(0xFFEEEEEE), width: 1.5),
         boxShadow: [
           BoxShadow(
-            color: const Color(0xFF009DFF).withOpacity(0.05), // Blue tint shadow
+            color:
+                const Color(0xFF009DFF).withOpacity(0.05), // Blue tint shadow
             blurRadius: 15,
             offset: const Offset(0, 5),
           ),
@@ -274,7 +287,8 @@ class _HomeViewState extends State<HomeView> {
                 MaterialPageRoute(builder: (context) => const MenuView()),
               );
             },
-            child: const Icon(Icons.menu, color: AppColors.primaryOrange, size: 32),
+            child: const Icon(Icons.menu,
+                color: AppColors.primaryOrange, size: 32),
           ),
         ),
       ],
@@ -288,10 +302,17 @@ class _HomeViewState extends State<HomeView> {
         Expanded(
           child: GestureDetector(
             onTap: () {
+              // Get the selected avatar from provider
+              final avatarProvider =
+                  Provider.of<AvatarProvider>(context, listen: false);
+
               Navigator.push(
                 context,
                 MaterialPageRoute(
-                    builder: (context) => const ConversationView()),
+                  builder: (context) => ConversationChat(
+                    selectedAvatarName: avatarProvider.selectedAvatarName,
+                  ),
+                ),
               );
             },
             child: Container(
@@ -315,14 +336,19 @@ class _HomeViewState extends State<HomeView> {
           ),
         ),
         const SizedBox(width: 16),
-        
+
         // 2. Vocabulary Button (Gradient BG)
         Expanded(
           child: GestureDetector(
             onTap: () {
-               // This is the current page, so we don't navigate or we just refresh
+              // This is the current page, so we don't navigate or we just refresh
               //  Navigator.pushNamed(context, '/vocab-loop');
-              Navigator.push(context, MaterialPageRoute(builder: (context) => const VocabLoopView(lessonId: "lesson_1"),));
+              Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) =>
+                        const VocabLoopView(lessonId: "lesson_1"),
+                  ));
             },
             child: Container(
               height: 50,

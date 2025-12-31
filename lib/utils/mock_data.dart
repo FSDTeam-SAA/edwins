@@ -51,11 +51,11 @@ class MockData {
       {
         "id": "m_120",
         "role": "avatar",
-        "text": "Hello! I'm excited to practice with you today. What's your favourite place to eat?",
+        "text": "Hello! I'm excited to **practice** with you today. What's your **favourite place** to eat?",
         "translation": {
-          "de": "Hallo! Ich freue mich darauf, heute mit dir zu üben. Was ist dein Lieblingsort zum Essen?"
+          "de": "Hallo! Ich **freue** mich darauf, heute mit dir zu üben. Was ist dein Lieblingsort zum **Essen**?"
         },
-        "audio": "assets/audio/greeting.mp3",
+        // "audio": "assets/audio/greeting.mp3",
         "visemes": {"aa": "0:01"},
         "created_at": "2025-12-28T10:12:00Z"
       }
@@ -64,12 +64,12 @@ class MockData {
   };
 
   // Mock avatar data
-  static Map<String, dynamic> avatarData = {
-    "id": "clara",
-    "name": "Clara",
-    "image": "assets/images/clara_avatar.png",
-    "language": "English"
-  };
+  // static Map<String, dynamic> avatarData = {
+  //   "id": "clara",
+  //   "name": "Clara",
+  //   "image": "assets/images/clara_avatar.png",
+  //   "language": "English"
+  // };
 
   // Mock response for user message submission
   static Map<String, dynamic> mockMessageResponse(String userText) {
@@ -103,37 +103,3 @@ class MockData {
     };
   }
 }
-
-// class MockData {
-//   // Home Progress Mock
-//   static Map<String, dynamic> homeProgress = {
-//     "overall_progress_percent": 75,
-//     "skills": {
-//       "Grammar": 10,
-//       "Speaking": 20,
-//       "Listening": 15,
-//       "Conversation": 20,
-//       "Vocabulary": 10,
-//     },
-//     "total": 1250,
-//     "days": {"Mon": 10, "Tue": 35, "Wed": 15, "Thu": 40, "Fri": 30}
-//   };
-
-//   // Listening MC Step Mock
-//   static Map<String, dynamic> listeningStep = {
-//     "step_id": "st_1",
-//     "type": "listening_mc",
-//     "audio": "assets/audio/cat.mp3",
-//     "choices": [
-//       {"choice_id": "c1", "text": "Cat"},
-//       {"choice_id": "c2", "text": "Cap"},
-//       {"choice_id": "c3", "text": "Car"},
-//       {"choice_id": "c4", "text": "Can"}
-//     ]
-//   };
-//   static Map<String, dynamic> conversationStep = {
-//     "step_id": "conv_1",
-//     "prompt": "The cat eats chicken.",
-//     "correct_answer": "Die Katze frisst Hühnchen"
-//   };
-// }

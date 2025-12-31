@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import 'package:language_app/providers/avatar_provider.dart';
 import 'package:language_app/Mainhomepage/view/conversation/conversation_chat.dart';
 import '../../../utils/app_style.dart';
-
-// Avatar imports
 import 'package:language_app/avatar/avatar_controller.dart';
 import 'package:language_app/avatar/avatar_view.dart';
 
@@ -14,21 +14,25 @@ class SelectAvatar extends StatefulWidget {
 }
 
 class _SelectAvatarState extends State<SelectAvatar> {
-  // Page Controller for swiping
   late PageController _pageController;
-  int _currentPageIndex = 0;
+  int currentPageIndex = 0;
 
-  // Selection State (String based, no AvatarModel)
-  String _selectedAvatarName = "Clara"; // Default
-
-  // 3D Avatar Controllers
   final AvatarController _claraController = AvatarController();
   final AvatarController _karlController = AvatarController();
 
   @override
   void initState() {
     super.initState();
-    _pageController = PageController(viewportFraction: 0.85, initialPage: 0);
+    final avatarProvider = Provider.of<AvatarProvider>(context, listen: false);
+    
+    // Set initial page based on saved avatar
+    final initialIndex = avatarProvider.selectedAvatarName == "Clara" ? 0 : 1;
+    currentPageIndex = initialIndex;
+    
+    _pageController = PageController(
+      viewportFraction: 0.85,
+      initialPage: initialIndex,
+    );
   }
 
   @override
@@ -41,13 +45,12 @@ class _SelectAvatarState extends State<SelectAvatar> {
 
   void _onPageChanged(int index) {
     setState(() {
-      _currentPageIndex = index;
-      if (index == 0) {
-        _selectedAvatarName = "Clara";
-      } else {
-        _selectedAvatarName = "Karl";
-      }
+      currentPageIndex = index;
     });
+    
+    final avatarProvider = Provider.of<AvatarProvider>(context, listen: false);
+    final avatarName = index == 0 ? "Clara" : "Karl";
+    avatarProvider.setSelectedAvatar(avatarName);
   }
 
   void _onAvatarCardTap(int index) {
@@ -56,20 +59,19 @@ class _SelectAvatarState extends State<SelectAvatar> {
       duration: const Duration(milliseconds: 300),
       curve: Curves.easeInOut,
     );
-    _onPageChanged(index);
   }
 
- void _startConversation() {
-  // Pass the selected name ("Clara" or "Karl") directly to the next screen
-  Navigator.push(
-    context,
-    MaterialPageRoute(
-      builder: (context) => ConversationChat(
-        selectedAvatarName: _selectedAvatarName, 
+  void _startConversation() {
+    final avatarProvider = Provider.of<AvatarProvider>(context, listen: false);
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => ConversationChat(
+          selectedAvatarName: avatarProvider.selectedAvatarName,
+        ),
       ),
-    ),
-  );
-}
+    );
+  }
 
   // Helper to get accent color based on name (Optional visual flair)
   Color _getAccentColor() {
@@ -78,6 +80,7 @@ class _SelectAvatarState extends State<SelectAvatar> {
 
   @override
   Widget build(BuildContext context) {
+        final selectedAvatarName = context.watch<AvatarProvider>().selectedAvatarName;
     final accentColor = _getAccentColor();
 
     return Scaffold(
@@ -150,7 +153,8 @@ class _SelectAvatarState extends State<SelectAvatar> {
                     index: 0,
                     name: "Clara",
                     controller: _claraController,
-                    isSelected: _selectedAvatarName == "Clara",
+                    isSelected: selectedAvatarName == "Clara",
+                    // isSelected: $selectedAvatarName,
                   ),
                   
                   // 2. Karl Card
@@ -158,7 +162,7 @@ class _SelectAvatarState extends State<SelectAvatar> {
                     index: 1,
                     name: "Karl",
                     controller: _karlController,
-                    isSelected: _selectedAvatarName == "Karl",
+                    isSelected: selectedAvatarName == "Karl",
                   ),
                 ],
               ),
@@ -194,7 +198,7 @@ class _SelectAvatarState extends State<SelectAvatar> {
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
                         Text(
-                          "Start with $_selectedAvatarName",
+                          "Start with $selectedAvatarName",
                           style: const TextStyle(
                             color: Colors.white,
                             fontSize: 18,
@@ -316,173 +320,3 @@ class _SelectAvatarState extends State<SelectAvatar> {
     );
   }
 }
-
-// import 'package:flutter/material.dart';
-// import 'package:language_app/Mainhomepage/view/conversation/conversation_chat.dart';
-// import 'package:provider/provider.dart';
-// import '../../../provider/avatar_provider.dart';
-// import '../../../utils/app_style.dart';
-// import '../../../models/avatar_model.dart';
-// import 'widgets/avatar_selector.dart';
-
-// class SelectAvatar extends StatefulWidget {
-//   const SelectAvatar({super.key});
-
-//   @override
-//   State<SelectAvatar> createState() => _SelectAvatarState();
-// }
-
-// class _SelectAvatarState extends State<SelectAvatar> {
-//   AvatarModel _selectedAvatar = AvatarModel.clara;
-
-//   void _onAvatarSelected(AvatarModel avatar) {
-//     setState(() {
-//       _selectedAvatar = avatar;
-//     });
-//   }
-
-//   void _startConversation() {
-//     // 1. Save the selected avatar to the Provider
-//     Provider.of<AvatarProvider>(
-//       context,
-//       listen: false,
-//     ).selectAvatar(_selectedAvatar);
-//     // Pass the selected avatar to the next screen
-//     // Navigator.pushNamed(
-//     //   context,
-//     //   '/ConversationChat',
-//     // arguments: {
-//     //   'avatarId': _selectedAvatar.id,
-//     //   'avatarName': _selectedAvatar.name,
-//     //   'avatarModelPath': _selectedAvatar.modelPath,
-//     //   'avatarColor': _selectedAvatar.accentColor.value,
-//     // },
-//     // );
-//     Navigator.push(
-//       context,
-//       MaterialPageRoute(
-//         builder: (context) => const ConversationChat(),
-//       ),
-//     );
-//   }
-
-//   @override
-//   Widget build(BuildContext context) {
-//     return Scaffold(
-//       backgroundColor: Colors.white,
-//       appBar: AppBar(
-//         backgroundColor: Colors.white,
-//         elevation: 0,
-//         leading: IconButton(
-//           icon: const Icon(
-//             Icons.arrow_back_ios,
-//             color: AppColors.primaryOrange,
-//           ),
-//           onPressed: () => Navigator.pop(context),
-//         ),
-//         title: const Text(
-//           "Choose Your Companion",
-//           style: TextStyle(
-//             color: AppColors.primaryOrange,
-//             fontSize: 20,
-//             fontWeight: FontWeight.bold,
-//           ),
-//         ),
-//         centerTitle: true,
-//       ),
-//       body: SafeArea(
-//         child: Padding(
-//           padding: const EdgeInsets.symmetric(horizontal: 24.0),
-//           child: Column(
-//             children: [
-//               const SizedBox(height: 20),
-
-//               // Subtitle
-//               Text(
-//                 'Select your companion for the conversation',
-//                 style: TextStyle(fontSize: 14, color: Colors.grey[600]),
-//                 textAlign: TextAlign.center,
-//               ),
-
-//               const SizedBox(height: 20),
-
-//               // Avatar Selector
-//               Expanded(
-//                 child: SingleChildScrollView(
-//                   physics: const BouncingScrollPhysics(),
-//                   child: AvatarSelector(
-//                     selectedAvatar: _selectedAvatar,
-//                     onAvatarSelected: _onAvatarSelected,
-//                   ),
-//                   // For flutter_3d_controller, use:
-//                   // AvatarSelector3D(
-//                   //   selectedAvatar: _selectedAvatar,
-//                   //   onAvatarSelected: _onAvatarSelected,
-//                   // ),
-//                 ),
-//               ),
-
-//               // Start Conversation Button
-//               Padding(
-//                 padding: const EdgeInsets.only(bottom: 40.0, top: 20.0),
-//                 child: GestureDetector(
-//                   onTap: _startConversation,
-//                   child: AnimatedContainer(
-//                     duration: const Duration(milliseconds: 300),
-//                     width: double.infinity,
-//                     height: 60,
-//                     decoration: BoxDecoration(
-//                       gradient: LinearGradient(
-//                         colors: [
-//                           _selectedAvatar.accentColor,
-//                           _selectedAvatar.accentColor.withOpacity(0.8),
-//                         ],
-//                       ),
-//                       borderRadius: BorderRadius.circular(15),
-//                       boxShadow: [
-//                         BoxShadow(
-//                           color: _selectedAvatar.accentColor.withOpacity(0.4),
-//                           blurRadius: 15,
-//                           offset: const Offset(0, 8),
-//                         ),
-//                       ],
-//                     ),
-//                     child: Center(
-//                       child: Row(
-//                         mainAxisAlignment: MainAxisAlignment.center,
-//                         children: [
-//                           Text(
-//                             "Start with ${_selectedAvatar.name}",
-//                             style: const TextStyle(
-//                               color: Colors.white,
-//                               fontSize: 18,
-//                               fontWeight: FontWeight.bold,
-//                               letterSpacing: 0.5,
-//                             ),
-//                           ),
-//                           const SizedBox(width: 12),
-//                           Container(
-//                             padding: const EdgeInsets.all(4),
-//                             decoration: BoxDecoration(
-//                               color: Colors.white.withOpacity(0.2),
-//                               shape: BoxShape.circle,
-//                             ),
-//                             child: const Icon(
-//                               Icons.arrow_forward_rounded,
-//                               color: Colors.white,
-//                               size: 20,
-//                             ),
-//                           ),
-//                         ],
-//                       ),
-//                     ),
-//                   ),
-//                 ),
-//               ),
-//             ],
-//           ),
-//         ),
-//       ),
-//     );
-//   }
-// }

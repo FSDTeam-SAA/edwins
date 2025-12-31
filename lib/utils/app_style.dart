@@ -24,7 +24,7 @@ class AppColors {
 
   // Gradient for buttons and active states
   static const LinearGradient primaryGradient = LinearGradient(
-    colors: [Color(0xFFFF8A65), Color(0xFFFF5252)],
+    colors: [Color(0xFFFF8A65), Color(0xFFFF5C7C)],
     begin: Alignment.topCenter,
     end: Alignment.bottomCenter,
   );
