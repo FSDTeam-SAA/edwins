@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:language_app/Auth/login.dart';
 import 'package:language_app/Screens/test_vocabulary.dart';
+
 import 'package:language_app/avatar/avatar_controller.dart';
 import 'package:language_app/avatar/avatar_view.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -11,7 +13,7 @@ class OnboardingScreen extends StatefulWidget {
   State<OnboardingScreen> createState() => _OnboardingScreenState();
 }
 
-class _OnboardingScreenState extends State<OnboardingScreen> {
+class _OnboardingScreenState extends State<OnboardingScreen> with TickerProviderStateMixin {
   final PageController _pageController = PageController();
   int _currentPage = 0;
 
@@ -27,9 +29,26 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   final AvatarController claraController = AvatarController();
   final AvatarController karlController = AvatarController();
 
+  // Animation Controllers
+  late AnimationController _buttonScaleController;
+  late Animation<double> _buttonScaleAnimation;
+
+  @override
+  void initState() {
+    super.initState();
+    _buttonScaleController = AnimationController(
+      duration: const Duration(milliseconds: 150),
+      vsync: this,
+    );
+    _buttonScaleAnimation = Tween<double>(begin: 1.0, end: 0.95).animate(
+      CurvedAnimation(parent: _buttonScaleController, curve: Curves.easeInOut),
+    );
+  }
+
   @override
   void dispose() {
     _pageController.dispose();
+    _buttonScaleController.dispose();
     claraController.disposeView();
     karlController.disposeView();
     super.dispose();
@@ -94,6 +113,13 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
     );
   }
 
+  // Animated button press handler
+  Future<void> _onButtonPressed(VoidCallback action) async {
+    await _buttonScaleController.forward();
+    await _buttonScaleController.reverse();
+    action();
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -103,8 +129,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
         elevation: 0,
         leading: _currentPage == 0
             ? null
-            : IconButton(
-                icon: const Icon(Icons.arrow_back_ios, color: Colors.orange),
+            : _AnimatedBackButton(
                 onPressed: () {
                   _pageController.previousPage(
                     duration: const Duration(milliseconds: 400),
@@ -171,37 +196,27 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(title, style: const TextStyle(fontSize: 32, fontWeight: FontWeight.bold)),
+          Text(
+            title,
+            style: const TextStyle(
+              fontSize: 32,
+              fontWeight: FontWeight.bold,
+              letterSpacing: -0.5,
+            ),
+          ),
           const SizedBox(height: 40),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-            decoration: BoxDecoration(
-              border: Border.all(color: Colors.grey.shade300),
-              borderRadius: BorderRadius.circular(12),
-              color: Colors.white,
-            ),
-            child: DropdownButtonHideUnderline(
-              child: DropdownButton<String>(
-                value: isNative ? selectedNative : selectedTarget,
-                isExpanded: true,
-                icon: const Icon(Icons.keyboard_arrow_down, color: Colors.grey),
-                items: options.map((String lang) {
-                  return DropdownMenuItem<String>(
-                    value: lang,
-                    child: Text(lang, style: const TextStyle(fontSize: 18)),
-                  );
-                }).toList(),
-                onChanged: (val) {
-                  setState(() {
-                    if (isNative) {
-                      selectedNative = val!;
-                    } else {
-                      selectedTarget = val!;
-                    }
-                  });
-                },
-              ),
-            ),
+          _AnimatedDropdown(
+            value: isNative ? selectedNative : selectedTarget,
+            items: options,
+            onChanged: (val) {
+              setState(() {
+                if (isNative) {
+                  selectedNative = val!;
+                } else {
+                  selectedTarget = val!;
+                }
+              });
+            },
           ),
         ],
       ),
@@ -221,40 +236,33 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text("Why do you want to learn the language?", style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold)),
+          const Text(
+            "Why do you want to learn the language?",
+            style: TextStyle(
+              fontSize: 28,
+              fontWeight: FontWeight.bold,
+              letterSpacing: -0.5,
+            ),
+          ),
           const SizedBox(height: 30),
           Wrap(
             spacing: 12,
             runSpacing: 12,
-            children: goals.map((goal) {
+            children: goals.asMap().entries.map((entry) {
+              int index = entry.key;
+              Map<String, String> goal = entry.value;
               bool isSelected = selectedGoal == goal['title'];
-              return GestureDetector(
+              
+              return _AnimatedSelectionCard(
+                key: ValueKey('goal_$index'),
+                isSelected: isSelected,
+                delay: Duration(milliseconds: 100 * index),
                 onTap: () => setState(() => selectedGoal = goal['title']!),
-                child: AnimatedContainer(
-                  duration: const Duration(milliseconds: 300),
-                  curve: Curves.easeInOut,
-                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-                  decoration: BoxDecoration(
-                    border: Border.all(
-                      color: isSelected ? Colors.orange : Colors.grey.shade300,
-                      width: isSelected ? 2 : 1,
-                    ),
-                    borderRadius: BorderRadius.circular(12),
-                    color: isSelected ? Colors.orange.withOpacity(0.1) : Colors.white,
-                    boxShadow: isSelected ? [
-                      BoxShadow(
-                        color: Colors.orange.withOpacity(0.3),
-                        blurRadius: 8,
-                        offset: const Offset(0, 4),
-                      ),
-                    ] : [],
-                  ),
-                  child: Text(
-                    "${goal['title']} ${goal['icon']}", 
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
-                    ),
+                child: Text(
+                  "${goal['title']} ${goal['icon']}",
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
                   ),
                 ),
               );
@@ -271,26 +279,19 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text("How much time do you have in a day?", style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold)),
+          const Text(
+            "How much time do you have in a day?",
+            style: TextStyle(
+              fontSize: 28,
+              fontWeight: FontWeight.bold,
+              letterSpacing: -0.5,
+            ),
+          ),
           const SizedBox(height: 30),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-            decoration: BoxDecoration(
-              border: Border.all(color: Colors.grey.shade300),
-              borderRadius: BorderRadius.circular(12),
-              color: Colors.white,
-            ),
-            child: DropdownButtonHideUnderline(
-              child: DropdownButton<String>(
-                value: selectedTime,
-                isExpanded: true,
-                icon: const Icon(Icons.keyboard_arrow_down, color: Colors.grey),
-                items: ["5 min", "10 min", "1 hour", "2 hour", "4+ hour"].map((String value) {
-                  return DropdownMenuItem<String>(value: value, child: Text(value));
-                }).toList(),
-                onChanged: (val) => setState(() => selectedTime = val!),
-              ),
-            ),
+          _AnimatedDropdown(
+            value: selectedTime,
+            items: ["5 min", "10 min", "1 hour", "2 hour", "4+ hour"],
+            onChanged: (val) => setState(() => selectedTime = val!),
           ),
         ],
       ),
@@ -298,193 +299,245 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   }
 
   Widget _buildPartnerStep() {
-    return SingleChildScrollView(
-      child: Padding(
-        padding: const EdgeInsets.all(24.0),
-        child: Column(
-          children: [
-            const Text(
-              "Choose your language partner",
-              style: TextStyle(fontSize: 26, fontWeight: FontWeight.bold),
-              textAlign: TextAlign.center,
+    return Padding(
+      padding: const EdgeInsets.all(24.0),
+      child: Column(
+        children: [
+          const Text(
+            "Choose your language partner",
+            style: TextStyle(
+              fontSize: 26,
+              fontWeight: FontWeight.bold,
+              letterSpacing: -0.5,
             ),
-            const SizedBox(height: 30),
-            
-            // Clara Avatar
-            GestureDetector(
-              onTap: () => setState(() => selectedAvatar = "Clara"),
-              child: AnimatedContainer(
-                duration: const Duration(milliseconds: 300),
-                margin: const EdgeInsets.only(bottom: 20),
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(20),
-                  border: Border.all(
-                    color: selectedAvatar == "Clara" ? Colors.orange : Colors.grey.shade300,
-                    width: selectedAvatar == "Clara" ? 3 : 1,
-                  ),
-                  boxShadow: [
-                    BoxShadow(
-                      color: selectedAvatar == "Clara" 
-                          ? Colors.orange.withOpacity(0.3)
-                          : Colors.black.withOpacity(0.1),
-                      blurRadius: selectedAvatar == "Clara" ? 15 : 8,
-                      offset: const Offset(0, 4),
-                    ),
-                  ],
-                ),
-                child: Column(
-                  children: [
-                    ClipRRect(
-                      borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
-                      child: AvatarView(
-                        avatarName: "Clara",
-                        controller: claraController,
-                        height: 250,
-                        backgroundImagePath: "assets/images/background.png",
-                        borderRadius: 0,
-                      ),
-                    ),
-                    Container(
-                      padding: const EdgeInsets.symmetric(vertical: 12),
-                      decoration: BoxDecoration(
-                        color: selectedAvatar == "Clara" 
-                            ? Colors.orange.withOpacity(0.1)
-                            : Colors.white,
-                        borderRadius: const BorderRadius.vertical(bottom: Radius.circular(20)),
-                      ),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Text(
-                            "Clara",
-                            style: TextStyle(
-                              color: selectedAvatar == "Clara" ? Colors.orange : Colors.black,
-                              fontSize: 22,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                          if (selectedAvatar == "Clara") ...[
-                            const SizedBox(width: 8),
-                            const Icon(Icons.check_circle, color: Colors.orange, size: 22),
-                          ],
-                        ],
-                      ),
-                    ),
-                  ],
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: 20),
+          
+          // Swipe indicator
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(Icons.arrow_back_ios, size: 16, color: Colors.grey.shade400),
+              const SizedBox(width: 8),
+              Text(
+                "Swipe to see more",
+                style: TextStyle(
+                  fontSize: 14,
+                  color: Colors.grey.shade600,
+                  fontStyle: FontStyle.italic,
                 ),
               ),
-            ),
-            
-            // Karl Avatar
-            GestureDetector(
-              onTap: () => setState(() => selectedAvatar = "Karl"),
-              child: AnimatedContainer(
-                duration: const Duration(milliseconds: 300),
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(20),
-                  border: Border.all(
-                    color: selectedAvatar == "Karl" ? Colors.orange : Colors.grey.shade300,
-                    width: selectedAvatar == "Karl" ? 3 : 1,
-                  ),
-                  boxShadow: [
-                    BoxShadow(
-                      color: selectedAvatar == "Karl" 
-                          ? Colors.orange.withOpacity(0.3)
-                          : Colors.black.withOpacity(0.1),
-                      blurRadius: selectedAvatar == "Karl" ? 15 : 8,
-                      offset: const Offset(0, 4),
-                    ),
-                  ],
-                ),
-                child: Column(
-                  children: [
-                    ClipRRect(
-                      borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
-                      child: AvatarView(
-                        avatarName: "Karl",
-                        controller: karlController,
-                        height: 250,
-                        backgroundImagePath: "assets/images/background.png",
-                        borderRadius: 0,
-                      ),
-                    ),
-                    Container(
-                      padding: const EdgeInsets.symmetric(vertical: 12),
-                      decoration: BoxDecoration(
-                        color: selectedAvatar == "Karl" 
-                            ? Colors.orange.withOpacity(0.1)
-                            : Colors.white,
-                        borderRadius: const BorderRadius.vertical(bottom: Radius.circular(20)),
-                      ),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Text(
-                            "Karl",
-                            style: TextStyle(
-                              color: selectedAvatar == "Karl" ? Colors.orange : Colors.black,
-                              fontSize: 22,
-                              fontWeight: FontWeight.bold,
+              const SizedBox(width: 8),
+              Icon(Icons.arrow_forward_ios, size: 16, color: Colors.grey.shade400),
+            ],
+          ),
+          const SizedBox(height: 20),
+          
+          // Horizontal scrollable avatars
+          Expanded(
+            child: PageView(
+              padEnds: false,
+              children: [
+                // Clara Avatar
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                  child: _AnimatedAvatarCard(
+                    key: const ValueKey('clara'),
+                    isSelected: selectedAvatar == "Clara",
+                    delay: const Duration(milliseconds: 100),
+                    onTap: () => setState(() => selectedAvatar = "Clara"),
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Expanded(
+                          child: ClipRRect(
+                            borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+                            child: AvatarView(
+                              avatarName: "Clara",
+                              controller: claraController,
+                              height: 400,
+                              backgroundImagePath: "assets/images/background.png",
+                              borderRadius: 0,
                             ),
                           ),
-                          if (selectedAvatar == "Karl") ...[
-                            const SizedBox(width: 8),
-                            const Icon(Icons.check_circle, color: Colors.orange, size: 22),
-                          ],
-                        ],
-                      ),
+                        ),
+                        Container(
+                          padding: const EdgeInsets.symmetric(vertical: 16),
+                          decoration: BoxDecoration(
+                            color: selectedAvatar == "Clara"
+                                ? Colors.orange.withOpacity(0.1)
+                                : Colors.white,
+                            borderRadius: const BorderRadius.vertical(
+                              bottom: Radius.circular(20),
+                            ),
+                          ),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Text(
+                                "Clara",
+                                style: TextStyle(
+                                  color: selectedAvatar == "Clara"
+                                      ? Colors.orange
+                                      : Colors.black,
+                                  fontSize: 24,
+                                  fontWeight: FontWeight.bold,
+                                  letterSpacing: 0.5,
+                                ),
+                              ),
+                              if (selectedAvatar == "Clara") ...[
+                                const SizedBox(width: 8),
+                                const Icon(
+                                  Icons.check_circle,
+                                  color: Colors.orange,
+                                  size: 24,
+                                ),
+                              ],
+                            ],
+                          ),
+                        ),
+                      ],
                     ),
-                  ],
+                  ),
                 ),
-              ),
+                // Karl Avatar
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                  child: _AnimatedAvatarCard(
+                    key: const ValueKey('karl'),
+                    isSelected: selectedAvatar == "Karl",
+                    delay: const Duration(milliseconds: 100),
+                    onTap: () => setState(() => selectedAvatar = "Karl"),
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Expanded(
+                          child: ClipRRect(
+                            borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+                            child: AvatarView(
+                              avatarName: "Karl",
+                              controller: karlController,
+                              height: 400,
+                              backgroundImagePath: "assets/images/background.png",
+                              borderRadius: 0,
+                            ),
+                          ),
+                        ),
+                        Container(
+                          padding: const EdgeInsets.symmetric(vertical: 16),
+                          decoration: BoxDecoration(
+                            color: selectedAvatar == "Karl"
+                                ? Colors.orange.withOpacity(0.1)
+                                : Colors.white,
+                            borderRadius: const BorderRadius.vertical(
+                              bottom: Radius.circular(20),
+                            ),
+                          ),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Text(
+                                "Karl",
+                                style: TextStyle(
+                                  color: selectedAvatar == "Karl"
+                                      ? Colors.orange
+                                      : Colors.black,
+                                  fontSize: 24,
+                                  fontWeight: FontWeight.bold,
+                                  letterSpacing: 0.5,
+                                ),
+                              ),
+                              if (selectedAvatar == "Karl") ...[
+                                const SizedBox(width: 8),
+                                const Icon(
+                                  Icons.check_circle,
+                                  color: Colors.orange,
+                                  size: 24,
+                                ),
+                              ],
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
 
   Widget _buildHobbiesStep() {
-    List<String> hobbies = ["Football", "Basketball", "Film/TV", "History", "Geographic", "Nature", "Hiking", "Technology", "Fitness", "Finance", "Health", "Food/Cooking"];
+    List<String> hobbies = [
+      "Football",
+      "Basketball",
+      "Film/TV",
+      "History",
+      "Geographic",
+      "Nature",
+      "Hiking",
+      "Technology",
+      "Fitness",
+      "Finance",
+      "Health",
+      "Food/Cooking"
+    ];
+    
     return Padding(
       padding: const EdgeInsets.all(24.0),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text("What are your hobbies?", style: TextStyle(fontSize: 30, fontWeight: FontWeight.bold)),
+          const Text(
+            "What are your hobbies?",
+            style: TextStyle(
+              fontSize: 30,
+              fontWeight: FontWeight.bold,
+              letterSpacing: -0.5,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            "Select Max 2",
+            style: TextStyle(
+              fontSize: 16,
+              color: Colors.grey.shade600,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
           const SizedBox(height: 20),
           Expanded(
             child: SingleChildScrollView(
               child: Wrap(
                 spacing: 10,
                 runSpacing: 10,
-                children: hobbies.map((hobby) {
+                children: hobbies.asMap().entries.map((entry) {
+                  int index = entry.key;
+                  String hobby = entry.value;
                   bool isSelected = selectedHobbies.contains(hobby);
-                  return GestureDetector(
-                    onTap: () {
-                      setState(() {
-                        isSelected ? selectedHobbies.remove(hobby) : selectedHobbies.add(hobby);
-                      });
-                    },
-                    child: AnimatedContainer(
-                      duration: const Duration(milliseconds: 300),
-                      curve: Curves.easeInOut,
-                      padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
-                      decoration: BoxDecoration(
-                        border: Border.all(
-                          color: isSelected ? Colors.orange : Colors.grey.shade300,
-                          width: isSelected ? 2 : 1,
-                        ),
-                        borderRadius: BorderRadius.circular(12),
-                        color: isSelected ? Colors.orange.withOpacity(0.1) : Colors.white,
-                        boxShadow: isSelected ? [
-                          BoxShadow(
-                            color: Colors.orange.withOpacity(0.2),
-                            blurRadius: 6,
-                            offset: const Offset(0, 3),
-                          ),
-                        ] : [],
-                      ),
+                  bool canSelect = selectedHobbies.length < 2 || isSelected;
+                  
+                  return _AnimatedSelectionCard(
+                    key: ValueKey('hobby_$index'),
+                    isSelected: isSelected,
+                    delay: Duration(milliseconds: 50 * index),
+                    onTap: canSelect
+                        ? () {
+                            setState(() {
+                              if (isSelected) {
+                                selectedHobbies.remove(hobby);
+                              } else if (selectedHobbies.length < 2) {
+                                selectedHobbies.add(hobby);
+                              }
+                            });
+                          }
+                        : null,
+                    child: Opacity(
+                      opacity: canSelect ? 1.0 : 0.4,
                       child: Text(
                         hobby,
                         style: TextStyle(
@@ -508,41 +561,30 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text("What is your speaking level?", style: TextStyle(fontSize: 26, fontWeight: FontWeight.bold)),
+          const Text(
+            "What is your speaking level?",
+            style: TextStyle(
+              fontSize: 26,
+              fontWeight: FontWeight.bold,
+              letterSpacing: -0.5,
+            ),
+          ),
           const SizedBox(height: 30),
-          ...['A1', 'A2', 'B1', 'B2'].map((lvl) {
+          ...['A1', 'A2', 'B1', 'B2', 'C1', 'C2'].asMap().entries.map((entry) {
+            int index = entry.key;
+            String lvl = entry.value;
             bool isSelected = selectedLevel == lvl;
-            return GestureDetector(
+            
+            return _AnimatedLevelCard(
+              key: ValueKey('level_$lvl'),
+              isSelected: isSelected,
+              delay: Duration(milliseconds: 80 * index),
               onTap: () => setState(() => selectedLevel = lvl),
-              child: AnimatedContainer(
-                duration: const Duration(milliseconds: 300),
-                curve: Curves.easeInOut,
-                width: double.infinity,
-                margin: const EdgeInsets.only(bottom: 12),
-                padding: const EdgeInsets.symmetric(vertical: 18),
-                decoration: BoxDecoration(
-                  border: Border.all(
-                    color: isSelected ? Colors.orange : Colors.grey.shade300,
-                    width: isSelected ? 2 : 1,
-                  ),
-                  borderRadius: BorderRadius.circular(12),
-                  color: isSelected ? Colors.orange.withOpacity(0.05) : Colors.white,
-                  boxShadow: isSelected ? [
-                    BoxShadow(
-                      color: Colors.orange.withOpacity(0.2),
-                      blurRadius: 8,
-                      offset: const Offset(0, 4),
-                    ),
-                  ] : [],
-                ),
-                child: Center(
-                  child: Text(
-                    lvl, 
-                    style: TextStyle(
-                      fontSize: 18, 
-                      fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
-                    ),
-                  ),
+              child: Text(
+                lvl,
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
                 ),
               ),
             );
@@ -565,6 +607,15 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
           decoration: BoxDecoration(
             color: _currentPage == index ? Colors.orange : Colors.grey.shade300,
             borderRadius: BorderRadius.circular(5),
+            boxShadow: _currentPage == index
+                ? [
+                    BoxShadow(
+                      color: Colors.orange.withOpacity(0.4),
+                      blurRadius: 8,
+                      offset: const Offset(0, 2),
+                    ),
+                  ]
+                : [],
           ),
         );
       }),
@@ -576,114 +627,717 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
       padding: const EdgeInsets.symmetric(horizontal: 24.0),
       child: Column(
         children: [
-          Container(
-            width: double.infinity,
-            height: 60,
-            decoration: BoxDecoration(
-              gradient: const LinearGradient(colors: [Color(0xFFFF5F6D), Color(0xFFFFC371)]),
-              borderRadius: BorderRadius.circular(15),
-              boxShadow: [
-                BoxShadow(
-                  color: const Color(0xFFFF5F6D).withOpacity(0.3),
-                  blurRadius: 12,
-                  offset: const Offset(0, 6),
-                ),
-              ],
-            ),
-            child: ElevatedButton(
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.transparent,
-                shadowColor: Colors.transparent,
-              ),
+          ScaleTransition(
+            scale: _buttonScaleAnimation,
+            child: _AnimatedGradientButton(
               onPressed: () {
-                bool isValid = true;
-                String message = "";
+                _onButtonPressed(() {
+                  bool isValid = true;
+                  String message = "";
 
-                if (_currentPage == 1 && selectedGoal.isEmpty) {
-                  isValid = false;
-                  message = "Please select a goal!";
-                } else if (_currentPage == 4 && selectedAvatar.isEmpty) {
-                  isValid = false;
-                  message = "Please select an avatar!";
-                } else if (_currentPage == 5 && selectedHobbies.isEmpty) {
-                  isValid = false;
-                  message = "Please select at least one hobby!";
-                } else if (_currentPage == 6 && selectedLevel.isEmpty) {
-                  isValid = false;
-                  message = "Please select your speaking level!";
-                }
+                  if (_currentPage == 1 && selectedGoal.isEmpty) {
+                    isValid = false;
+                    message = "Please select a goal!";
+                  } else if (_currentPage == 4 && selectedAvatar.isEmpty) {
+                    isValid = false;
+                    message = "Please select an avatar!";
+                  } else if (_currentPage == 5 && selectedHobbies.isEmpty) {
+                    isValid = false;
+                    message = "Please select at least one hobby!";
+                  } else if (_currentPage == 6 && selectedLevel.isEmpty) {
+                    isValid = false;
+                    message = "Please select your speaking level!";
+                  }
 
-                if (!isValid) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text(message), backgroundColor: Colors.redAccent),
-                  );
-                  return;
-                }
+                  if (!isValid) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text(message),
+                        backgroundColor: Colors.redAccent,
+                        behavior: SnackBarBehavior.floating,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        margin: const EdgeInsets.all(16),
+                      ),
+                    );
+                    return;
+                  }
 
-                if (_currentPage < 6) {
-                  _pageController.nextPage(
-                    duration: const Duration(milliseconds: 500),
-                    curve: Curves.easeInOutCubic,
-                  );
-                } else {
-                  // _currentPage == 6
-                  _completeOnboarding();
-                  // Navigate to TestVocabularyPage with selected avatar
-                  Navigator.pushReplacement(
-                    context,
-                    _createScaleRoute(
-                      TestVocabularyPage(selectedAvatar: selectedAvatar),
-                    ),
-                  );
-                }
+                  if (_currentPage < 6) {
+                    _pageController.nextPage(
+                      duration: const Duration(milliseconds: 500),
+                      curve: Curves.easeInOutCubic,
+                    );
+                  } else {
+                    // When on level page and clicking Next, go to LoginPage
+                    _completeOnboarding();
+                    Navigator.pushReplacement(
+                      context,
+                      _createScaleRoute(
+                        const LoginPage(),
+                      ),
+                    );
+                  }
+                });
               },
-              child: const Text("Next", style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)),
+              text: "Next",
             ),
           ),
           
           if (_currentPage == 6) ...[
             const SizedBox(height: 15),
-            Container(
-              width: double.infinity,
-              height: 55,
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(12),
-                boxShadow: [
-                  BoxShadow(
-                    color: const Color(0xFF2ECC71).withOpacity(0.3),
-                    blurRadius: 12,
-                    offset: const Offset(0, 6),
-                  ),
-                ],
-              ),
-              child: ElevatedButton(
+            ScaleTransition(
+              scale: _buttonScaleAnimation,
+              child: _AnimatedTestButton(
                 onPressed: () {
-                  if (selectedAvatar.isEmpty) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text("Please select an avatar first!"),
-                        backgroundColor: Colors.redAccent,
+                  _onButtonPressed(() {
+                    if (selectedAvatar.isEmpty) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: const Text("Please select an avatar first!"),
+                          backgroundColor: Colors.redAccent,
+                          behavior: SnackBarBehavior.floating,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                          margin: const EdgeInsets.all(16),
+                        ),
+                      );
+                      return;
+                    }
+                    Navigator.push(
+                      context,
+                      _createSlideRoute(
+                        TestVocabularyPage(selectedAvatar: selectedAvatar),
                       ),
                     );
-                    return;
-                  }
-                  // Navigate to TestVocabularyPage with selected avatar
-                  Navigator.push(
-                    context,
-                    _createSlideRoute(
-                      TestVocabularyPage(selectedAvatar: selectedAvatar),
-                    ),
-                  );
+                  });
                 },
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF2ECC71),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                ),
-                child: const Text("Test your level", style: TextStyle(color: Colors.white, fontSize: 18)),
               ),
             ),
-          ]
+          ],
         ],
+      ),
+    );
+  }
+}
+
+// 🎨 Animated Back Button
+class _AnimatedBackButton extends StatefulWidget {
+  final VoidCallback onPressed;
+
+  const _AnimatedBackButton({required this.onPressed});
+
+  @override
+  State<_AnimatedBackButton> createState() => _AnimatedBackButtonState();
+}
+
+class _AnimatedBackButtonState extends State<_AnimatedBackButton>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _controller;
+  late Animation<double> _scaleAnimation;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      duration: const Duration(milliseconds: 150),
+      vsync: this,
+    );
+    _scaleAnimation = Tween<double>(begin: 1.0, end: 0.85).animate(
+      CurvedAnimation(parent: _controller, curve: Curves.easeInOut),
+    );
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return ScaleTransition(
+      scale: _scaleAnimation,
+      child: IconButton(
+        icon: const Icon(Icons.arrow_back_ios, color: Colors.orange),
+        onPressed: () async {
+          await _controller.forward();
+          await _controller.reverse();
+          widget.onPressed();
+        },
+      ),
+    );
+  }
+}
+
+// 🎨 Animated Dropdown
+class _AnimatedDropdown extends StatefulWidget {
+  final String value;
+  final List<String> items;
+  final ValueChanged<String?> onChanged;
+
+  const _AnimatedDropdown({
+    required this.value,
+    required this.items,
+    required this.onChanged,
+  });
+
+  @override
+  State<_AnimatedDropdown> createState() => _AnimatedDropdownState();
+}
+
+class _AnimatedDropdownState extends State<_AnimatedDropdown>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _controller;
+  late Animation<double> _scaleAnimation;
+  bool _isPressed = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      duration: const Duration(milliseconds: 150),
+      vsync: this,
+    );
+    _scaleAnimation = Tween<double>(begin: 1.0, end: 0.98).animate(
+      CurvedAnimation(parent: _controller, curve: Curves.easeInOut),
+    );
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return ScaleTransition(
+      scale: _scaleAnimation,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+        decoration: BoxDecoration(
+          border: Border.all(
+            color: _isPressed ? Colors.orange : Colors.grey.shade300,
+            width: _isPressed ? 2 : 1,
+          ),
+          borderRadius: BorderRadius.circular(12),
+          color: Colors.white,
+          boxShadow: _isPressed
+              ? [
+                  BoxShadow(
+                    color: Colors.orange.withOpacity(0.2),
+                    blurRadius: 8,
+                    offset: const Offset(0, 4),
+                  ),
+                ]
+              : [],
+        ),
+        child: DropdownButtonHideUnderline(
+          child: DropdownButton<String>(
+            value: widget.value,
+            isExpanded: true,
+            icon: const Icon(Icons.keyboard_arrow_down, color: Colors.grey),
+            items: widget.items.map((String lang) {
+              return DropdownMenuItem<String>(
+                value: lang,
+                child: Text(lang, style: const TextStyle(fontSize: 18)),
+              );
+            }).toList(),
+            onChanged: (val) {
+              setState(() => _isPressed = true);
+              _controller.forward().then((_) {
+                _controller.reverse();
+                setState(() => _isPressed = false);
+              });
+              widget.onChanged(val);
+            },
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+// 🎨 Animated Selection Card (for goals and hobbies)
+class _AnimatedSelectionCard extends StatefulWidget {
+  final bool isSelected;
+  final VoidCallback? onTap;
+  final Widget child;
+  final Duration delay;
+
+  const _AnimatedSelectionCard({
+    Key? key,
+    required this.isSelected,
+    required this.onTap,
+    required this.child,
+    this.delay = Duration.zero,
+  }) : super(key: key);
+
+  @override
+  State<_AnimatedSelectionCard> createState() => _AnimatedSelectionCardState();
+}
+
+class _AnimatedSelectionCardState extends State<_AnimatedSelectionCard>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _controller;
+  late Animation<double> _scaleAnimation;
+  late Animation<double> _fadeAnimation;
+  bool _isPressed = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      duration: const Duration(milliseconds: 400),
+      vsync: this,
+    );
+    
+    _scaleAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
+      CurvedAnimation(
+        parent: _controller,
+        curve: const Interval(0.0, 0.6, curve: Curves.easeOutBack),
+      ),
+    );
+    
+    _fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
+      CurvedAnimation(
+        parent: _controller,
+        curve: const Interval(0.0, 0.4, curve: Curves.easeOut),
+      ),
+    );
+
+    Future.delayed(widget.delay, () {
+      if (mounted) _controller.forward();
+    });
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return FadeTransition(
+      opacity: _fadeAnimation,
+      child: ScaleTransition(
+        scale: _scaleAnimation,
+        child: GestureDetector(
+          onTapDown: widget.onTap != null ? (_) => setState(() => _isPressed = true) : null,
+          onTapUp: widget.onTap != null ? (_) => setState(() => _isPressed = false) : null,
+          onTapCancel: widget.onTap != null ? () => setState(() => _isPressed = false) : null,
+          onTap: widget.onTap,
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 300),
+            curve: Curves.easeInOut,
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+            decoration: BoxDecoration(
+              border: Border.all(
+                color: widget.isSelected ? Colors.orange : Colors.grey.shade300,
+                width: widget.isSelected ? 2 : 1,
+              ),
+              borderRadius: BorderRadius.circular(12),
+              color: widget.isSelected ? Colors.orange.withOpacity(0.1) : Colors.white,
+              boxShadow: widget.isSelected
+                  ? [
+                      BoxShadow(
+                        color: Colors.orange.withOpacity(0.3),
+                        blurRadius: 8,
+                        offset: const Offset(0, 4),
+                      ),
+                    ]
+                  : [],
+            ),
+            transform: Matrix4.identity()..scale(_isPressed ? 0.95 : 1.0),
+            child: widget.child,
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+// 🎨 Animated Avatar Card
+class _AnimatedAvatarCard extends StatefulWidget {
+  final bool isSelected;
+  final VoidCallback onTap;
+  final Widget child;
+  final Duration delay;
+
+  const _AnimatedAvatarCard({
+    Key? key,
+    required this.isSelected,
+    required this.onTap,
+    required this.child,
+    this.delay = Duration.zero,
+  }) : super(key: key);
+
+  @override
+  State<_AnimatedAvatarCard> createState() => _AnimatedAvatarCardState();
+}
+
+class _AnimatedAvatarCardState extends State<_AnimatedAvatarCard>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _controller;
+  late Animation<double> _scaleAnimation;
+  late Animation<double> _fadeAnimation;
+  bool _isPressed = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      duration: const Duration(milliseconds: 500),
+      vsync: this,
+    );
+    
+    _scaleAnimation = Tween<double>(begin: 0.8, end: 1.0).animate(
+      CurvedAnimation(
+        parent: _controller,
+        curve: Curves.easeOutBack,
+      ),
+    );
+    
+    _fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
+      CurvedAnimation(
+        parent: _controller,
+        curve: const Interval(0.0, 0.5, curve: Curves.easeOut),
+      ),
+    );
+
+    Future.delayed(widget.delay, () {
+      if (mounted) _controller.forward();
+    });
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return FadeTransition(
+      opacity: _fadeAnimation,
+      child: ScaleTransition(
+        scale: _scaleAnimation,
+        child: GestureDetector(
+          onTapDown: (_) => setState(() => _isPressed = true),
+          onTapUp: (_) => setState(() => _isPressed = false),
+          onTapCancel: () => setState(() => _isPressed = false),
+          onTap: widget.onTap,
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 300),
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(
+                color: widget.isSelected ? Colors.orange : Colors.grey.shade300,
+                width: widget.isSelected ? 3 : 1,
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: widget.isSelected
+                      ? Colors.orange.withOpacity(0.3)
+                      : Colors.black.withOpacity(0.1),
+                  blurRadius: widget.isSelected ? 15 : 8,
+                  offset: const Offset(0, 4),
+                ),
+              ],
+            ),
+            transform: Matrix4.identity()..scale(_isPressed ? 0.95 : 1.0),
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(20),
+              child: Container(
+                color: widget.isSelected ? Colors.orange.withOpacity(0.05) : Colors.white,
+                child: widget.child,
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+// 🎨 Animated Level Card
+class _AnimatedLevelCard extends StatefulWidget {
+  final bool isSelected;
+  final VoidCallback onTap;
+  final Widget child;
+  final Duration delay;
+
+  const _AnimatedLevelCard({
+    Key? key,
+    required this.isSelected,
+    required this.onTap,
+    required this.child,
+    this.delay = Duration.zero,
+  }) : super(key: key);
+
+  @override
+  State<_AnimatedLevelCard> createState() => _AnimatedLevelCardState();
+}
+
+class _AnimatedLevelCardState extends State<_AnimatedLevelCard>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _controller;
+  late Animation<double> _slideAnimation;
+  late Animation<double> _fadeAnimation;
+  bool _isPressed = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      duration: const Duration(milliseconds: 400),
+      vsync: this,
+    );
+    
+    _slideAnimation = Tween<double>(begin: 30.0, end: 0.0).animate(
+      CurvedAnimation(
+        parent: _controller,
+        curve: Curves.easeOutCubic,
+      ),
+    );
+    
+    _fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
+      CurvedAnimation(
+        parent: _controller,
+        curve: const Interval(0.0, 0.6, curve: Curves.easeOut),
+      ),
+    );
+
+    Future.delayed(widget.delay, () {
+      if (mounted) _controller.forward();
+    });
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return FadeTransition(
+      opacity: _fadeAnimation,
+      child: AnimatedBuilder(
+        animation: _slideAnimation,
+        builder: (context, child) {
+          return Transform.translate(
+            offset: Offset(_slideAnimation.value, 0),
+            child: child,
+          );
+        },
+        child: GestureDetector(
+          onTapDown: (_) => setState(() => _isPressed = true),
+          onTapUp: (_) => setState(() => _isPressed = false),
+          onTapCancel: () => setState(() => _isPressed = false),
+          onTap: widget.onTap,
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 300),
+            curve: Curves.easeInOut,
+            width: double.infinity,
+            margin: const EdgeInsets.only(bottom: 12),
+            padding: const EdgeInsets.symmetric(vertical: 18),
+            decoration: BoxDecoration(
+              border: Border.all(
+                color: widget.isSelected ? Colors.orange : Colors.grey.shade300,
+                width: widget.isSelected ? 2 : 1,
+              ),
+              borderRadius: BorderRadius.circular(12),
+              color: widget.isSelected ? Colors.orange.withOpacity(0.05) : Colors.white,
+              boxShadow: widget.isSelected
+                  ? [
+                      BoxShadow(
+                        color: Colors.orange.withOpacity(0.2),
+                        blurRadius: 8,
+                        offset: const Offset(0, 4),
+                      ),
+                    ]
+                  : [],
+            ),
+            transform: Matrix4.identity()..scale(_isPressed ? 0.98 : 1.0),
+            child: Center(child: widget.child),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+// 🎨 Animated Gradient Button
+class _AnimatedGradientButton extends StatefulWidget {
+  final VoidCallback onPressed;
+  final String text;
+
+  const _AnimatedGradientButton({
+    required this.onPressed,
+    required this.text,
+  });
+
+  @override
+  State<_AnimatedGradientButton> createState() => _AnimatedGradientButtonState();
+}
+
+class _AnimatedGradientButtonState extends State<_AnimatedGradientButton>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _controller;
+  late Animation<double> _scaleAnimation;
+  bool _isPressed = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      duration: const Duration(milliseconds: 150),
+      vsync: this,
+    );
+    _scaleAnimation = Tween<double>(begin: 1.0, end: 0.95).animate(
+      CurvedAnimation(parent: _controller, curve: Curves.easeInOut),
+    );
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return ScaleTransition(
+      scale: _scaleAnimation,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        width: double.infinity,
+        height: 60,
+        decoration: BoxDecoration(
+          gradient: const LinearGradient(
+            colors: [Color(0xFFFF5F6D), Color(0xFFFFC371)],
+          ),
+          borderRadius: BorderRadius.circular(15),
+          boxShadow: [
+            BoxShadow(
+              color: const Color(0xFFFF5F6D).withOpacity(_isPressed ? 0.2 : 0.3),
+              blurRadius: _isPressed ? 8 : 12,
+              offset: Offset(0, _isPressed ? 3 : 6),
+            ),
+          ],
+        ),
+        child: ElevatedButton(
+          style: ElevatedButton.styleFrom(
+            backgroundColor: Colors.transparent,
+            shadowColor: Colors.transparent,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(15),
+            ),
+          ),
+          onPressed: () async {
+            setState(() => _isPressed = true);
+            await _controller.forward();
+            await _controller.reverse();
+            setState(() => _isPressed = false);
+            widget.onPressed();
+          },
+          child: Text(
+            widget.text,
+            style: const TextStyle(
+              color: Colors.white,
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+              letterSpacing: 0.5,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+// 🎨 Animated Test Button
+class _AnimatedTestButton extends StatefulWidget {
+  final VoidCallback onPressed;
+
+  const _AnimatedTestButton({required this.onPressed});
+
+  @override
+  State<_AnimatedTestButton> createState() => _AnimatedTestButtonState();
+}
+
+class _AnimatedTestButtonState extends State<_AnimatedTestButton>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _controller;
+  late Animation<double> _scaleAnimation;
+  bool _isPressed = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      duration: const Duration(milliseconds: 150),
+      vsync: this,
+    );
+    _scaleAnimation = Tween<double>(begin: 1.0, end: 0.95).animate(
+      CurvedAnimation(parent: _controller, curve: Curves.easeInOut),
+    );
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return ScaleTransition(
+      scale: _scaleAnimation,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        width: double.infinity,
+        height: 55,
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(12),
+          boxShadow: [
+            BoxShadow(
+              color: const Color(0xFF2ECC71).withOpacity(_isPressed ? 0.2 : 0.3),
+              blurRadius: _isPressed ? 8 : 12,
+              offset: Offset(0, _isPressed ? 3 : 6),
+            ),
+          ],
+        ),
+        child: ElevatedButton(
+          onPressed: () async {
+            setState(() => _isPressed = true);
+            await _controller.forward();
+            await _controller.reverse();
+            setState(() => _isPressed = false);
+            widget.onPressed();
+          },
+          style: ElevatedButton.styleFrom(
+            backgroundColor: const Color(0xFF2ECC71),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+          ),
+          child: const Text(
+            "Test your level",
+            style: TextStyle(
+              color: Colors.white,
+              fontSize: 18,
+              fontWeight: FontWeight.w600,
+              letterSpacing: 0.5,
+            ),
+          ),
+        ),
       ),
     );
   }
@@ -702,7 +1356,8 @@ class _AnimatedPageWrapper extends StatefulWidget {
   State<_AnimatedPageWrapper> createState() => _AnimatedPageWrapperState();
 }
 
-class _AnimatedPageWrapperState extends State<_AnimatedPageWrapper> with SingleTickerProviderStateMixin {
+class _AnimatedPageWrapperState extends State<_AnimatedPageWrapper>
+    with SingleTickerProviderStateMixin {
   late AnimationController _controller;
   late Animation<double> _fadeAnimation;
   late Animation<double> _scaleAnimation;

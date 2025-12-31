@@ -6,10 +6,10 @@ import 'package:language_app/avatar/avatar_controller.dart';
 import 'package:language_app/avatar/avatar_view.dart';
 import 'dart:io' show Platform;
 import 'dart:math' as math;
-
+import 'package:flutter/services.dart';
 
 class TestConversationPage extends StatefulWidget {
-  final String selectedAvatar; // Add this parameter
+  final String selectedAvatar;
   
   const TestConversationPage({
     super.key,
@@ -20,18 +20,30 @@ class TestConversationPage extends StatefulWidget {
   State<TestConversationPage> createState() => _TestConversationPageState();
 }
 
-class _TestConversationPageState extends State<TestConversationPage> {
+class _TestConversationPageState extends State<TestConversationPage> with TickerProviderStateMixin {
   final TextEditingController _textController = TextEditingController();
   bool isRecording = false;
   bool showWaveform = false;
   bool showSendButton = false;
   bool isMuted = false;
+  bool isAvatarMinimized = false;
+  bool isAvatarSpeaking = false;
+  String? recordedText;
+  bool showRecordingControls = false;
 
   // Text-to-Speech instance
   late FlutterTts flutterTts;
   
   // Avatar Controller
   late AvatarController avatarController;
+  
+  // Animation Controllers
+  late AnimationController _waveformController;
+  late AnimationController _buttonPressController;
+  late AnimationController _avatarController;
+  late AnimationController _speakingController;
+  late Animation<double> _buttonScaleAnimation;
+  late Animation<double> _avatarSizeAnimation;
 
   List<Map<String, dynamic>> messages = [
     {
@@ -42,15 +54,15 @@ class _TestConversationPageState extends State<TestConversationPage> {
   ];
 
   String currentQuestion = 'Translate the sentence:';
-  bool showCharacter = false;
+  int currentExerciseType = 1; // 1: Translation, 2: Multiple Choice, 3: Fill in blank
 
   @override
   void initState() {
     super.initState();
     avatarController = AvatarController();
     _initTts();
+    _initAnimations();
     
-    // Listen to text changes to toggle send button
     _textController.addListener(() {
       setState(() {
         showSendButton = _textController.text.trim().isNotEmpty;
@@ -58,7 +70,36 @@ class _TestConversationPageState extends State<TestConversationPage> {
     });
   }
 
-  // Initialize TTS with proper configuration
+  void _initAnimations() {
+    _waveformController = AnimationController(
+      duration: const Duration(milliseconds: 800),
+      vsync: this,
+    )..repeat(reverse: true);
+
+    _buttonPressController = AnimationController(
+      duration: const Duration(milliseconds: 150),
+      vsync: this,
+    );
+
+    _avatarController = AnimationController(
+      duration: const Duration(milliseconds: 400),
+      vsync: this,
+    );
+
+    _speakingController = AnimationController(
+      duration: const Duration(milliseconds: 300),
+      vsync: this,
+    )..repeat(reverse: true);
+
+    _buttonScaleAnimation = Tween<double>(begin: 1.0, end: 0.9).animate(
+      CurvedAnimation(parent: _buttonPressController, curve: Curves.easeInOut),
+    );
+
+    _avatarSizeAnimation = Tween<double>(begin: 500.0, end: 150.0).animate(
+      CurvedAnimation(parent: _avatarController, curve: Curves.easeInOutCubic),
+    );
+  }
+
   Future<void> _initTts() async {
     flutterTts = FlutterTts();
     
@@ -67,7 +108,6 @@ class _TestConversationPageState extends State<TestConversationPage> {
     await flutterTts.setVolume(1.0);
     await flutterTts.setPitch(1.0);
 
-    // iOS specific settings
     if (Platform.isIOS) {
       await flutterTts.setIosAudioCategory(
         IosTextToSpeechAudioCategory.playback,
@@ -82,39 +122,31 @@ class _TestConversationPageState extends State<TestConversationPage> {
       await flutterTts.setSharedInstance(true);
     }
 
-    if (await flutterTts.isLanguageAvailable("en-US")) {
-      await flutterTts.setLanguage("en-US");
-    }
-
     flutterTts.setStartHandler(() {
-      print("TTS Started");
+      setState(() => isAvatarSpeaking = true);
     });
 
     flutterTts.setCompletionHandler(() {
-      print("TTS Completed");
+      setState(() => isAvatarSpeaking = false);
     });
 
     flutterTts.setErrorHandler((msg) {
-      print("TTS Error: $msg");
+      setState(() => isAvatarSpeaking = false);
     });
   }
 
-  // Speak text function
   Future<void> _speak(String text) async {
     if (!isMuted) {
       await flutterTts.stop();
       await Future.delayed(const Duration(milliseconds: 100));
       await flutterTts.speak(text);
-      print("Speaking: $text");
     }
   }
 
-  // Stop speaking
   Future<void> _stop() async {
     await flutterTts.stop();
   }
 
-  // Toggle mute/unmute
   void _toggleMute() {
     setState(() {
       isMuted = !isMuted;
@@ -122,62 +154,82 @@ class _TestConversationPageState extends State<TestConversationPage> {
     if (isMuted) {
       _stop();
     }
-    print("Mute status: $isMuted");
+  }
+
+  void _toggleAvatarSize() {
+    setState(() {
+      isAvatarMinimized = !isAvatarMinimized;
+    });
+    if (isAvatarMinimized) {
+      _avatarController.forward();
+    } else {
+      _avatarController.reverse();
+    }
   }
 
   @override
   void dispose() {
     _textController.dispose();
+    _waveformController.dispose();
+    _buttonPressController.dispose();
+    _avatarController.dispose();
+    _speakingController.dispose();
     flutterTts.stop();
     avatarController.disposeView();
     super.dispose();
   }
 
   void _startRecording() {
+    HapticFeedback.mediumImpact();
     setState(() {
       isRecording = true;
-      showWaveform = false;
-    });
-
-    Timer(const Duration(milliseconds: 500), () {
-      if (mounted && isRecording) {
-        setState(() {
-          showWaveform = true;
-        });
-      }
+      showWaveform = true;
+      showRecordingControls = false;
+      recordedText = null;
     });
   }
 
   void _stopRecording() {
     if (!isRecording) return;
 
+    HapticFeedback.lightImpact();
     setState(() {
       isRecording = false;
+      showRecordingControls = true;
+      recordedText = "Die Katze frisst Hühnchen.";
+    });
+  }
+
+  void _cancelRecording() {
+    HapticFeedback.lightImpact();
+    setState(() {
+      showRecordingControls = false;
+      showWaveform = false;
+      recordedText = null;
+    });
+  }
+
+  void _approveRecording() {
+    HapticFeedback.mediumImpact();
+    setState(() {
+      showRecordingControls = false;
       showWaveform = false;
 
       messages.add({
-        'text': null,
-        'isUser': false,
-        'type': 'audio',
-        'duration': '1:34',
-      });
-
-      messages.add({
-        'text': 'Die Katze frisst Hühnchen.',
+        'text': recordedText,
         'isUser': false,
         'type': 'text',
       });
+      recordedText = null;
     });
 
-    // Speak the response
     _speak('Die Katze frisst Hühnchen.');
 
-    // Navigate to LanguageLevelPage after 2 seconds
     Timer(const Duration(seconds: 2), () {
       if (mounted) {
         Navigator.pushReplacement(
           context,
-          MaterialPageRoute(builder: (context) => const LanguageLevelPage()),
+          _createFadeRoute(const LanguageLevelPage()),
         );
       }
     });
@@ -198,66 +250,115 @@ class _TestConversationPageState extends State<TestConversationPage> {
       showSendButton = false;
     });
 
-    // Speak the user's message
     _speak(userMessage);
 
-    // Navigate to LanguageLevelPage after 2 seconds
     Timer(const Duration(seconds: 2), () {
       if (mounted) {
         Navigator.pushReplacement(
           context,
-          MaterialPageRoute(builder: (context) => const LanguageLevelPage()),
+          _createFadeRoute(const LanguageLevelPage()),
         );
       }
     });
   }
 
-  void _toggleToVoiceRecordScreen() {
-    setState(() {
-      showCharacter = true;
-      currentQuestion = '';
+  void _checkAnswer(String answer, bool isCorrect) async {
+    await _buttonPressController.forward();
+    await _buttonPressController.reverse();
+
+    if (isCorrect) {
+      HapticFeedback.mediumImpact();
+      // Show success dialog
+      _showSuccessDialog(answer);
+    } else {
+      // Triple vibration for wrong answer
+      HapticFeedback.heavyImpact();
+      await Future.delayed(const Duration(milliseconds: 100));
+      HapticFeedback.heavyImpact();
+      await Future.delayed(const Duration(milliseconds: 100));
+      HapticFeedback.heavyImpact();
+      
+      // Show error dialog
+      _showErrorDialog(answer);
+    }
+  }
+
+  void _showErrorDialog(String wrongAnswer) {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => _ErrorDialog(correctAnswer: 'Cat'),
+    );
+  }
+
+  void _showSuccessDialog(String correctAnswer) {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => _SuccessDialog(answer: correctAnswer),
+    ).then((_) {
+      // Navigate after closing dialog
+      Timer(const Duration(milliseconds: 500), () {
+        if (mounted) {
+          Navigator.pushReplacement(
+            context,
+            _createFadeRoute(const LanguageLevelPage()),
+          );
+        }
+      });
     });
+  }
+
+  Route _createFadeRoute(Widget page) {
+    return PageRouteBuilder(
+      pageBuilder: (context, animation, secondaryAnimation) => page,
+      transitionsBuilder: (context, animation, secondaryAnimation, child) {
+        var fadeTween = Tween<double>(begin: 0.0, end: 1.0).chain(
+          CurveTween(curve: Curves.easeInOut),
+        );
+        
+        return FadeTransition(
+          opacity: animation.drive(fadeTween),
+          child: child,
+        );
+      },
+      transitionDuration: const Duration(milliseconds: 400),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: showCharacter ? const Color(0xFFF5F5F5) : Colors.white,
+      backgroundColor: Colors.white,
       body: SafeArea(
         child: Column(
           children: [
             _buildHeader(),
             Expanded(
-              child: Stack(
+              child: Column(
                 children: [
-                  Column(
-                    children: [
-                      if (showCharacter) _buildCharacterSection(),
-                      if (!showCharacter && currentQuestion.isNotEmpty)
-                        _buildQuestionHeader(),
-                      Expanded(
-                        child: ListView.builder(
+                  _buildAvatarSection(),
+                  if (currentQuestion.isNotEmpty)
+                    _buildQuestionHeader(),
+                  Expanded(
+                    child: Stack(
+                      children: [
+                        ListView.builder(
                           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                           itemCount: messages.length,
                           itemBuilder: (context, index) {
                             return _buildMessage(messages[index]);
                           },
                         ),
-                      ),
-                    ],
-                  ),
-                  // Show big microphone button only in character view
-                  if (showCharacter)
-                    Positioned(
-                      bottom: 100,
-                      left: 0,
-                      right: 0,
-                      child: Center(child: _buildMicrophoneButton()),
+                        if (currentExerciseType == 2)
+                          _buildMultipleChoiceOptions(),
+                      ],
                     ),
+                  ),
                 ],
               ),
             ),
-            if (!showCharacter) _buildBottomInput(),
+            _buildBottomInput(),
           ],
         ),
       ),
@@ -272,24 +373,14 @@ class _TestConversationPageState extends State<TestConversationPage> {
         children: [
           Row(
             children: [
-              IconButton(
-                icon: const Icon(Icons.arrow_back_ios, color: Color(0xFFFF8000), size: 18),
-                padding: EdgeInsets.zero,
-                onPressed: () {
-                  if (showCharacter) {
-                    // If in character view, go back to conversation
-                    setState(() {
-                      showCharacter = false;
-                      currentQuestion = 'Translate the sentence:';
-                    });
-                  } else {
-                    // Otherwise, pop the page
-                    Navigator.pop(context);
-                  }
-                },
+              _AnimatedIconButton(
+                icon: Icons.arrow_back_ios,
+                color: const Color(0xFFFF8000),
+                onPressed: () => Navigator.pop(context),
               ),
+              const SizedBox(width: 4),
               Text(
-                widget.selectedAvatar, // Display the selected avatar name
+                widget.selectedAvatar,
                 style: const TextStyle(
                   color: Color(0xFFFF8000),
                   fontSize: 16,
@@ -298,280 +389,308 @@ class _TestConversationPageState extends State<TestConversationPage> {
               ),
             ],
           ),
+          _AnimatedIconButton(
+            icon: Icons.menu,
+            color: const Color(0xFFFF8000),
+            onPressed: () {},
+          ),
         ],
       ),
     );
   }
 
   Widget _buildQuestionHeader() {
-    return Container(
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 300),
       width: double.infinity,
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-      child: const Text(
-        'Translate the sentence:',
-        style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: Colors.black),
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+      child: Text(
+        currentQuestion,
+        style: const TextStyle(
+          fontSize: 16,
+          fontWeight: FontWeight.w600,
+          color: Colors.black87,
+        ),
       ),
     );
   }
 
-  Widget _buildCharacterSection() {
-    return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      width: double.infinity,
-      height: 220,
-      decoration: BoxDecoration(
-        color: const Color(0xFFFFF3E0),
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: Stack(
-        children: [
-          // Avatar View
-          Center(
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(12),
-              child: AvatarView(
-                avatarName: widget.selectedAvatar,
-                controller: avatarController,
-                height: 220,
-                backgroundImagePath: "assets/images/background.png",
-                borderRadius: 12,
-              ),
+  Widget _buildAvatarSection() {
+    return AnimatedBuilder(
+      animation: _avatarSizeAnimation,
+      builder: (context, child) {
+        double avatarHeight = _avatarSizeAnimation.value;
+        
+        return GestureDetector(
+          onTap: _toggleAvatarSize,
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 400),
+            curve: Curves.easeInOutCubic,
+            margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            width: double.infinity,
+            height: avatarHeight,
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(20),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.08),
+                  blurRadius: 20,
+                  offset: const Offset(0, 4),
+                ),
+              ],
             ),
-          ),
-          // Sound Icon (Mute/Unmute)
-          Positioned(
-            bottom: 10,
-            right: 10,
-            child: GestureDetector(
-              onTap: _toggleMute,
-              child: Container(
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    colors: isMuted 
-                      ? [Colors.grey.shade400, Colors.grey.shade600]
-                      : [const Color(0xFFFF609D), const Color(0xFFFF7A06)],
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
+            child: Stack(
+              children: [
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(20),
+                  child: Stack(
+                    children: [
+                      AvatarView(
+                        avatarName: widget.selectedAvatar,
+                        controller: avatarController,
+                        height: avatarHeight,
+                        backgroundImagePath: "assets/images/background.png",
+                        borderRadius: 20,
+                      ),
+                      if (isAvatarSpeaking)
+                        AnimatedBuilder(
+                          animation: _speakingController,
+                          builder: (context, child) {
+                            return Container(
+                              decoration: BoxDecoration(
+                                borderRadius: BorderRadius.circular(20),
+                                gradient: LinearGradient(
+                                  colors: [
+                                    Colors.orange.withOpacity(0.1 * _speakingController.value),
+                                    Colors.transparent,
+                                  ],
+                                  begin: Alignment.bottomCenter,
+                                  end: Alignment.topCenter,
+                                ),
+                              ),
+                            );
+                          },
+                        ),
+                    ],
                   ),
-                  shape: BoxShape.circle,
                 ),
-                child: Icon(
-                  isMuted ? Icons.volume_off : Icons.volume_up,
-                  color: Colors.white,
-                  size: 18,
+                
+                // Control buttons overlay
+                Positioned(
+                  bottom: 12,
+                  left: 12,
+                  right: 12,
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      _AvatarControlButton(
+                        icon: isAvatarMinimized ? Icons.fullscreen : Icons.fullscreen_exit,
+                        onPressed: _toggleAvatarSize,
+                      ),
+                      Row(
+                        children: [
+                          _AvatarControlButton(
+                            icon: Icons.volume_up,
+                            onPressed: () => _speak(currentQuestion),
+                          ),
+                          const SizedBox(width: 8),
+                          _AvatarControlButton(
+                            icon: Icons.translate,
+                            onPressed: () {
+                              // Show translation
+                            },
+                          ),
+                          const SizedBox(width: 8),
+                          _AvatarControlButton(
+                            icon: isMuted ? Icons.volume_off : Icons.volume_up,
+                            onPressed: _toggleMute,
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
                 ),
-              ),
+              ],
             ),
           ),
-        ],
-      ),
+        );
+      },
     );
   }
 
   Widget _buildMessage(Map<String, dynamic> message) {
     bool isUser = message['isUser'];
     String? text = message['text'];
-    String type = message['type'];
+    bool? isCorrect = message['isCorrect'];
 
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 12),
-      child: Row(
-        mainAxisAlignment: isUser ? MainAxisAlignment.start : MainAxisAlignment.end,
-        children: [
-          if (type == 'audio' && !isUser)
-            _buildAudioMessage(message['duration'])
-          else
-            Container(
-              constraints: BoxConstraints(maxWidth: MediaQuery.of(context).size.width * 0.7),
-              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-              decoration: BoxDecoration(
-                color: isUser ? const Color(0xFFFFFDE7) : null,
-                gradient: !isUser
-                    ? const LinearGradient(colors: [Color(0xFFFF609D), Color(0xFFFF7A06)])
-                    : null,
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Text(
-                text ?? '',
-                style: TextStyle(color: isUser ? Colors.black87 : Colors.white, fontSize: 14),
-              ),
-            ),
-        ],
-      ),
-    );
-  }
+    Color bgColor;
+    if (isCorrect == true) {
+      bgColor = Colors.green.shade100;
+    } else if (isCorrect == false) {
+      bgColor = Colors.red.shade300;
+    } else if (isUser) {
+      bgColor = const Color(0xFFFFFDE7);
+    } else {
+      bgColor = Colors.transparent;
+    }
 
-  Widget _buildAudioMessage(String duration) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-      decoration: BoxDecoration(
-        gradient: const LinearGradient(colors: [Color(0xFFFF609D), Color(0xFFFF7A06)]),
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          const Icon(Icons.play_arrow, color: Colors.white, size: 20),
-          const SizedBox(width: 6),
-          SizedBox(
-            width: 100,
-            height: 20,
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-              children: List.generate(20, (index) {
-                double height = (index % 3 == 0) ? 16 : (index % 2 == 0) ? 12 : 8;
-                return Container(
-                  width: 2,
-                  height: height,
-                  decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.8),
-                    borderRadius: BorderRadius.circular(1),
-                  ),
-                );
-              }),
-            ),
-          ),
-          const SizedBox(width: 8),
-          Text(duration, style: const TextStyle(color: Colors.white, fontSize: 12)),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildMicrophoneButton() {
-    return GestureDetector(
-      onTapDown: (_) => _startRecording(),
-      onTapUp: (_) => _stopRecording(),
-      onTapCancel: () => _stopRecording(),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          if (showWaveform)
-            Container(
-              width: 180,
-              height: 70,
-              margin: const EdgeInsets.only(bottom: 30),
+    return TweenAnimationBuilder<double>(
+      tween: Tween(begin: 0.0, end: 1.0),
+      duration: const Duration(milliseconds: 400),
+      curve: Curves.easeOut,
+      builder: (context, value, child) {
+        return Transform.scale(
+          scale: value,
+          child: Opacity(
+            opacity: value,
+            child: Padding(
+              padding: const EdgeInsets.only(bottom: 12),
               child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: List.generate(25, (index) {
-                  double height;
-                  if (index == 12) {
-                    height = 60;
-                  } else if ([11, 13].contains(index)) {
-                    height = 55;
-                  } else if ([10, 14].contains(index)) {
-                    height = 48;
-                  } else if ([9, 15].contains(index)) {
-                    height = 42;
-                  } else if ([8, 16].contains(index)) {
-                    height = 38;
-                  } else if ([7, 17].contains(index)) {
-                    height = 32;
-                  } else if ([6, 18].contains(index)) {
-                    height = 28;
-                  } else {
-                    height = 22;
-                  }
-
-                  return Container(
-                    width: 3,
-                    height: height,
-                    margin: const EdgeInsets.symmetric(horizontal: 1.5),
-                    decoration: BoxDecoration(
-                      gradient: const LinearGradient(
-                        colors: [Color(0xFFFF609D), Color(0xFFFF7A06)],
-                        begin: Alignment.topCenter,
-                        end: Alignment.bottomCenter,
-                      ),
-                      borderRadius: BorderRadius.circular(2),
+                mainAxisAlignment: isUser ? MainAxisAlignment.start : MainAxisAlignment.end,
+                children: [
+                  Container(
+                    constraints: BoxConstraints(
+                      maxWidth: MediaQuery.of(context).size.width * 0.7,
                     ),
-                  );
-                }),
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                    decoration: BoxDecoration(
+                      color: isUser || isCorrect != null ? bgColor : null,
+                      gradient: !isUser && isCorrect == null
+                          ? const LinearGradient(
+                              colors: [Color(0xFFFF609D), Color(0xFFFF7A06)],
+                            )
+                          : null,
+                      borderRadius: BorderRadius.circular(16),
+                      boxShadow: [
+                        if (isCorrect != null)
+                          BoxShadow(
+                            color: (isCorrect ? Colors.green : Colors.red).withOpacity(0.3),
+                            blurRadius: 8,
+                            offset: const Offset(0, 3),
+                          ),
+                      ],
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        if (isCorrect != null)
+                          Padding(
+                            padding: const EdgeInsets.only(right: 8),
+                            child: Icon(
+                              isCorrect ? Icons.check_circle : Icons.cancel,
+                              color: isCorrect ? Colors.green.shade700 : Colors.white,
+                              size: 20,
+                            ),
+                          ),
+                        Flexible(
+                          child: Text(
+                            text ?? '',
+                            style: TextStyle(
+                              color: isUser || isCorrect == false 
+                                  ? Colors.black87 
+                                  : isCorrect == true 
+                                      ? Colors.green.shade900 
+                                      : Colors.white,
+                              fontSize: 14,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
               ),
             ),
-          Stack(
-            alignment: Alignment.center,
-            children: [
-              if (isRecording)
-                Container(
-                  width: 140,
-                  height: 140,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    gradient: RadialGradient(
-                      colors: [
-                        const Color(0xFFFF609D).withOpacity(0.15),
-                        const Color(0xFFFF7A06).withOpacity(0.05),
-                        Colors.transparent
-                      ],
-                      stops: const [0.3, 0.6, 1.0],
-                    ),
-                  ),
-                ),
-              if (isRecording)
-                Container(
-                  width: 110,
-                  height: 110,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    gradient: RadialGradient(
-                      colors: [
-                        const Color(0xFFFF609D).withOpacity(0.25),
-                        const Color(0xFFFF7A06).withOpacity(0.15),
-                        Colors.transparent
-                      ],
-                      stops: const [0.4, 0.7, 1.0],
-                    ),
-                  ),
-                ),
-              Container(
-                width: 90,
-                height: 90,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  gradient: RadialGradient(
-                    colors: isRecording
-                        ? [
-                            const Color(0xFFFF609D).withOpacity(0.4),
-                            const Color(0xFFFF7A06).withOpacity(0.2),
-                            Colors.transparent
-                          ]
-                        : [
-                            const Color(0xFFFFE0B2).withOpacity(0.5),
-                            const Color(0xFFFFE0B2).withOpacity(0.2),
-                            Colors.transparent
-                          ],
-                    stops: const [0.3, 0.6, 1.0],
-                  ),
-                ),
-              ),
-              Container(
-                width: 70,
-                height: 70,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  gradient: const LinearGradient(colors: [Color(0xFFFF609D), Color(0xFFFF7A06)]),
-                  boxShadow: [
-                    BoxShadow(
-                      color: const Color(0xFFFF609D).withOpacity(0.4),
-                      blurRadius: 20,
-                      spreadRadius: 2,
-                    ),
-                  ],
-                ),
-                child: const Icon(Icons.mic, color: Colors.white, size: 32),
-              ),
-            ],
           ),
-        ],
+        );
+      },
+    );
+  }
+
+Widget _buildMultipleChoiceOptions() {
+    List<Map<String, dynamic>> options = [
+      {'text': 'Cat', 'isCorrect': true},
+      {'text': 'Cap', 'isCorrect': false},
+      {'text': 'Can', 'isCorrect': false},
+      {'text': 'Car', 'isCorrect': false},
+    ];
+
+    return Align(
+      alignment: Alignment.bottomCenter,
+      child: Padding(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // First row with 2 buttons
+            Row(
+              children: [
+                Expanded(
+                  child: _AnimatedOptionButton(
+                    text: options[0]['text'],
+                    onPressed: () => _checkAnswer(options[0]['text'], options[0]['isCorrect']),
+                    delay: const Duration(milliseconds: 100),
+                  ),
+                ),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: _AnimatedOptionButton(
+                    text: options[1]['text'],
+                    onPressed: () => _checkAnswer(options[1]['text'], options[1]['isCorrect']),
+                    delay: const Duration(milliseconds: 200),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+            // Second row with 2 buttons
+            Row(
+              children: [
+                Expanded(
+                  child: _AnimatedOptionButton(
+                    text: options[2]['text'],
+                    onPressed: () => _checkAnswer(options[2]['text'], options[2]['isCorrect']),
+                    delay: const Duration(milliseconds: 300),
+                  ),
+                ),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: _AnimatedOptionButton(
+                    text: options[3]['text'],
+                    onPressed: () => _checkAnswer(options[3]['text'], options[3]['isCorrect']),
+                    delay: const Duration(milliseconds: 400),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 20),
+            // Continue button
+            _AnimatedContinueButton(
+              onPressed: () {
+                Navigator.pushReplacement(
+                  context,
+                  _createFadeRoute(const LanguageLevelPage()),
+                );
+              },
+              delay: const Duration(milliseconds: 500),
+            ),
+          ],
+        ),
       ),
     );
   }
 
   Widget _buildBottomInput() {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 300),
+      padding: EdgeInsets.only(
+        left: 16,
+        right: 16,
+        top: 12,
+        bottom: 12 + MediaQuery.of(context).viewInsets.bottom,
+      ),
       decoration: BoxDecoration(
         color: Colors.white,
         boxShadow: [
@@ -582,44 +701,137 @@ class _TestConversationPageState extends State<TestConversationPage> {
           )
         ],
       ),
-      child: Row(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
         children: [
-          Expanded(
-            child: Container(
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(8),
-                border: Border.all(width: 2, color: const Color(0xFFFF609D)),
-              ),
-              child: TextField(
-                controller: _textController,
-                decoration: const InputDecoration(
-                  hintText: 'Type your response',
-                  hintStyle: TextStyle(color: Colors.grey, fontSize: 14),
-                  border: InputBorder.none,
-                  contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          if (showWaveform && isRecording)
+            AnimatedBuilder(
+              animation: _waveformController,
+              builder: (context, child) {
+                return Container(
+                  height: 50,
+                  margin: const EdgeInsets.only(bottom: 12),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: List.generate(30, (index) {
+                      double baseHeight = 8 + (index % 5) * 3;
+                      double animatedHeight = baseHeight + 
+                          (math.sin((index / 30 * 2 * math.pi) + 
+                          (_waveformController.value * 2 * math.pi)) * 8);
+                      
+                      return Container(
+                        width: 3,
+                        height: animatedHeight.clamp(8.0, 40.0),
+                        margin: const EdgeInsets.symmetric(horizontal: 2),
+                        decoration: BoxDecoration(
+                          gradient: const LinearGradient(
+                            colors: [Color(0xFFFF609D), Color(0xFFFF7A06)],
+                            begin: Alignment.topCenter,
+                            end: Alignment.bottomCenter,
+                          ),
+                          borderRadius: BorderRadius.circular(2),
+                        ),
+                      );
+                    }),
+                  ),
+                );
+              },
+            ),
+          
+          if (showRecordingControls)
+            _buildRecordingControls(),
+          
+          if (!showRecordingControls)
+            Row(
+              children: [
+                Expanded(
+                  child: AnimatedContainer(
+                    duration: const Duration(milliseconds: 300),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(25),
+                      border: Border.all(
+                        width: 2,
+                        color: const Color(0xFFFF609D),
+                      ),
+                      boxShadow: [
+                        BoxShadow(
+                          color: const Color(0xFFFF609D).withOpacity(0.1),
+                          blurRadius: 8,
+                          offset: const Offset(0, 2),
+                        ),
+                      ],
+                    ),
+                    child: TextField(
+                      controller: _textController,
+                      decoration: const InputDecoration(
+                        hintText: 'Type your response',
+                        hintStyle: TextStyle(color: Colors.grey, fontSize: 14),
+                        border: InputBorder.none,
+                        contentPadding: EdgeInsets.symmetric(
+                          horizontal: 20,
+                          vertical: 14,
+                        ),
+                      ),
+                      onSubmitted: (_) => _sendMessage(),
+                    ),
+                  ),
                 ),
-                onSubmitted: (_) => _sendMessage(),
-              ),
+                const SizedBox(width: 12),
+                
+                if (showSendButton)
+                  _AnimatedCircleButton(
+                    icon: Icons.send,
+                    onPressed: _sendMessage,
+                  )
+                else
+                  _AnimatedMicButton(
+                    isRecording: isRecording,
+                    onStartRecording: _startRecording,
+                    onStopRecording: _stopRecording,
+                  ),
+              ],
+            ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildRecordingControls() {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.grey.shade50,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: Colors.grey.shade300),
+      ),
+      child: Column(
+        children: [
+          Text(
+            recordedText ?? '',
+            style: const TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.w500,
+              color: Colors.black87,
             ),
           ),
-          const SizedBox(width: 12),
-          // Toggle between Voice and Send button
-          GestureDetector(
-            onTap: showSendButton ? _sendMessage : _toggleToVoiceRecordScreen,
-            child: Container(
-              width: 48,
-              height: 48,
-              decoration: const BoxDecoration(
-                gradient: LinearGradient(colors: [Color(0xFFFF609D), Color(0xFFFF7A06)]),
-                shape: BoxShape.circle,
+          const SizedBox(height: 16),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+            children: [
+              _RecordingActionButton(
+                icon: Icons.delete_outline,
+                label: 'Delete',
+                color: Colors.red,
+                onPressed: _cancelRecording,
               ),
-              child: Icon(
-                showSendButton ? Icons.send : Icons.mic,
-                color: Colors.white,
-                size: 24,
+              _RecordingActionButton(
+                icon: Icons.check,
+                label: 'Send',
+                color: Colors.green,
+                onPressed: _approveRecording,
               ),
-            ),
+            ],
           ),
         ],
       ),
@@ -627,7 +839,864 @@ class _TestConversationPageState extends State<TestConversationPage> {
   }
 }
 
-// LanguageLevelPage Widget
+// Custom Animated Widgets
+
+class _AnimatedIconButton extends StatefulWidget {
+  final IconData icon;
+  final Color color;
+  final VoidCallback onPressed;
+
+  const _AnimatedIconButton({
+    required this.icon,
+    required this.color,
+    required this.onPressed,
+  });
+
+  @override
+  State<_AnimatedIconButton> createState() => _AnimatedIconButtonState();
+}
+
+class _AnimatedIconButtonState extends State<_AnimatedIconButton>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _controller;
+  late Animation<double> _scaleAnimation;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      duration: const Duration(milliseconds: 150),
+      vsync: this,
+    );
+    _scaleAnimation = Tween<double>(begin: 1.0, end: 0.85).animate(
+      CurvedAnimation(parent: _controller, curve: Curves.easeInOut),
+    );
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return ScaleTransition(
+      scale: _scaleAnimation,
+      child: IconButton(
+        icon: Icon(widget.icon, color: widget.color, size: 20),
+        padding: EdgeInsets.zero,
+        onPressed: () async {
+          HapticFeedback.lightImpact();
+          await _controller.forward();
+          await _controller.reverse();
+          widget.onPressed();
+        },
+      ),
+    );
+  }
+}
+
+class _AvatarControlButton extends StatefulWidget {
+  final IconData icon;
+  final VoidCallback onPressed;
+
+  const _AvatarControlButton({
+    required this.icon,
+    required this.onPressed,
+  });
+
+  @override
+  State<_AvatarControlButton> createState() => _AvatarControlButtonState();
+}
+
+class _AvatarControlButtonState extends State<_AvatarControlButton>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _controller;
+  late Animation<double> _scaleAnimation;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      duration: const Duration(milliseconds: 150),
+      vsync: this,
+    );
+    _scaleAnimation = Tween<double>(begin: 1.0, end: 0.9).animate(
+      CurvedAnimation(parent: _controller, curve: Curves.easeInOut),
+    );
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return ScaleTransition(
+      scale: _scaleAnimation,
+      child: GestureDetector(
+        onTap: () async {
+          HapticFeedback.mediumImpact();
+          await _controller.forward();
+          await _controller.reverse();
+          widget.onPressed();
+        },
+        child: Container(
+          padding: const EdgeInsets.all(10),
+          decoration: BoxDecoration(
+            gradient: const LinearGradient(
+              colors: [Color(0xFFFF609D), Color(0xFFFF7A06)],
+            ),
+            shape: BoxShape.circle,
+            boxShadow: [
+              BoxShadow(
+                color: const Color(0xFFFF609D).withOpacity(0.3),
+                blurRadius: 8,
+                offset: const Offset(0, 3),
+              ),
+            ],
+          ),
+          child: Icon(
+            widget.icon,
+            color: Colors.white,
+            size: 20,
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _AnimatedOptionButton extends StatefulWidget {
+  final String text;
+  final VoidCallback onPressed;
+  final Duration delay;
+
+  const _AnimatedOptionButton({
+    required this.text,
+    required this.onPressed,
+    this.delay = Duration.zero,
+  });
+
+  @override
+  State<_AnimatedOptionButton> createState() => _AnimatedOptionButtonState();
+}
+
+class _AnimatedOptionButtonState extends State<_AnimatedOptionButton>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _controller;
+  late Animation<double> _scaleAnimation;
+  late Animation<double> _fadeAnimation;
+  bool _isPressed = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      duration: const Duration(milliseconds: 400),
+      vsync: this,
+    );
+    
+    _scaleAnimation = Tween<double>(begin: 0.8, end: 1.0).animate(
+      CurvedAnimation(
+        parent: _controller,
+        curve: Curves.easeOutBack,
+      ),
+    );
+    
+    _fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
+      CurvedAnimation(
+        parent: _controller,
+        curve: const Interval(0.0, 0.6, curve: Curves.easeOut),
+      ),
+    );
+
+    Future.delayed(widget.delay, () {
+      if (mounted) _controller.forward();
+    });
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return FadeTransition(
+      opacity: _fadeAnimation,
+      child: ScaleTransition(
+        scale: _scaleAnimation,
+        child: GestureDetector(
+          onTapDown: (_) {
+            setState(() => _isPressed = true);
+          },
+          onTapUp: (_) {
+            setState(() => _isPressed = false);
+            HapticFeedback.lightImpact();
+            widget.onPressed();
+          },
+          onTapCancel: () {
+            setState(() => _isPressed = false);
+          },
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 150),
+            height: 60,
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(
+                color: _isPressed ? const Color(0xFFFF609D) : Colors.grey.shade300,
+                width: _isPressed ? 2 : 1.5,
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: _isPressed 
+                      ? const Color(0xFFFF609D).withOpacity(0.2)
+                      : Colors.black.withOpacity(0.05),
+                  blurRadius: _isPressed ? 12 : 8,
+                  offset: Offset(0, _isPressed ? 4 : 2),
+                ),
+              ],
+            ),
+            transform: Matrix4.identity()..scale(_isPressed ? 0.95 : 1.0),
+            child: Center(
+              child: Text(
+                widget.text,
+                style: TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.w600,
+                  color: _isPressed ? const Color(0xFFFF609D) : Colors.black87,
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _AnimatedCircleButton extends StatefulWidget {
+  final IconData icon;
+  final VoidCallback onPressed;
+
+  const _AnimatedCircleButton({
+    required this.icon,
+    required this.onPressed,
+  });
+
+  @override
+  State<_AnimatedCircleButton> createState() => _AnimatedCircleButtonState();
+}
+
+class _AnimatedCircleButtonState extends State<_AnimatedCircleButton>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _controller;
+  late Animation<double> _scaleAnimation;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      duration: const Duration(milliseconds: 150),
+      vsync: this,
+    );
+    _scaleAnimation = Tween<double>(begin: 1.0, end: 0.9).animate(
+      CurvedAnimation(parent: _controller, curve: Curves.easeInOut),
+    );
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return ScaleTransition(
+      scale: _scaleAnimation,
+      child: GestureDetector(
+        onTap: () async {
+          HapticFeedback.mediumImpact();
+          await _controller.forward();
+          await _controller.reverse();
+          widget.onPressed();
+        },
+        child: Container(
+          width: 52,
+          height: 52,
+          decoration: BoxDecoration(
+            gradient: const LinearGradient(
+              colors: [Color(0xFFFF609D), Color(0xFFFF7A06)],
+            ),
+            shape: BoxShape.circle,
+            boxShadow: [
+              BoxShadow(
+                color: const Color(0xFFFF609D).withOpacity(0.4),
+                blurRadius: 12,
+                offset: const Offset(0, 4),
+              ),
+            ],
+          ),
+          child: Icon(
+            widget.icon,
+            color: Colors.white,
+            size: 24,
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _AnimatedMicButton extends StatefulWidget {
+  final bool isRecording;
+  final VoidCallback onStartRecording;
+  final VoidCallback onStopRecording;
+
+  const _AnimatedMicButton({
+    required this.isRecording,
+    required this.onStartRecording,
+    required this.onStopRecording,
+  });
+
+  @override
+  State<_AnimatedMicButton> createState() => _AnimatedMicButtonState();
+}
+
+class _AnimatedMicButtonState extends State<_AnimatedMicButton>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _pulseController;
+
+  @override
+  void initState() {
+    super.initState();
+    _pulseController = AnimationController(
+      duration: const Duration(milliseconds: 1000),
+      vsync: this,
+    );
+    
+    if (widget.isRecording) {
+      _pulseController.repeat(reverse: true);
+    }
+  }
+
+  @override
+  void didUpdateWidget(_AnimatedMicButton oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.isRecording && !oldWidget.isRecording) {
+      _pulseController.repeat(reverse: true);
+    } else if (!widget.isRecording && oldWidget.isRecording) {
+      _pulseController.stop();
+      _pulseController.reset();
+    }
+  }
+
+  @override
+  void dispose() {
+    _pulseController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onLongPressStart: (_) => widget.onStartRecording(),
+      onLongPressEnd: (_) => widget.onStopRecording(),
+      child: AnimatedBuilder(
+        animation: _pulseController,
+        builder: (context, child) {
+          return Container(
+            width: 52 + (_pulseController.value * 8),
+            height: 52 + (_pulseController.value * 8),
+            decoration: BoxDecoration(
+              gradient: const LinearGradient(
+                colors: [Color(0xFFFF609D), Color(0xFFFF7A06)],
+              ),
+              shape: BoxShape.circle,
+              boxShadow: [
+                BoxShadow(
+                  color: const Color(0xFFFF609D).withOpacity(
+                    0.4 + (_pulseController.value * 0.2),
+                  ),
+                  blurRadius: 12 + (_pulseController.value * 8),
+                  offset: const Offset(0, 4),
+                ),
+              ],
+            ),
+            child: Icon(
+              widget.isRecording ? Icons.stop : Icons.mic,
+              color: Colors.white,
+              size: 24,
+            ),
+          );
+        },
+      ),
+    );
+  }
+}
+
+class _RecordingActionButton extends StatefulWidget {
+  final IconData icon;
+  final String label;
+  final Color color;
+  final VoidCallback onPressed;
+
+  const _RecordingActionButton({
+    required this.icon,
+    required this.label,
+    required this.color,
+    required this.onPressed,
+  });
+
+  @override
+  State<_RecordingActionButton> createState() => _RecordingActionButtonState();
+}
+
+class _RecordingActionButtonState extends State<_RecordingActionButton>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _controller;
+  late Animation<double> _scaleAnimation;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      duration: const Duration(milliseconds: 150),
+      vsync: this,
+    );
+    _scaleAnimation = Tween<double>(begin: 1.0, end: 0.9).animate(
+      CurvedAnimation(parent: _controller, curve: Curves.easeInOut),
+    );
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return ScaleTransition(
+      scale: _scaleAnimation,
+      child: GestureDetector(
+        onTap: () async {
+          HapticFeedback.mediumImpact();
+          await _controller.forward();
+          await _controller.reverse();
+          widget.onPressed();
+        },
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 12),
+          decoration: BoxDecoration(
+            color: widget.color,
+            borderRadius: BorderRadius.circular(12),
+            boxShadow: [
+              BoxShadow(
+                color: widget.color.withOpacity(0.3),
+                blurRadius: 8,
+                offset: const Offset(0, 3),
+              ),
+            ],
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(widget.icon, color: Colors.white, size: 20),
+              const SizedBox(width: 8),
+              Text(
+                widget.label,
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+// Error Dialog Widget
+class _ErrorDialog extends StatefulWidget {
+  final String correctAnswer;
+
+  const _ErrorDialog({required this.correctAnswer});
+
+  @override
+  State<_ErrorDialog> createState() => _ErrorDialogState();
+}
+
+class _ErrorDialogState extends State<_ErrorDialog> with SingleTickerProviderStateMixin {
+  late AnimationController _controller;
+  late Animation<double> _scaleAnimation;
+  late Animation<double> _shakeAnimation;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      duration: const Duration(milliseconds: 600),
+      vsync: this,
+    );
+
+    _scaleAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
+      CurvedAnimation(
+        parent: _controller,
+        curve: const Interval(0.0, 0.5, curve: Curves.easeOutBack),
+      ),
+    );
+
+    _shakeAnimation = TweenSequence<double>([
+      TweenSequenceItem(tween: Tween(begin: 0.0, end: 10.0), weight: 1),
+      TweenSequenceItem(tween: Tween(begin: 10.0, end: -10.0), weight: 1),
+      TweenSequenceItem(tween: Tween(begin: -10.0, end: 10.0), weight: 1),
+      TweenSequenceItem(tween: Tween(begin: 10.0, end: 0.0), weight: 1),
+    ]).animate(
+      CurvedAnimation(
+        parent: _controller,
+        curve: const Interval(0.5, 1.0, curve: Curves.easeInOut),
+      ),
+    );
+
+    _controller.forward();
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return ScaleTransition(
+      scale: _scaleAnimation,
+      child: AnimatedBuilder(
+        animation: _shakeAnimation,
+        builder: (context, child) {
+          return Transform.translate(
+            offset: Offset(_shakeAnimation.value, 0),
+            child: child,
+          );
+        },
+        child: Dialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          child: Container(
+            padding: const EdgeInsets.all(24),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(20),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.1),
+                  blurRadius: 20,
+                  offset: const Offset(0, 10),
+                ),
+              ],
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      colors: [
+                        const Color(0xFFFF6B6B).withOpacity(0.9), // Lighter red
+                        const Color(0xFFFF8E8E).withOpacity(0.9), // Even lighter red
+                      ],
+                    ),
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                  child: const Text(
+                    "It's incorrect.",
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 20),
+                const Text(
+                  'The right answer is',
+                  style: TextStyle(
+                    fontSize: 14,
+                    color: Colors.grey,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  widget.correctAnswer,
+                  style: const TextStyle(
+                    fontSize: 24,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.black87,
+                  ),
+                ),
+                const SizedBox(height: 24),
+                SizedBox(
+                  width: double.infinity,
+                  height: 50,
+                  child: DecoratedBox(
+                    decoration: BoxDecoration(
+                      gradient: const LinearGradient(
+                        colors: [Color(0xFFFF609D), Color(0xFFFF7A06)],
+                      ),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: ElevatedButton(
+                      onPressed: () {
+                        HapticFeedback.lightImpact();
+                        Navigator.of(context).pop();
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.transparent,
+                        shadowColor: Colors.transparent,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                      child: const Text(
+                        'Continue',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+// Success Dialog Widget
+class _SuccessDialog extends StatefulWidget {
+  final String answer;
+
+  const _SuccessDialog({required this.answer});
+
+  @override
+  State<_SuccessDialog> createState() => _SuccessDialogState();
+}
+
+class _SuccessDialogState extends State<_SuccessDialog> with SingleTickerProviderStateMixin {
+  late AnimationController _controller;
+  late Animation<double> _scaleAnimation;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      duration: const Duration(milliseconds: 400),
+      vsync: this,
+    );
+
+    _scaleAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
+      CurvedAnimation(
+        parent: _controller,
+        curve: Curves.easeOutBack,
+      ),
+    );
+
+    _controller.forward();
+
+    // Play success sound effect (implement with audio player)
+    // Auto close after 1.5 seconds
+    Future.delayed(const Duration(milliseconds: 1500), () {
+      if (mounted) {
+        Navigator.of(context).pop();
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return ScaleTransition(
+      scale: _scaleAnimation,
+      child: Dialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        child: Container(
+          padding: const EdgeInsets.all(32),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(20),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.1),
+                blurRadius: 20,
+                offset: const Offset(0, 10),
+              ),
+            ],
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                padding: const EdgeInsets.all(20),
+                decoration: BoxDecoration(
+                  color: Colors.green.shade50,
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(
+                  Icons.check_circle,
+                  size: 60,
+                  color: Colors.green.shade600,
+                ),
+              ),
+              const SizedBox(height: 20),
+              const Text(
+                "Correct!",
+                style: TextStyle(
+                  fontSize: 28,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.black87,
+                ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                widget.answer,
+                style: TextStyle(
+                  fontSize: 18,
+                  color: Colors.grey.shade700,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+// Continue Button Widget
+class _AnimatedContinueButton extends StatefulWidget {
+  final VoidCallback onPressed;
+  final Duration delay;
+
+  const _AnimatedContinueButton({
+    required this.onPressed,
+    this.delay = Duration.zero,
+  });
+
+  @override
+  State<_AnimatedContinueButton> createState() => _AnimatedContinueButtonState();
+}
+
+class _AnimatedContinueButtonState extends State<_AnimatedContinueButton>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _controller;
+  late Animation<double> _scaleAnimation;
+  late Animation<double> _fadeAnimation;
+  bool _isPressed = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      duration: const Duration(milliseconds: 400),
+      vsync: this,
+    );
+    
+    _scaleAnimation = Tween<double>(begin: 0.8, end: 1.0).animate(
+      CurvedAnimation(
+        parent: _controller,
+        curve: Curves.easeOutBack,
+      ),
+    );
+    
+    _fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
+      CurvedAnimation(
+        parent: _controller,
+        curve: const Interval(0.0, 0.6, curve: Curves.easeOut),
+      ),
+    );
+
+    Future.delayed(widget.delay, () {
+      if (mounted) _controller.forward();
+    });
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return FadeTransition(
+      opacity: _fadeAnimation,
+      child: ScaleTransition(
+        scale: _scaleAnimation,
+        child: GestureDetector(
+          onTapDown: (_) => setState(() => _isPressed = true),
+          onTapUp: (_) {
+            setState(() => _isPressed = false);
+            HapticFeedback.mediumImpact();
+            widget.onPressed();
+          },
+          onTapCancel: () => setState(() => _isPressed = false),
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 150),
+            width: double.infinity,
+            height: 56,
+            decoration: BoxDecoration(
+              gradient: const LinearGradient(
+                colors: [Color(0xFFFF609D), Color(0xFFFF7A06)],
+              ),
+              borderRadius: BorderRadius.circular(16),
+              boxShadow: [
+                BoxShadow(
+                  color: const Color(0xFFFF609D).withOpacity(_isPressed ? 0.3 : 0.4),
+                  blurRadius: _isPressed ? 8 : 12,
+                  offset: Offset(0, _isPressed ? 3 : 5),
+                ),
+              ],
+            ),
+            transform: Matrix4.identity()..scale(_isPressed ? 0.98 : 1.0),
+            child: const Center(
+              child: Text(
+                'Continue',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+// LanguageLevelPage Widget (unchanged but with improved animations)
 class LanguageLevelPage extends StatelessWidget {
   const LanguageLevelPage({super.key});
 
@@ -657,20 +1726,46 @@ class LanguageLevelPage extends StatelessWidget {
                 child: Column(
                   children: [
                     const SizedBox(height: 20),
-                    const Text(
-                      'Your language level',
-                      style: TextStyle(fontSize: 20, fontWeight: FontWeight.w600, color: Colors.black),
-                    ),
-                    const SizedBox(height: 12),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        const Text(
-                          'B1',
-                          style: TextStyle(fontSize: 48, fontWeight: FontWeight.bold, color: Color(0xFFFF7043), letterSpacing: 2),
-                        ),
-                        const SizedBox(width: 12),
-                      ],
+                    TweenAnimationBuilder<double>(
+                      tween: Tween(begin: 0.0, end: 1.0),
+                      duration: const Duration(milliseconds: 600),
+                      curve: Curves.easeOut,
+                      builder: (context, value, child) {
+                        return Transform.scale(
+                          scale: value,
+                          child: Opacity(
+                            opacity: value,
+                            child: child,
+                          ),
+                        );
+                      },
+                      child: Column(
+                        children: [
+                          const Text(
+                            'Your language level',
+                            style: TextStyle(
+                              fontSize: 20,
+                              fontWeight: FontWeight.w600,
+                              color: Colors.black,
+                            ),
+                          ),
+                          const SizedBox(height: 12),
+                          const Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Text(
+                                'B1',
+                                style: TextStyle(
+                                  fontSize: 48,
+                                  fontWeight: FontWeight.bold,
+                                  color: Color(0xFFFF7043),
+                                  letterSpacing: 2,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
                     ),
                     const SizedBox(height: 40),
                     const RadarChartWidget(),
@@ -682,36 +1777,98 @@ class LanguageLevelPage extends StatelessWidget {
           ),
           Padding(
             padding: const EdgeInsets.all(24),
-            child: SizedBox(
-              width: double.infinity,
-              height: 56,
-              child: DecoratedBox(
-                decoration: BoxDecoration(
-                  gradient: const LinearGradient(colors: [Color(0xFFFF609D), Color(0xFFFF7A06)]),
-                  borderRadius: BorderRadius.circular(12),
-                  boxShadow: [BoxShadow(color: const Color(0xFFFF609D).withOpacity(0.3), blurRadius: 15, offset: const Offset(0, 5))],
-                ),
-                child: ElevatedButton(
-                  onPressed: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(builder: (context) => const LoginPage()),
-                    );
-                  },
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.transparent,
-                    shadowColor: Colors.transparent,
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                  ),
-                  child: const Text(
-                    'Start Now',
-                    style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.w600),
-                  ),
-                ),
-              ),
+            child: _AnimatedStartButton(
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => const LoginPage()),
+                );
+              },
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+class _AnimatedStartButton extends StatefulWidget {
+  final VoidCallback onPressed;
+
+  const _AnimatedStartButton({required this.onPressed});
+
+  @override
+  State<_AnimatedStartButton> createState() => _AnimatedStartButtonState();
+}
+
+class _AnimatedStartButtonState extends State<_AnimatedStartButton>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _controller;
+  late Animation<double> _scaleAnimation;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      duration: const Duration(milliseconds: 150),
+      vsync: this,
+    );
+    _scaleAnimation = Tween<double>(begin: 1.0, end: 0.95).animate(
+      CurvedAnimation(parent: _controller, curve: Curves.easeInOut),
+    );
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return ScaleTransition(
+      scale: _scaleAnimation,
+      child: SizedBox(
+        width: double.infinity,
+        height: 56,
+        child: DecoratedBox(
+          decoration: BoxDecoration(
+            gradient: const LinearGradient(
+              colors: [Color(0xFFFF609D), Color(0xFFFF7A06)],
+            ),
+            borderRadius: BorderRadius.circular(12),
+            boxShadow: [
+              BoxShadow(
+                color: const Color(0xFFFF609D).withOpacity(0.3),
+                blurRadius: 15,
+                offset: const Offset(0, 5),
+              )
+            ],
+          ),
+          child: ElevatedButton(
+            onPressed: () async {
+              HapticFeedback.mediumImpact();
+              await _controller.forward();
+              await _controller.reverse();
+              widget.onPressed();
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.transparent,
+              shadowColor: Colors.transparent,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+            ),
+            child: const Text(
+              'Start Now',
+              style: TextStyle(
+                color: Colors.white,
+                fontSize: 18,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+        ),
       ),
     );
   }
@@ -722,11 +1879,28 @@ class RadarChartWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return SizedBox(width: 320, height: 320, child: CustomPaint(painter: RadarChartPainter()));
+    return TweenAnimationBuilder<double>(
+      tween: Tween(begin: 0.0, end: 1.0),
+      duration: const Duration(milliseconds: 1000),
+      curve: Curves.easeOutCubic,
+      builder: (context, value, child) {
+        return SizedBox(
+          width: 320,
+          height: 320,
+          child: CustomPaint(
+            painter: RadarChartPainter(animationValue: value),
+          ),
+        );
+      },
+    );
   }
 }
 
 class RadarChartPainter extends CustomPainter {
+  final double animationValue;
+  
+  RadarChartPainter({this.animationValue = 1.0});
+  
   final List<String> labels = [
     'Grammar\n20%',
     'Speaking\n30%',
@@ -788,7 +1962,7 @@ class RadarChartPainter extends CustomPainter {
       ..strokeWidth = 2;
 
     for (int i = 0; i < sides; i++) {
-      final percentage = values[i] / 100;
+      final percentage = (values[i] / 100) * animationValue;
       final dataRadius = radius * percentage;
       final x = center.dx + dataRadius * math.cos(angle * i - math.pi / 2);
       final y = center.dy + dataRadius * math.sin(angle * i - math.pi / 2);
@@ -800,14 +1974,18 @@ class RadarChartPainter extends CustomPainter {
 
     final pointPaint = Paint()..color = const Color(0xFFFF9800);
     for (int i = 0; i < sides; i++) {
-      final percentage = values[i] / 100;
+      final percentage = (values[i] / 100) * animationValue;
       final dataRadius = radius * percentage;
       final x = center.dx + dataRadius * math.cos(angle * i - math.pi / 2);
       final y = center.dy + dataRadius * math.sin(angle * i - math.pi / 2);
       canvas.drawCircle(Offset(x, y), 4, pointPaint);
     }
 
-    final textStyle = const TextStyle(color: Color(0xFF757575), fontSize: 12, fontWeight: FontWeight.w500);
+    final textStyle = const TextStyle(
+      color: Color(0xFF757575),
+      fontSize: 12,
+      fontWeight: FontWeight.w500,
+    );
 
     for (int i = 0; i < sides; i++) {
       final labelRadius = radius + 35;
@@ -835,5 +2013,7 @@ class RadarChartPainter extends CustomPainter {
   }
 
   @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
+  bool shouldRepaint(RadarChartPainter oldDelegate) {
+    return oldDelegate.animationValue != animationValue;
+  }
 }
