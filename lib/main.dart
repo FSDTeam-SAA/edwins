@@ -2,6 +2,8 @@ import 'dart:async';
 
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
+import 'package:language_app/Screens/onbording_screen.dart';
+import 'package:language_app/Screens/splash.dart';
 import 'package:language_app/avatar/avatar_controller.dart';
 import 'package:language_app/avatar/avatar_view.dart';
 import 'package:language_app/components/message_bubble.dart';
@@ -27,7 +29,7 @@ class MyApp extends StatelessWidget {
         theme: ThemeData(
           primarySwatch: Colors.blue,
         ),
-        home: const AvatarTestPage()); // AvatarDemoPage());
+        home: const SplashScreen()); // AvatarDemoPage());
   }
 }
 
