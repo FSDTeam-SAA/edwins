@@ -7,7 +7,6 @@ import 'package:language_app/avatar/avatar_view.dart';
 import 'dart:io' show Platform;
 import 'dart:math' as math;
 import 'package:flutter/services.dart';
-
 class TestConversationPage extends StatefulWidget {
   final String selectedAvatar;
   
