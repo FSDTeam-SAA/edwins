@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:language_app/Auth/login.dart';
 import 'package:language_app/Screens/test_vocabulary.dart';
-
 import 'package:language_app/avatar/avatar_controller.dart';
 import 'package:language_app/avatar/avatar_view.dart';
 import 'package:shared_preferences/shared_preferences.dart';

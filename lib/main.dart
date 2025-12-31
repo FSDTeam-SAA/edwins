@@ -7,7 +7,7 @@ import 'package:language_app/components/message_bubble.dart';
 import 'package:language_app/components/progess_visual.dart';
 import 'package:language_app/gradient_button.dart';
 import 'package:language_app/helper/viseme_helper.dart';
-import 'package:language_app/provider/avatar_provider.dart';
+import 'package:language_app/providers/avatar_provider.dart';
 import 'package:provider/provider.dart';
 import 'package:speech_to_text/speech_recognition_error.dart' as stt;
 import 'package:speech_to_text/speech_recognition_result.dart' as stt;

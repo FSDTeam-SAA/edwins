@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:language_app/Mainhomepage/home_view.dart';
-import 'package:language_app/Mainhomepage/view/conversation/conversation_chat.dart';
 import 'package:language_app/Mainhomepage/view/vocabulary/vocab_loop_view.dart';
 import 'package:language_app/utils/app_style.dart';
 import 'package:lottie/lottie.dart';
@@ -94,21 +93,21 @@ class LessonCompletionView extends StatelessWidget {
                 ),
 
                 const SizedBox(height: 15),
-                _buildGradientButton(
-                  context,
-                  "🗣 Conversation Lesson",
-                  gradient: const LinearGradient(
-                    colors: [Color(0xFF4CAF50), Color(0xFF087F23)],
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                  ),
-                  onTap: () => Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (_) => const ConversationChat(),
-                    ),
-                  ),
-                ),
+                // _buildGradientButton(
+                //   context,
+                //   "🗣 Conversation Lesson",
+                //   gradient: const LinearGradient(
+                //     colors: [Color(0xFF4CAF50), Color(0xFF087F23)],
+                //     begin: Alignment.topLeft,
+                //     end: Alignment.bottomRight,
+                //   ),
+                //   onTap: () => Navigator.push(
+                //     context,
+                //     MaterialPageRoute(
+                //       builder: (_) => const ConversationChat(),
+                //     ),
+                //   ),
+                // ),
               ],
             ),
           ),
