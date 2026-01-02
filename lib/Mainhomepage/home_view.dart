@@ -18,7 +18,7 @@ class HomeView extends StatefulWidget {
 }
 
 class _HomeViewState extends State<HomeView> {
-  // Simulating data fetch
+  
   Future<Map<String, dynamic>> _fetchHomeData() async {
     await Future.delayed(const Duration(milliseconds: 500));
     return MockData.homeProgress;
