@@ -31,6 +31,9 @@ class _TestVocabularyPageState extends State<TestVocabularyPage> with TickerProv
   late FlutterTts flutterTts;
   late AvatarController avatarController;
   
+  // Viseme data
+  Map<String, List<VisemeData>> visemeMap = {};
+  
   // Animation Controllers
   late AnimationController _shakeController;
   late AnimationController _correctController;
@@ -48,10 +51,58 @@ class _TestVocabularyPageState extends State<TestVocabularyPage> with TickerProv
     avatarController = AvatarController();
     _initAnimations();
     _initTts();
+    _loadVisemeData();
+  }
+
+  // Load viseme data from file
+  Future<void> _loadVisemeData() async {
+    try {
+      final String data = await rootBundle.loadString('test/data/viseme.txt');
+      _parseVisemeData(data);
+    } catch (e) {
+      print('Error loading viseme data: $e');
+    }
+  }
+
+  // Parse viseme data
+  void _parseVisemeData(String data) {
+    final lines = data.split('\n');
+    String? currentWord;
+    List<VisemeData> currentVisemes = [];
+
+    for (var line in lines) {
+      line = line.trim();
+      if (line.isEmpty) continue;
+
+      // Check if it's a word line (doesn't start with parenthesis)
+      if (!line.startsWith('(')) {
+        if (currentWord != null && currentVisemes.isNotEmpty) {
+          visemeMap[currentWord.toLowerCase()] = List.from(currentVisemes);
+        }
+        currentWord = line;
+        currentVisemes.clear();
+      } else {
+        // Parse viseme line: ('viseme_PP', 0.03, 0.07)
+        final regex = RegExp(r"\('([^']+)',\s*([\d.]+),\s*([\d.]+)\)");
+        final match = regex.firstMatch(line);
+        if (match != null) {
+          final visemeName = match.group(1)!;
+          final startTime = double.parse(match.group(2)!);
+          final endTime = double.parse(match.group(3)!);
+          currentVisemes.add(VisemeData(visemeName, startTime, endTime));
+        }
+      }
+    }
+
+    // Add last word
+    if (currentWord != null && currentVisemes.isNotEmpty) {
+      visemeMap[currentWord.toLowerCase()] = currentVisemes;
+    }
+
+    print('Loaded viseme data for ${visemeMap.length} words');
   }
 
   void _initAnimations() {
-    // Shake animation for wrong answer
     _shakeController = AnimationController(
       duration: const Duration(milliseconds: 500),
       vsync: this,
@@ -60,7 +111,6 @@ class _TestVocabularyPageState extends State<TestVocabularyPage> with TickerProv
       CurvedAnimation(parent: _shakeController, curve: Curves.elasticIn),
     );
 
-    // Correct answer animation
     _correctController = AnimationController(
       duration: const Duration(milliseconds: 600),
       vsync: this,
@@ -73,7 +123,6 @@ class _TestVocabularyPageState extends State<TestVocabularyPage> with TickerProv
       end: const Color(0xFF4CAF50),
     ).animate(_correctController);
 
-    // Avatar size animation
     _avatarController = AnimationController(
       duration: const Duration(milliseconds: 400),
       vsync: this,
@@ -82,52 +131,131 @@ class _TestVocabularyPageState extends State<TestVocabularyPage> with TickerProv
       CurvedAnimation(parent: _avatarController, curve: Curves.easeInOut),
     );
 
-    // Button scale animation
     _buttonScaleController = AnimationController(
       duration: const Duration(milliseconds: 100),
       vsync: this,
     );
   }
 
-  Future<void> _initTts() async {
-    flutterTts = FlutterTts();
-    await flutterTts.setLanguage("en-US");
-    await flutterTts.setSpeechRate(0.4);
-    await flutterTts.setVolume(1.0);
-    await flutterTts.setPitch(1.0);
-
-    if (Platform.isIOS) {
-      await flutterTts.setIosAudioCategory(
-        IosTextToSpeechAudioCategory.playback,
-        [
-          IosTextToSpeechAudioCategoryOptions.allowBluetooth,
-          IosTextToSpeechAudioCategoryOptions.allowBluetoothA2DP,
-          IosTextToSpeechAudioCategoryOptions.mixWithOthers,
-          IosTextToSpeechAudioCategoryOptions.defaultToSpeaker,
-        ],
-        IosTextToSpeechAudioMode.voicePrompt,
-      );
-      await flutterTts.setSharedInstance(true);
+Future<void> _initTts() async {
+  flutterTts = FlutterTts();
+  
+  // Set language and speech parameters
+  await flutterTts.setLanguage("en-US");
+  
+  // Set voice based on avatar selection
+  if (widget.selectedAvatar.toLowerCase() == 'karl') {
+    // Karl = Male voice
+    if (Platform.isAndroid) {
+      await flutterTts.setVoice({"name": "en-us-x-tpd-local", "locale": "en-US"});
+    } else if (Platform.isIOS) {
+      await flutterTts.setVoice({"name": "com.apple.ttsbundle.Daniel-compact", "locale": "en-US"});
     }
-
-    flutterTts.setStartHandler(() {
-      setState(() => isAvatarSpeaking = true);
-    });
-
-    flutterTts.setCompletionHandler(() {
-      setState(() => isAvatarSpeaking = false);
-    });
-
-    flutterTts.setErrorHandler((msg) {
-      setState(() => isAvatarSpeaking = false);
-    });
+  } else {
+    // Clara = Female voice (default)
+    if (Platform.isAndroid) {
+      await flutterTts.setVoice({"name": "en-us-x-tpf-local", "locale": "en-US"});
+    } else if (Platform.isIOS) {
+      await flutterTts.setVoice({"name": "com.apple.ttsbundle.Samantha-compact", "locale": "en-US"});
+    }
   }
+  
+  await flutterTts.setSpeechRate(0.4);
+  await flutterTts.setVolume(1.0);
+  await flutterTts.setPitch(1.0);
+
+  if (Platform.isIOS) {
+    await flutterTts.setIosAudioCategory(
+      IosTextToSpeechAudioCategory.ambient,
+      [
+        IosTextToSpeechAudioCategoryOptions.allowBluetooth,
+        IosTextToSpeechAudioCategoryOptions.allowBluetoothA2DP,
+        IosTextToSpeechAudioCategoryOptions.mixWithOthers,
+        IosTextToSpeechAudioCategoryOptions.defaultToSpeaker,
+      ],
+      IosTextToSpeechAudioMode.voicePrompt,
+    );
+    await flutterTts.setSharedInstance(true);
+  }
+
+  flutterTts.setStartHandler(() {
+    if (mounted) {
+      setState(() => isAvatarSpeaking = true);
+    }
+  });
+
+  flutterTts.setCompletionHandler(() {
+    if (mounted) {
+      setState(() => isAvatarSpeaking = false);
+    }
+  });
+
+  flutterTts.setErrorHandler((msg) {
+    print('TTS Error: $msg');
+    if (mounted) {
+      setState(() => isAvatarSpeaking = false);
+    }
+  });
+  
+  flutterTts.setCancelHandler(() {
+    if (mounted) {
+      setState(() => isAvatarSpeaking = false);
+    }
+  });
+}
 
   Future<void> _speak(String text) async {
     if (!isMuted) {
       await flutterTts.stop();
       await Future.delayed(const Duration(milliseconds: 100));
-      await flutterTts.speak(text);
+      
+      // Start lip sync animation BEFORE speaking
+      print('🎤 Speaking: $text');
+      _startLipSync(text);
+      
+      // Speak with await to ensure it completes
+      var result = await flutterTts.speak(text);
+      if (result == 1) {
+        print('✅ TTS started successfully');
+      } else {
+        print('❌ TTS failed to start: $result');
+      }
+    }
+  }
+
+  // Start lip sync based on viseme data
+  void _startLipSync(String text) {
+    final words = text.toLowerCase().split(' ');
+    print('📝 Words to sync: $words');
+    
+    for (var word in words) {
+      // Remove punctuation
+      word = word.replaceAll(RegExp(r'[^\w\s]'), '');
+      
+      print('🔍 Looking for viseme data: "$word"');
+      
+      if (visemeMap.containsKey(word)) {
+        final visemes = visemeMap[word]!;
+        print('✅ Found ${visemes.length} visemes for "$word"');
+        
+        // Play each viseme with proper timing
+        for (var viseme in visemes) {
+          final delay = (viseme.startTime * 1000).toInt();
+          final duration = (viseme.endTime - viseme.startTime);
+          
+          print('⏱️ Scheduling ${viseme.name} at ${delay}ms for ${duration}s');
+          
+          Future.delayed(Duration(milliseconds: delay), () {
+            if (mounted && isAvatarSpeaking) {
+              print('🎭 Playing viseme: ${viseme.name}');
+              avatarController.triggerViseme(viseme.name, duration: duration);
+            }
+          });
+        }
+      } else {
+        print('❌ No viseme data found for "$word"');
+        print('📋 Available words: ${visemeMap.keys.toList()}');
+      }
     }
   }
 
@@ -154,9 +282,7 @@ class _TestVocabularyPageState extends State<TestVocabularyPage> with TickerProv
 
   Future<void> _playCorrectSound() async {
     try {
-      // Play system sound for correct answer
       await SystemSound.play(SystemSoundType.click);
-      // Additional haptic feedback for better UX
       HapticFeedback.mediumImpact();
     } catch (e) {
       print('Error playing sound: $e');
@@ -251,6 +377,9 @@ class _TestVocabularyPageState extends State<TestVocabularyPage> with TickerProv
   ];
 
   void handleOptionTap(String option) {
+    // Prevent multiple taps on the same option or when error is showing
+    if (showError || selectedOption == option) return;
+    
     setState(() {
       selectedOption = option;
       String correctAnswer = questions[currentQuestionIndex]['correctAnswer'];
@@ -261,6 +390,13 @@ class _TestVocabularyPageState extends State<TestVocabularyPage> with TickerProv
         showError = true;
         _vibratePhone();
         _shakeController.forward().then((_) => _shakeController.reverse());
+        
+        // Speak correct answer once after delay
+        Future.delayed(const Duration(milliseconds: 800), () {
+          if (mounted && showError) {
+            _speakCorrectAnswer(correctAnswer);
+          }
+        });
       } else {
         _correctController.forward();
         _playCorrectSound();
@@ -281,7 +417,6 @@ class _TestVocabularyPageState extends State<TestVocabularyPage> with TickerProv
           _correctController.reset();
         });
       } else {
-        // All questions completed - navigate to conversation screen
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(
@@ -300,7 +435,12 @@ class _TestVocabularyPageState extends State<TestVocabularyPage> with TickerProv
   }
 
   void _speakCorrectAnswer(String answer) {
-    _speak("The right answer is $answer");
+    // Stop any ongoing speech first
+    _stop().then((_) {
+      Future.delayed(const Duration(milliseconds: 300), () {
+        _speak("The right answer is $answer");
+      });
+    });
   }
 
   @override
@@ -311,12 +451,6 @@ class _TestVocabularyPageState extends State<TestVocabularyPage> with TickerProv
     final options = currentQuestion['options'] as List<Map<String, dynamic>>;
     final correctAnswer = currentQuestion['correctAnswer'];
 
-    if (showError) {
-      Future.delayed(const Duration(milliseconds: 500), () {
-        _speakCorrectAnswer(correctAnswer);
-      });
-    }
-
     return Scaffold(
       backgroundColor: Colors.white,
       body: SafeArea(
@@ -324,7 +458,6 @@ class _TestVocabularyPageState extends State<TestVocabularyPage> with TickerProv
           children: [
             Column(
               children: [
-                // Header
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 8),
                   child: Row(
@@ -363,7 +496,6 @@ class _TestVocabularyPageState extends State<TestVocabularyPage> with TickerProv
 
                 const SizedBox(height: 4),
 
-                // Avatar Display with Animation
                 AnimatedBuilder(
                   animation: _avatarSizeAnimation,
                   builder: (context, child) {
@@ -386,7 +518,6 @@ class _TestVocabularyPageState extends State<TestVocabularyPage> with TickerProv
                         ),
                         child: Stack(
                           children: [
-                            // Avatar with speaking animation
                             Center(
                               child: AnimatedContainer(
                                 duration: const Duration(milliseconds: 200),
@@ -408,7 +539,6 @@ class _TestVocabularyPageState extends State<TestVocabularyPage> with TickerProv
                                 ),
                               ),
                             ),
-                            // Speaking indicator
                             if (isAvatarSpeaking)
                               Positioned(
                                 top: 10,
@@ -457,13 +587,11 @@ class _TestVocabularyPageState extends State<TestVocabularyPage> with TickerProv
                                   },
                                 ),
                               ),
-                            // Controls
                             Positioned(
                               bottom: 10,
                               right: 10,
                               child: Row(
                                 children: [
-                                  // Minimize/Maximize button
                                   GestureDetector(
                                     onTap: _toggleAvatarSize,
                                     child: Container(
@@ -484,7 +612,6 @@ class _TestVocabularyPageState extends State<TestVocabularyPage> with TickerProv
                                     ),
                                   ),
                                   const SizedBox(width: 8),
-                                  // Mute button
                                   GestureDetector(
                                     onTap: _toggleMute,
                                     child: Container(
@@ -516,14 +643,12 @@ class _TestVocabularyPageState extends State<TestVocabularyPage> with TickerProv
 
                 const SizedBox(height: 24),
 
-                // Question Container
                 Expanded(
                   child: questionType == 'multiple_choice' 
                     ? _buildMultipleChoiceLayout(options)
                     : _buildFillBlankLayout(questionText, options),
                 ),
 
-                // Continue Button
                 Padding(
                   padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
                   child: GestureDetector(
@@ -560,7 +685,6 @@ class _TestVocabularyPageState extends State<TestVocabularyPage> with TickerProv
               ],
             ),
 
-            // Error Dialog
             if (showError)
               Container(
                 color: Colors.black.withOpacity(0.6),
@@ -854,4 +978,13 @@ class _TestVocabularyPageState extends State<TestVocabularyPage> with TickerProv
       ),
     );
   }
+}
+
+// Viseme data model
+class VisemeData {
+  final String name;
+  final double startTime;
+  final double endTime;
+
+  VisemeData(this.name, this.startTime, this.endTime);
 }

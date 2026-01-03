@@ -76,12 +76,22 @@
 		<true/>
 	</dict>
 
-	<!-- 🎤 Permissions -->
+	<!-- 🎤 Microphone & Speech Recognition Permissions -->
 	<key>NSMicrophoneUsageDescription</key>
 	<string>Das Mikrofon wird für die Spracherkennung benötigt.</string>
 
 	<key>NSSpeechRecognitionUsageDescription</key>
 	<string>Die Spracherkennung wird benötigt, um deine Sprache in Text umzuwandeln.</string>
+
+	<!-- 🔊 Text-to-Speech Permissions -->
+	<key>NSSpeechSynthesisUsageDescription</key>
+	<string>This app uses text-to-speech to help you learn languages.</string>
+
+	<!-- 🎵 Audio Session Configuration (for background audio and TTS) -->
+	<key>UIBackgroundModes</key>
+	<array>
+		<string>audio</string>
+	</array>
 
 </dict>
 </plist>

@@ -297,178 +297,178 @@ class _OnboardingScreenState extends State<OnboardingScreen> with TickerProvider
     );
   }
 
-  Widget _buildPartnerStep() {
-    return Padding(
-      padding: const EdgeInsets.all(24.0),
-      child: Column(
-        children: [
-          const Text(
-            "Choose your language partner",
-            style: TextStyle(
-              fontSize: 26,
-              fontWeight: FontWeight.bold,
-              letterSpacing: -0.5,
-            ),
-            textAlign: TextAlign.center,
+Widget _buildPartnerStep() {
+  return Padding(
+    padding: const EdgeInsets.all(24.0),
+    child: Column(
+      children: [
+        const Text(
+          "Choose your language partner",
+          style: TextStyle(
+            fontSize: 26,
+            fontWeight: FontWeight.bold,
+            letterSpacing: -0.5,
           ),
-          const SizedBox(height: 20),
-          
-          // Swipe indicator
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
+          textAlign: TextAlign.center,
+        ),
+        const SizedBox(height: 20),
+        
+        // Swipe indicator
+        Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.arrow_back_ios, size: 16, color: Colors.grey.shade400),
+            const SizedBox(width: 8),
+            Text(
+              "Swipe to see more",
+              style: TextStyle(
+                fontSize: 14,
+                color: Colors.grey.shade600,
+                fontStyle: FontStyle.italic,
+              ),
+            ),
+            const SizedBox(width: 8),
+            Icon(Icons.arrow_forward_ios, size: 16, color: Colors.grey.shade400),
+          ],
+        ),
+        const SizedBox(height: 20),
+        
+        // Horizontal scrollable avatars
+        Expanded(
+          child: PageView(
+            padEnds: false,
             children: [
-              Icon(Icons.arrow_back_ios, size: 16, color: Colors.grey.shade400),
-              const SizedBox(width: 8),
-              Text(
-                "Swipe to see more",
-                style: TextStyle(
-                  fontSize: 14,
-                  color: Colors.grey.shade600,
-                  fontStyle: FontStyle.italic,
+              // Clara Avatar
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                child: _AnimatedAvatarCard(
+                  key: const ValueKey('clara'),
+                  isSelected: selectedAvatar == "Clara",
+                  delay: const Duration(milliseconds: 100),
+                  onTap: () => setState(() => selectedAvatar = "Clara"),
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Expanded(
+                        child: ClipRRect(
+                          borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+                          child: AvatarView(
+                            avatarName: "Clara",
+                            controller: claraController,
+                            height: 400,
+                            backgroundImagePath: "assets/images/background.png",
+                            borderRadius: 0,
+                          ),
+                        ),
+                      ),
+                      Container(
+                        padding: const EdgeInsets.symmetric(vertical: 16),
+                        decoration: BoxDecoration(
+                          color: selectedAvatar == "Clara"
+                              ? Colors.orange.withOpacity(0.1)
+                              : Colors.white,
+                          borderRadius: const BorderRadius.vertical(
+                            bottom: Radius.circular(20),
+                          ),
+                        ),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Text(
+                              "Clara",
+                              style: TextStyle(
+                                color: selectedAvatar == "Clara"
+                                    ? Colors.orange
+                                    : Colors.black,
+                                fontSize: 24,
+                                fontWeight: FontWeight.bold,
+                                letterSpacing: 0.5,
+                              ),
+                            ),
+                            if (selectedAvatar == "Clara") ...[
+                              const SizedBox(width: 8),
+                              const Icon(
+                                Icons.check_circle,
+                                color: Colors.orange,
+                                size: 24,
+                              ),
+                            ],
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               ),
-              const SizedBox(width: 8),
-              Icon(Icons.arrow_forward_ios, size: 16, color: Colors.grey.shade400),
+              // Karl Avatar
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                child: _AnimatedAvatarCard(
+                  key: const ValueKey('karl'),
+                  isSelected: selectedAvatar == "Karl",
+                  delay: const Duration(milliseconds: 100),
+                  onTap: () => setState(() => selectedAvatar = "Karl"),
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Expanded(
+                        child: ClipRRect(
+                          borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+                          child: AvatarView(
+                            avatarName: "Karl",
+                            controller: karlController,
+                            height: 400,
+                            backgroundImagePath: "assets/images/background.png",
+                            borderRadius: 0,
+                          ),
+                        ),
+                      ),
+                      Container(
+                        padding: const EdgeInsets.symmetric(vertical: 16),
+                        decoration: BoxDecoration(
+                          color: selectedAvatar == "Karl"
+                              ? Colors.orange.withOpacity(0.1)
+                              : Colors.white,
+                          borderRadius: const BorderRadius.vertical(
+                            bottom: Radius.circular(20),
+                          ),
+                        ),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Text(
+                              "Karl",
+                              style: TextStyle(
+                                color: selectedAvatar == "Karl"
+                                    ? Colors.orange
+                                    : Colors.black,
+                                fontSize: 24,
+                                fontWeight: FontWeight.bold,
+                                letterSpacing: 0.5,
+                              ),
+                            ),
+                            if (selectedAvatar == "Karl") ...[
+                              const SizedBox(width: 8),
+                              const Icon(
+                                Icons.check_circle,
+                                color: Colors.orange,
+                                size: 24,
+                              ),
+                            ],
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
             ],
           ),
-          const SizedBox(height: 20),
-          
-          // Horizontal scrollable avatars
-          Expanded(
-            child: PageView(
-              padEnds: false,
-              children: [
-                // Clara Avatar
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16.0),
-                  child: _AnimatedAvatarCard(
-                    key: const ValueKey('clara'),
-                    isSelected: selectedAvatar == "Clara",
-                    delay: const Duration(milliseconds: 100),
-                    onTap: () => setState(() => selectedAvatar = "Clara"),
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Expanded(
-                          child: ClipRRect(
-                            borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
-                            child: AvatarView(
-                              avatarName: "Clara",
-                              controller: claraController,
-                              height: 400,
-                              backgroundImagePath: "assets/images/background.png",
-                              borderRadius: 0,
-                            ),
-                          ),
-                        ),
-                        Container(
-                          padding: const EdgeInsets.symmetric(vertical: 16),
-                          decoration: BoxDecoration(
-                            color: selectedAvatar == "Clara"
-                                ? Colors.orange.withOpacity(0.1)
-                                : Colors.white,
-                            borderRadius: const BorderRadius.vertical(
-                              bottom: Radius.circular(20),
-                            ),
-                          ),
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Text(
-                                "Clara",
-                                style: TextStyle(
-                                  color: selectedAvatar == "Clara"
-                                      ? Colors.orange
-                                      : Colors.black,
-                                  fontSize: 24,
-                                  fontWeight: FontWeight.bold,
-                                  letterSpacing: 0.5,
-                                ),
-                              ),
-                              if (selectedAvatar == "Clara") ...[
-                                const SizedBox(width: 8),
-                                const Icon(
-                                  Icons.check_circle,
-                                  color: Colors.orange,
-                                  size: 24,
-                                ),
-                              ],
-                            ],
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-                // Karl Avatar
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16.0),
-                  child: _AnimatedAvatarCard(
-                    key: const ValueKey('karl'),
-                    isSelected: selectedAvatar == "Karl",
-                    delay: const Duration(milliseconds: 100),
-                    onTap: () => setState(() => selectedAvatar = "Karl"),
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Expanded(
-                          child: ClipRRect(
-                            borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
-                            child: AvatarView(
-                              avatarName: "Karl",
-                              controller: karlController,
-                              height: 400,
-                              backgroundImagePath: "assets/images/background.png",
-                              borderRadius: 0,
-                            ),
-                          ),
-                        ),
-                        Container(
-                          padding: const EdgeInsets.symmetric(vertical: 16),
-                          decoration: BoxDecoration(
-                            color: selectedAvatar == "Karl"
-                                ? Colors.orange.withOpacity(0.1)
-                                : Colors.white,
-                            borderRadius: const BorderRadius.vertical(
-                              bottom: Radius.circular(20),
-                            ),
-                          ),
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Text(
-                                "Karl",
-                                style: TextStyle(
-                                  color: selectedAvatar == "Karl"
-                                      ? Colors.orange
-                                      : Colors.black,
-                                  fontSize: 24,
-                                  fontWeight: FontWeight.bold,
-                                  letterSpacing: 0.5,
-                                ),
-                              ),
-                              if (selectedAvatar == "Karl") ...[
-                                const SizedBox(width: 8),
-                                const Icon(
-                                  Icons.check_circle,
-                                  color: Colors.orange,
-                                  size: 24,
-                                ),
-                              ],
-                            ],
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
+        ),
+      ],
+    ),
+  );
+}
 
   Widget _buildHobbiesStep() {
     List<String> hobbies = [

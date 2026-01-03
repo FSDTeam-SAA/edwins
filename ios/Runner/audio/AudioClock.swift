@@ -19,6 +19,7 @@ final class AVClock: AudioClock {
         self.player = player
         self.sampleRate = sampleRate
     }
+    
     func nowSamples() -> Int64 {
         guard
             let nodeTime = player.lastRenderTime,
@@ -30,3 +31,21 @@ final class AVClock: AudioClock {
     }
 }
 
+// ✅ NEW: Clock for TTS-based visemes (without audio file)
+final class TTSClock: AudioClock {
+    private var startTime: TimeInterval = 0
+    let sampleRate: Double = 44100.0
+    
+    init() {
+        self.startTime = CACurrentMediaTime()
+    }
+    
+    func nowSamples() -> Int64 {
+        let elapsed = CACurrentMediaTime() - startTime
+        return Int64(elapsed * sampleRate)
+    }
+    
+    func reset() {
+        startTime = CACurrentMediaTime()
+    }
+}

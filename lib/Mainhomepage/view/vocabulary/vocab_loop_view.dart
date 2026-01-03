@@ -8,7 +8,6 @@ import 'package:language_app/Mainhomepage/view/Result/result_view.dart';
 import 'package:language_app/widgets/data/repository.dart';
 import '../../../models/learning_models.dart';
 import '../widgets/choice_chip_widget.dart';
-
 class VocabLoopView extends StatefulWidget {
   final String lessonId;
   const VocabLoopView({super.key, required this.lessonId});

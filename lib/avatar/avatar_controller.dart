@@ -21,7 +21,7 @@ class AvatarController {
 
   Future<void> disposeView() async {
     try {
-      await _channel?.invokeMethod('dispose'); // native aufräumen
+      await _channel?.invokeMethod('dispose');
     } catch (_) {}
     print("channel weg: ${_channel?.name}");
     _channel = null;
@@ -44,5 +44,38 @@ class AvatarController {
 
   Future<List<Map<String, dynamic>>> loadVisemesFromAsset(String assetPath) {
     return _visemeHelper.loadVisemesFromAsset(assetPath);
+  }
+
+  // ✅ NEW METHOD: Play viseme for text-based lip sync
+  Future<void> playVisemeForText(String text, List<Map<String, dynamic>> visemeEvents) async {
+    try {
+      await _channel?.invokeMethod('playVisemeForText', {
+        'text': text,
+        'visemes': visemeEvents,
+      });
+    } catch (e) {
+      print('Error playing viseme for text: $e');
+    }
+  }
+
+  // ✅ NEW METHOD: Trigger single viseme
+  Future<void> triggerViseme(String visemeName, {double duration = 0.1}) async {
+    try {
+      await _channel?.invokeMethod('triggerViseme', {
+        'visemeName': visemeName,
+        'duration': duration,
+      });
+    } catch (e) {
+      print('Error triggering viseme: $e');
+    }
+  }
+
+  // ✅ NEW METHOD: Reset avatar to neutral state
+  Future<void> resetToNeutral() async {
+    try {
+      await _channel?.invokeMethod('resetToNeutral');
+    } catch (e) {
+      print('Error resetting avatar: $e');
+    }
   }
 }

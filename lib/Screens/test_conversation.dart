@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'dart:async';
 import 'package:flutter_tts/flutter_tts.dart';
 import 'package:language_app/Auth/login.dart';
+import 'package:language_app/Screens/test_vocabulary.dart';
 import 'package:language_app/avatar/avatar_controller.dart';
 import 'package:language_app/avatar/avatar_view.dart';
 import 'dart:io' show Platform;
@@ -54,22 +55,33 @@ class _TestConversationPageState extends State<TestConversationPage> with Ticker
 
   String currentQuestion = 'Translate the sentence:';
   int currentExerciseType = 1; // 1: Translation, 2: Multiple Choice, 3: Fill in blank
-
-  @override
-  void initState() {
-    super.initState();
-    avatarController = AvatarController();
-    _initTts();
-    _initAnimations();
-    
-    _textController.addListener(() {
-      setState(() {
-        showSendButton = _textController.text.trim().isNotEmpty;
-      });
+     // Viseme data
+     Map<String, List<VisemeData>> visemeMap = {};
+@override
+void initState() {
+  super.initState();
+  avatarController = AvatarController();
+  _initTts();
+  _initAnimations();
+  
+  _textController.addListener(() {
+    setState(() {
+      showSendButton = _textController.text.trim().isNotEmpty;
     });
-  }
-
+  });
+  
+  // Automatically speak the first message
+  WidgetsBinding.instance.addPostFrameCallback((_) {
+    Future.delayed(const Duration(milliseconds: 500), () {
+      if (messages.isNotEmpty && mounted) {
+        _speak(messages[0]['text']);
+      }
+    });
+  });
+}
+ 
   void _initAnimations() {
+    _loadVisemeData();
     _waveformController = AnimationController(
       duration: const Duration(milliseconds: 800),
       vsync: this,
@@ -99,53 +111,396 @@ class _TestConversationPageState extends State<TestConversationPage> with Ticker
     );
   }
 
-  Future<void> _initTts() async {
-    flutterTts = FlutterTts();
+Future<void> _initTts() async {
+  flutterTts = FlutterTts();
+  
+  await flutterTts.setLanguage("en-US");
+  
+  // Set voice based on avatar selection
+  if (widget.selectedAvatar.toLowerCase() == 'karl') {
+    // Karl = Male voice
+    if (Platform.isAndroid) {
+      await flutterTts.setVoice({"name": "en-us-x-tpd-local", "locale": "en-US"});
+    } else if (Platform.isIOS) {
+      await flutterTts.setVoice({"name": "com.apple.ttsbundle.Daniel-compact", "locale": "en-US"});
+    }
+  } else {
+    // Clara = Female voice (default)
+    if (Platform.isAndroid) {
+      await flutterTts.setVoice({"name": "en-us-x-tpf-local", "locale": "en-US"});
+    } else if (Platform.isIOS) {
+      await flutterTts.setVoice({"name": "com.apple.ttsbundle.Samantha-compact", "locale": "en-US"});
+    }
+  }
+  
+  await flutterTts.setSpeechRate(0.4);
+  await flutterTts.setVolume(1.0);
+  await flutterTts.setPitch(1.0);
+
+  if (Platform.isIOS) {
+    await flutterTts.setIosAudioCategory(
+      IosTextToSpeechAudioCategory.ambient,
+      [
+        IosTextToSpeechAudioCategoryOptions.allowBluetooth,
+        IosTextToSpeechAudioCategoryOptions.allowBluetoothA2DP,
+        IosTextToSpeechAudioCategoryOptions.mixWithOthers,
+        IosTextToSpeechAudioCategoryOptions.defaultToSpeaker,
+      ],
+      IosTextToSpeechAudioMode.voicePrompt,
+    );
+    await flutterTts.setSharedInstance(true);
+  }
+
+  flutterTts.setStartHandler(() {
+    setState(() => isAvatarSpeaking = true);
+  });
+
+  flutterTts.setCompletionHandler(() {
+    setState(() => isAvatarSpeaking = false);
+  });
+
+  flutterTts.setErrorHandler((msg) {
+    setState(() => isAvatarSpeaking = false);
+  });
+}
+
+Future<void> _speak(String text) async {
+  if (!isMuted) {
+    await flutterTts.stop();
+    await Future.delayed(const Duration(milliseconds: 100));
     
-    await flutterTts.setLanguage("en-US");
-    await flutterTts.setSpeechRate(0.4);
-    await flutterTts.setVolume(1.0);
-    await flutterTts.setPitch(1.0);
-
-    if (Platform.isIOS) {
-      await flutterTts.setIosAudioCategory(
-        IosTextToSpeechAudioCategory.playback,
-        [
-          IosTextToSpeechAudioCategoryOptions.allowBluetooth,
-          IosTextToSpeechAudioCategoryOptions.allowBluetoothA2DP,
-          IosTextToSpeechAudioCategoryOptions.mixWithOthers,
-          IosTextToSpeechAudioCategoryOptions.defaultToSpeaker,
-        ],
-        IosTextToSpeechAudioMode.voicePrompt,
-      );
-      await flutterTts.setSharedInstance(true);
-    }
-
-    flutterTts.setStartHandler(() {
-      setState(() => isAvatarSpeaking = true);
-    });
-
-    flutterTts.setCompletionHandler(() {
-      setState(() => isAvatarSpeaking = false);
-    });
-
-    flutterTts.setErrorHandler((msg) {
-      setState(() => isAvatarSpeaking = false);
-    });
-  }
-
-  Future<void> _speak(String text) async {
-    if (!isMuted) {
-      await flutterTts.stop();
-      await Future.delayed(const Duration(milliseconds: 100));
-      await flutterTts.speak(text);
+    print('🎤 Speaking: $text');
+    print('📊 Speech Rate: 0.4');
+    
+    // Start lip sync animation BEFORE speaking
+    _startLipSync(text);
+    
+    // Small delay to ensure lip sync starts
+    await Future.delayed(const Duration(milliseconds: 50));
+    
+    // Speak with await to ensure it completes
+    var result = await flutterTts.speak(text);
+    if (result == 1) {
+      print('✅ TTS started successfully');
+    } else {
+      print('❌ TTS failed to start: $result');
     }
   }
+}
 
   Future<void> _stop() async {
     await flutterTts.stop();
   }
+  // Translation helper function
+String _translateToGerman(String englishText) {
+  final translations = {
+    'the cat eats chicken': 'Die Katze frisst Hühnchen',
+    'hello': 'Hallo',
+    'good morning': 'Guten Morgen',
+    'thank you': 'Danke',
+    // Add more translations as needed
+  };
+  
+  String lowerText = englishText.toLowerCase().trim();
+  return translations[lowerText] ?? englishText;
+}
 
+// German phoneme to viseme mapper
+List<VisemeData> _generateVisemesFromGermanWord(String word) {
+  List<VisemeData> visemes = [];
+  double currentTime = 0.0;
+  final double phonemeDuration = 0.15; // Each sound lasts 150ms
+  
+  // Convert word to lowercase
+  word = word.toLowerCase();
+  
+  print('🔤 Generating visemes for: "$word"');
+  
+  int i = 0;
+  while (i < word.length) {
+    String char = word[i];
+    String? nextChar = i + 1 < word.length ? word[i + 1] : null;
+    
+    // Handle German digraphs (two-letter combinations)
+    if (nextChar != null) {
+      String digraph = char + nextChar;
+      
+      // German specific combinations
+      if (digraph == 'ch') {
+        visemes.add(VisemeData('viseme_CH', currentTime, currentTime + phonemeDuration));
+        currentTime += phonemeDuration;
+        i += 2;
+        continue;
+      } else if (digraph == 'sch') {
+        if (i + 2 < word.length && word[i + 2] == 'h') {
+          visemes.add(VisemeData('viseme_SS', currentTime, currentTime + phonemeDuration));
+          currentTime += phonemeDuration;
+          i += 3;
+          continue;
+        }
+      } else if (digraph == 'ie') {
+        visemes.add(VisemeData('viseme_I', currentTime, currentTime + phonemeDuration));
+        currentTime += phonemeDuration;
+        i += 2;
+        continue;
+      } else if (digraph == 'ei' || digraph == 'ai') {
+        visemes.add(VisemeData('viseme_aa', currentTime, currentTime + phonemeDuration));
+        currentTime += phonemeDuration;
+        i += 2;
+        continue;
+      } else if (digraph == 'eu' || digraph == 'äu') {
+        visemes.add(VisemeData('viseme_O', currentTime, currentTime + phonemeDuration));
+        currentTime += phonemeDuration;
+        i += 2;
+        continue;
+      }
+    }
+    
+    // Single character mappings
+    String? visemeName;
+    
+    switch (char) {
+      // Vowels
+      case 'a':
+      case 'ä':
+        visemeName = 'viseme_aa';
+        break;
+      case 'e':
+        visemeName = 'viseme_E';
+        break;
+      case 'i':
+        visemeName = 'viseme_I';
+        break;
+      case 'o':
+      case 'ö':
+        visemeName = 'viseme_O';
+        break;
+      case 'u':
+      case 'ü':
+        visemeName = 'viseme_U';
+        break;
+      
+      // Consonants
+      case 'b':
+      case 'p':
+        visemeName = 'viseme_PP';
+        break;
+      case 'd':
+      case 't':
+        visemeName = 'viseme_DD';
+        break;
+      case 'f':
+      case 'v':
+        visemeName = 'viseme_FF';
+        break;
+      case 'g':
+      case 'k':
+        visemeName = 'viseme_kk';
+        break;
+      case 'h':
+        visemeName = 'viseme_O'; // Slight open mouth
+        break;
+      case 'l':
+        visemeName = 'viseme_DD';
+        break;
+      case 'm':
+        visemeName = 'viseme_PP'; // Lips closed
+        break;
+      case 'n':
+        visemeName = 'viseme_nn';
+        break;
+      case 'r':
+        visemeName = 'viseme_RR';
+        break;
+      case 's':
+      case 'ß':
+      case 'z':
+        visemeName = 'viseme_SS';
+        break;
+      case 'w':
+        visemeName = 'viseme_FF';
+        break;
+      case 'j':
+        visemeName = 'viseme_I';
+        break;
+      default:
+        // Skip unknown characters
+        i++;
+        continue;
+    }
+    
+    if (visemeName != null) {
+      visemes.add(VisemeData(visemeName, currentTime, currentTime + phonemeDuration));
+      currentTime += phonemeDuration;
+      print('  ➡️ $char → $visemeName');
+    }
+    
+    i++;
+  }
+  
+  print('  ✅ Generated ${visemes.length} visemes');
+  return visemes;
+}
+// Load viseme data
+Future<void> _loadVisemeData() async {
+  _loadDefaultVisemeData();
+}
+
+void _loadDefaultVisemeData() {
+  visemeMap['car'] = [
+    VisemeData('viseme_kk', 0.0, 0.15),
+    VisemeData('viseme_aa', 0.15, 0.35),
+    VisemeData('viseme_RR', 0.35, 0.5),
+  ];
+  
+  visemeMap['cat'] = [
+    VisemeData('viseme_kk', 0.0, 0.15),
+    VisemeData('viseme_aa', 0.15, 0.35),
+    VisemeData('viseme_DD', 0.35, 0.5),
+  ];
+  
+  visemeMap['cap'] = [
+    VisemeData('viseme_kk', 0.0, 0.15),
+    VisemeData('viseme_aa', 0.15, 0.35),
+    VisemeData('viseme_PP', 0.35, 0.5),
+  ];
+  
+  visemeMap['can'] = [
+    VisemeData('viseme_kk', 0.0, 0.15),
+    VisemeData('viseme_aa', 0.15, 0.35),
+    VisemeData('viseme_nn', 0.35, 0.5),
+  ];
+  
+  visemeMap['the'] = [
+    VisemeData('viseme_TH', 0.0, 0.15),
+    VisemeData('viseme_E', 0.15, 0.3),
+  ];
+  
+  visemeMap['right'] = [
+    VisemeData('viseme_RR', 0.0, 0.12),
+    VisemeData('viseme_I', 0.12, 0.25),
+    VisemeData('viseme_DD', 0.25, 0.4),
+  ];
+  
+  visemeMap['answer'] = [
+    VisemeData('viseme_aa', 0.0, 0.15),
+    VisemeData('viseme_nn', 0.15, 0.25),
+    VisemeData('viseme_SS', 0.25, 0.35),
+    VisemeData('viseme_E', 0.35, 0.45),
+    VisemeData('viseme_RR', 0.45, 0.6),
+  ];
+  
+  visemeMap['is'] = [
+    VisemeData('viseme_I', 0.0, 0.12),
+    VisemeData('viseme_SS', 0.12, 0.25),
+  ];
+  
+  visemeMap['correct'] = [
+    VisemeData('viseme_kk', 0.0, 0.12),
+    VisemeData('viseme_O', 0.12, 0.25),
+    VisemeData('viseme_RR', 0.25, 0.35),
+    VisemeData('viseme_E', 0.35, 0.45),
+    VisemeData('viseme_kk', 0.45, 0.55),
+    VisemeData('viseme_DD', 0.55, 0.65),
+  ];
+  
+  visemeMap['translate'] = [
+    VisemeData('viseme_DD', 0.0, 0.1),
+    VisemeData('viseme_RR', 0.1, 0.2),
+    VisemeData('viseme_aa', 0.2, 0.3),
+    VisemeData('viseme_nn', 0.3, 0.4),
+    VisemeData('viseme_SS', 0.4, 0.5),
+    VisemeData('viseme_E', 0.5, 0.6),
+  ];
+  
+  visemeMap['sentence'] = [
+    VisemeData('viseme_SS', 0.0, 0.12),
+    VisemeData('viseme_E', 0.12, 0.22),
+    VisemeData('viseme_nn', 0.22, 0.32),
+    VisemeData('viseme_DD', 0.32, 0.42),
+    VisemeData('viseme_E', 0.42, 0.52),
+    VisemeData('viseme_nn', 0.52, 0.65),
+  ];
+  
+  // German words for "Die Katze frisst Hühnchen"
+// German words for "Die Katze frisst Hühnchen" - Adjusted for speech rate 0.4
+visemeMap['die'] = [
+  VisemeData('viseme_DD', 0.0, 0.2),
+  VisemeData('viseme_I', 0.2, 0.4),
+];
+
+visemeMap['katze'] = [
+  VisemeData('viseme_kk', 0.0, 0.25),
+  VisemeData('viseme_aa', 0.25, 0.5),
+  VisemeData('viseme_DD', 0.5, 0.7),
+  VisemeData('viseme_E', 0.7, 0.9),
+];
+
+visemeMap['frisst'] = [
+  VisemeData('viseme_FF', 0.0, 0.2),
+  VisemeData('viseme_RR', 0.2, 0.35),
+  VisemeData('viseme_I', 0.35, 0.5),
+  VisemeData('viseme_SS', 0.5, 0.7),
+  VisemeData('viseme_DD', 0.7, 0.9),
+];
+
+visemeMap['hühnchen'] = [
+  VisemeData('viseme_O', 0.0, 0.2),
+  VisemeData('viseme_nn', 0.2, 0.4),
+  VisemeData('viseme_CH', 0.4, 0.6),
+  VisemeData('viseme_E', 0.6, 0.8),
+  VisemeData('viseme_nn', 0.8, 1.0),
+];
+  
+}
+
+void _startLipSync(String text) {
+  final words = text.toLowerCase().split(' ');
+  print('🔊 Starting lip sync for: $text');
+  
+  double currentDelay = 0.0; // Cumulative delay in seconds
+  
+  for (var word in words) {
+    word = word.replaceAll(RegExp(r'[^\wäöüß]'), ''); // Keep German characters
+    
+    if (word.isEmpty) continue;
+    
+    print('🔍 Processing word: "$word"');
+    
+    List<VisemeData> visemes;
+    
+    // Check if we have pre-defined viseme data
+    if (visemeMap.containsKey(word)) {
+      visemes = visemeMap[word]!;
+      print('  📚 Using pre-defined visemes');
+    } else {
+      // Generate visemes automatically
+      visemes = _generateVisemesFromGermanWord(word);
+      print('  🤖 Auto-generated visemes');
+    }
+    
+    // Play each viseme with proper timing
+    for (var viseme in visemes) {
+      final absoluteStartTime = currentDelay + viseme.startTime;
+      final duration = viseme.endTime - viseme.startTime;
+      final delay = (absoluteStartTime * 1000).toInt();
+      
+      Future.delayed(Duration(milliseconds: delay), () {
+        if (mounted && isAvatarSpeaking) {
+          avatarController.triggerViseme(viseme.name, duration: duration);
+        }
+      });
+    }
+    
+    // Add word duration to cumulative delay
+    if (visemes.isNotEmpty) {
+      currentDelay += visemes.last.endTime;
+    }
+    
+    // Add pause between words (200ms)
+    currentDelay += 0.2;
+  }
+}
   void _toggleMute() {
     setState(() {
       isMuted = !isMuted;
@@ -208,58 +563,61 @@ class _TestConversationPageState extends State<TestConversationPage> with Ticker
     });
   }
 
-  void _approveRecording() {
-    HapticFeedback.mediumImpact();
-    setState(() {
-      showRecordingControls = false;
-      showWaveform = false;
+void _approveRecording() {
+  HapticFeedback.mediumImpact();
+  setState(() {
+    showRecordingControls = false;
+    showWaveform = false;
 
-      messages.add({
-        'text': recordedText,
-        'isUser': false,
-        'type': 'text',
-      });
-      recordedText = null;
+    messages.add({
+      'text': recordedText,
+      'isUser': false,
+      'type': 'text',
     });
+    recordedText = null;
+  });
 
-    _speak('Die Katze frisst Hühnchen.');
+  // Translate and speak (lip sync will happen inside _speak function)
+  String germanText = 'Die Katze frisst Hühnchen.';
+  _speak(germanText);
 
-    Timer(const Duration(seconds: 2), () {
-      if (mounted) {
-        Navigator.pushReplacement(
-          context,
-          _createFadeRoute(const LanguageLevelPage()),
-        );
-      }
+  Timer(const Duration(seconds: 3), () {
+    if (mounted) {
+      Navigator.pushReplacement(
+        context,
+        _createFadeRoute(const LanguageLevelPage()),
+      );
+    }
+  });
+}
+void _sendMessage() {
+  if (_textController.text.trim().isEmpty) return;
+
+  String userMessage = _textController.text;
+  
+  setState(() {
+    messages.add({
+      'text': userMessage,
+      'isUser': false,
+      'type': 'text',
     });
-  }
+    _textController.clear();
+    showSendButton = false;
+  });
 
-  void _sendMessage() {
-    if (_textController.text.trim().isEmpty) return;
+  // Translate and speak (lip sync will happen inside _speak function)
+  String translatedMessage = _translateToGerman(userMessage);
+  _speak(translatedMessage);
 
-    String userMessage = _textController.text;
-    
-    setState(() {
-      messages.add({
-        'text': userMessage,
-        'isUser': false,
-        'type': 'text',
-      });
-      _textController.clear();
-      showSendButton = false;
-    });
-
-    _speak(userMessage);
-
-    Timer(const Duration(seconds: 2), () {
-      if (mounted) {
-        Navigator.pushReplacement(
-          context,
-          _createFadeRoute(const LanguageLevelPage()),
-        );
-      }
-    });
-  }
+  Timer(const Duration(seconds: 3), () {
+    if (mounted) {
+      Navigator.pushReplacement(
+        context,
+        _createFadeRoute(const LanguageLevelPage()),
+      );
+    }
+  });
+}
 
   void _checkAnswer(String answer, bool isCorrect) async {
     await _buttonPressController.forward();
@@ -476,40 +834,24 @@ class _TestConversationPageState extends State<TestConversationPage> with Ticker
                 ),
                 
                 // Control buttons overlay
-                Positioned(
-                  bottom: 12,
-                  left: 12,
-                  right: 12,
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      _AvatarControlButton(
-                        icon: isAvatarMinimized ? Icons.fullscreen : Icons.fullscreen_exit,
-                        onPressed: _toggleAvatarSize,
-                      ),
-                      Row(
-                        children: [
-                          _AvatarControlButton(
-                            icon: Icons.volume_up,
-                            onPressed: () => _speak(currentQuestion),
-                          ),
-                          const SizedBox(width: 8),
-                          _AvatarControlButton(
-                            icon: Icons.translate,
-                            onPressed: () {
-                              // Show translation
-                            },
-                          ),
-                          const SizedBox(width: 8),
-                          _AvatarControlButton(
-                            icon: isMuted ? Icons.volume_off : Icons.volume_up,
-                            onPressed: _toggleMute,
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
-                ),
+Positioned(
+  bottom: 12,
+  left: 12,
+  right: 12,
+  child: Row(
+    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+    children: [
+      _AvatarControlButton(
+        icon: isAvatarMinimized ? Icons.fullscreen : Icons.fullscreen_exit,
+        onPressed: _toggleAvatarSize,
+      ),
+      _AvatarControlButton(
+        icon: isMuted ? Icons.volume_off : Icons.volume_up,
+        onPressed: _toggleMute,
+      ),
+    ],
+  ),
+),
               ],
             ),
           ),
@@ -867,6 +1209,7 @@ class _AnimatedIconButtonState extends State<_AnimatedIconButton>
       duration: const Duration(milliseconds: 150),
       vsync: this,
     );
+    
     _scaleAnimation = Tween<double>(begin: 1.0, end: 0.85).animate(
       CurvedAnimation(parent: _controller, curve: Curves.easeInOut),
     );
@@ -2015,4 +2358,14 @@ class RadarChartPainter extends CustomPainter {
   bool shouldRepaint(RadarChartPainter oldDelegate) {
     return oldDelegate.animationValue != animationValue;
   }
+
+  
+}
+// Viseme data model
+class VisemeData {
+  final String name;
+  final double startTime;
+  final double endTime;
+
+  VisemeData(this.name, this.startTime, this.endTime);
 }

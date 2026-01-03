@@ -1,4 +1,3 @@
-
 import SceneKit
 import Flutter
 
@@ -75,9 +74,7 @@ final class AvatarPlatformView: NSObject, FlutterPlatformView {
         guard let sceneSource = SCNSceneSource(url: sceneURL, options: nil) else { print("Failed to load SCNSceneSource."); return }
 
         let animationIDs = sceneSource.identifiersOfEntries(withClass: CAAnimation.self)
-        //print("Gefundene Animationen: \(animationIDs)")
 
-        // Leere Gruppe, um alle Einzelanimationen zusammenzufassen
         let animationGroup = CAAnimationGroup()
         var animations: [CAAnimation] = []
 
@@ -121,15 +118,9 @@ final class AvatarPlatformView: NSObject, FlutterPlatformView {
             scnView.scene = scene
             scnView.autoresizingMask = [.flexibleWidth, .flexibleHeight]
 
-            // Sicherstellen, dass das Lighting nicht unser Problem ist
             scnView.autoenablesDefaultLighting = true
-
-            // Debug-Hintergrund, damit wir sicher sehen, dass gerendert wird
             scene.background.contents = UIColor.black
-            print("\(avatarName)Idle")
 
-        
-            // Idle-Animation, Licht, Blink wie bisher
             loadAndPlayCombinedAnimation(from: "\(avatarName)Idle", on: scene.rootNode)
 
             let ambient = SCNNode()
@@ -159,12 +150,8 @@ final class AvatarPlatformView: NSObject, FlutterPlatformView {
             let localSphere = wrapper.boundingSphere
             let radius = max(0.01, localSphere.radius)
 
-            // Wir wollen eher auf den Kopf zielen, nicht auf die Mitte
-            // Füße sind bei ~0, Kopf ca. bei ~2 * radius
-            let headY = radius * 150.6          // bisschen unter der Spitze
+            let headY = radius * 150.6
             let target = SCNVector3(0, headY, 0)
-
-            // Kamera etwas über Kopfhöhe, davor
             let distance: Float = radius * 110.0
 
             let cameraNode = SCNNode()
@@ -182,7 +169,6 @@ final class AvatarPlatformView: NSObject, FlutterPlatformView {
             scnView.pointOfView = cameraNode
             scnView.allowsCameraControl = false
 
-            // Wenn das funktioniert, kannst du hier wieder dein Bild setzen
             applyPendingBackgroundIfAny()
 
         } catch {
@@ -212,15 +198,43 @@ final class AvatarPlatformView: NSObject, FlutterPlatformView {
                 if scheduler == nil, let rig, let clock = audioPlayer.clock {
                     scheduler = VisemeScheduler(clock: clock, morpher: rig)
                 }
-                // enqueue visemes 
                 if let list = args["visemes"] as? [[String:Any]] { enqueueVisemes(list) }
                 result(nil)
             } catch {
                 result(FlutterError(code: "audio_failed", message: error.localizedDescription, details: nil))
             }
+            
         case "stopAudioViseme":
             scheduler?.clear()
             audioPlayer.stop()
+            result(nil)
+            
+        // ✅ NEW: Trigger viseme for TTS-based lip sync
+        case "triggerViseme":
+            guard let args = call.arguments as? [String: Any],
+                  let visemeName = args["visemeName"] as? String,
+                  let duration = args["duration"] as? Double else {
+                result(FlutterError(code: "INVALID_ARGS", 
+                                  message: "visemeName and duration required", 
+                                  details: nil))
+                return
+            }
+            
+            // Initialize scheduler if not already done (for TTS without audio file)
+            if scheduler == nil, let rig = self.rig {
+                // Create a dummy clock for TTS-based visemes
+                let dummyClock = TTSClock()
+                scheduler = VisemeScheduler(clock: dummyClock, morpher: rig)
+            }
+            
+            scheduler?.triggerViseme(name: visemeName, duration: duration)
+            result(nil)
+            
+        // ✅ NEW: Reset avatar to neutral state
+        case "resetToNeutral":
+            scheduler?.clear()
+            result(nil)
+            
         case "dispose":
             print("[NATIVE] AvatarPlatformView.dispose() called")
             dispose()
@@ -230,38 +244,31 @@ final class AvatarPlatformView: NSObject, FlutterPlatformView {
         default: result(FlutterMethodNotImplemented)
         }
     }
+    
     private func dispose() {
         print("dispose")
-            // Wichtig: DisplayLink invalidieren (sonst starker Retain-Cycle!)
-            displayLink?.invalidate()
-            displayLink = nil
+        displayLink?.invalidate()
+        displayLink = nil
 
-            // Audio & Scheduler stoppen
-            scheduler?.clear()
-            scheduler = nil
-            //audioPlayer?.stop()
-            //audioPlayer = nil
+        scheduler?.clear()
+        scheduler = nil
 
-            // Blinker & Controller lösen
-            blinkCtl = nil
+        blinkCtl = nil
 
-            // Scene freigeben
-            scnView.scene = nil
-            scnView.delegate = nil
-            scnView.isPlaying = false
-            scnView.removeFromSuperview()
+        scnView.scene = nil
+        scnView.delegate = nil
+        scnView.isPlaying = false
+        scnView.removeFromSuperview()
 
-            // Channel lösen
-            channel.setMethodCallHandler(nil)
-            rig = nil
-            cameraController = nil
-        }
+        channel.setMethodCallHandler(nil)
+        rig = nil
+        cameraController = nil
+    }
 
-        deinit {
-            print("[NATIVE] AvatarPlatformView.deinit")
-            // Fallback, falls dispose nicht manuell aufgerufen wurde
-            dispose()
-        }
+    deinit {
+        print("[NATIVE] AvatarPlatformView.deinit")
+        dispose()
+    }
 
 
 
@@ -282,16 +289,11 @@ final class AvatarPlatformView: NSObject, FlutterPlatformView {
     }
 
     @objc private func tick() {
-        // viseme tick
         scheduler?.tick()
         
-        // blink tick
         let dt = CGFloat(displayLink?.duration ?? 1.0/60.0)
         let now = CACurrentMediaTime()
         blinkCtl?.tick(dt: dt, now: now)
-        
-
     }
     
 }
-
