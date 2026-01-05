@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:language_app/Mainhomepage/view/conversation/conversation_chat.dart';
-import 'package:language_app/Mainhomepage/view/conversation/select_avatar.dart';
+// import 'package:language_app/Mainhomepage/view/conversation/select_avatar.dart';
 import 'package:language_app/Mainhomepage/view/vocabulary/vocab_loop_view.dart';
 import 'package:language_app/providers/avatar_provider.dart';
 import 'package:provider/provider.dart';
@@ -18,7 +18,6 @@ class HomeView extends StatefulWidget {
 }
 
 class _HomeViewState extends State<HomeView> {
-  
   Future<Map<String, dynamic>> _fetchHomeData() async {
     await Future.delayed(const Duration(milliseconds: 500));
     return MockData.homeProgress;
@@ -47,6 +46,7 @@ class _HomeViewState extends State<HomeView> {
           final days = Map<String, int>.from(data['days']);
           final int overallProgress = data['overall_progress_percent'];
           final int totalWords = 80; // Hardcoded to match UI screenshot example
+          final avatarProvider = Provider.of<AvatarProvider>(context, listen: false);
 
           return SingleChildScrollView(
             padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 10),
@@ -64,9 +64,48 @@ class _HomeViewState extends State<HomeView> {
                   ),
                 ),
                 const SizedBox(height: 20),
+                Container(
+                  width: double.infinity,
+                  height: 50,
+                  decoration: BoxDecoration(
+                    // Your gradient implementation
+                    gradient: const LinearGradient(
+                      colors: [Color(0xFF4CAF50), Color(0xFF2E7D32)],
+                      begin: Alignment.centerLeft,
+                      end: Alignment.centerRight,
+                    ),
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                  child: ElevatedButton(
+                    onPressed: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                            builder: (context) => ConversationChat(selectedAvatarName: avatarProvider.selectedAvatarName,)),
+                      );
+                    },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor:
+                          Colors.transparent, // Make button transparent
+                      shadowColor: Colors.transparent, // Remove default shadow
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(16),
+                      ),
+                    ),
+                    child: const Text(
+                      "Start Learning",
+                      style: TextStyle(
+                        fontSize: 18,
+                        color: Colors.white,
+                        fontWeight: FontWeight.w600,
+                        letterSpacing: 0.5,
+                      ),
+                    ),
+                  ),
+                ),
 
                 // 2. Toggle Buttons (Conversation vs Vocabulary)
-                _buildToggleSection(),
+                // _buildToggleSection(),
                 const SizedBox(height: 25),
 
                 // 3. Gradient Progress Card
@@ -89,44 +128,48 @@ class _HomeViewState extends State<HomeView> {
                 ),
                 const SizedBox(height: 20),
 
+                 _buildToggleSection(),
+
                 // 5. Green "Continue Learning" Button
-                Container(
-  width: double.infinity,
-  height: 56,
-  decoration: BoxDecoration(
-    // Your gradient implementation
-    gradient: const LinearGradient(
-      colors: [Color(0xFF4CAF50), Color(0xFF2E7D32)],
-      begin: Alignment.centerLeft,
-      end: Alignment.centerRight,
-    ),
-    borderRadius: BorderRadius.circular(16),
-  ),
-  child: ElevatedButton(
-    onPressed: () {
-      Navigator.push(
-        context,
-        MaterialPageRoute(builder: (context) => const SelectAvatar()),
-      );
-    },
-    style: ElevatedButton.styleFrom(
-      backgroundColor: Colors.transparent, // Make button transparent
-      shadowColor: Colors.transparent,     // Remove default shadow
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16),
-      ),
-    ),
-    child: const Text(
-      "Continue Learning",
-      style: TextStyle(
-        fontSize: 18,
-        color: Colors.white,
-        fontWeight: FontWeight.w600,
-        letterSpacing: 0.5,
-      ),
-    ),
-  ),
-),
+                // Container(
+                //   width: double.infinity,
+                //   height: 56,
+                //   decoration: BoxDecoration(
+                //     // Your gradient implementation
+                //     gradient: const LinearGradient(
+                //       colors: [Color(0xFF4CAF50), Color(0xFF2E7D32)],
+                //       begin: Alignment.centerLeft,
+                //       end: Alignment.centerRight,
+                //     ),
+                //     borderRadius: BorderRadius.circular(16),
+                //   ),
+                //   child: ElevatedButton(
+                //     onPressed: () {
+                //       Navigator.push(
+                //         context,
+                //         MaterialPageRoute(
+                //             builder: (context) => const SelectAvatar()),
+                //       );
+                //     },
+                //     style: ElevatedButton.styleFrom(
+                //       backgroundColor:
+                //           Colors.transparent, // Make button transparent
+                //       shadowColor: Colors.transparent, // Remove default shadow
+                //       shape: RoundedRectangleBorder(
+                //         borderRadius: BorderRadius.circular(16),
+                //       ),
+                //     ),
+                //     child: const Text(
+                //       "Continue Learning",
+                //       style: TextStyle(
+                //         fontSize: 18,
+                //         color: Colors.white,
+                //         fontWeight: FontWeight.w600,
+                //         letterSpacing: 0.5,
+                //       ),
+                //     ),
+                //   ),
+                // ),
                 const SizedBox(height: 30),
               ],
             ),

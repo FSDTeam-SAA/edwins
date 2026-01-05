@@ -63,11 +63,13 @@ class MenuView extends StatelessWidget {
                   _buildMenuItem(
                     icon: Icons.monetization_on_outlined,
                     label: "Subscription",
-                    onTap: () {Navigator.push(
-                      context,
-                      MaterialPageRoute(builder: (context)=> const SubscriptionMainPage()),
-                      );},
-
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                            builder: (context) => const SubscriptionMainPage()),
+                      );
+                    },
                   ),
                   const Divider(
                     height: 1,
@@ -86,8 +88,6 @@ class MenuView extends StatelessWidget {
                         ),
                       );
                     },
-
-
                   ),
                 ],
               ),
@@ -106,8 +106,10 @@ class MenuView extends StatelessWidget {
                 label: "Log out",
                 onTap: () {
                   // Handle logout logic
-                  Navigator.push(context,
-                    MaterialPageRoute(builder: (context) => const LogoutScreen()),
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                        builder: (context) => const LogoutScreen()),
                   );
                 },
               ),

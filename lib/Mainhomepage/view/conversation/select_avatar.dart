@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:language_app/Mainhomepage/home_view.dart';
 import 'package:provider/provider.dart';
 import 'package:language_app/providers/avatar_provider.dart';
 import 'package:language_app/Mainhomepage/view/conversation/conversation_chat.dart';
@@ -24,11 +25,11 @@ class _SelectAvatarState extends State<SelectAvatar> {
   void initState() {
     super.initState();
     final avatarProvider = Provider.of<AvatarProvider>(context, listen: false);
-    
+
     // Set initial page based on saved avatar
     final initialIndex = avatarProvider.selectedAvatarName == "Clara" ? 0 : 1;
     currentPageIndex = initialIndex;
-    
+
     _pageController = PageController(
       viewportFraction: 0.85,
       initialPage: initialIndex,
@@ -47,7 +48,7 @@ class _SelectAvatarState extends State<SelectAvatar> {
     setState(() {
       currentPageIndex = index;
     });
-    
+
     final avatarProvider = Provider.of<AvatarProvider>(context, listen: false);
     final avatarName = index == 0 ? "Clara" : "Karl";
     avatarProvider.setSelectedAvatar(avatarName);
@@ -66,21 +67,28 @@ class _SelectAvatarState extends State<SelectAvatar> {
     Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (context) => ConversationChat(
-          selectedAvatarName: avatarProvider.selectedAvatarName,
-        ),
+        builder: (context) => const HomeView(),
       ),
     );
+    // Navigator.push(
+    //   context,
+    //   MaterialPageRoute(
+    //     builder: (context) => ConversationChat(
+    //       selectedAvatarName: avatarProvider.selectedAvatarName,
+    //     ),
+    //   ),
+    // );
   }
 
   // Helper to get accent color based on name (Optional visual flair)
   Color _getAccentColor() {
-    return AppColors.primaryOrange; 
+    return AppColors.primaryOrange;
   }
 
   @override
   Widget build(BuildContext context) {
-        final selectedAvatarName = context.watch<AvatarProvider>().selectedAvatarName;
+    final selectedAvatarName =
+        context.watch<AvatarProvider>().selectedAvatarName;
     final accentColor = _getAccentColor();
 
     return Scaffold(
@@ -123,7 +131,8 @@ class _SelectAvatarState extends State<SelectAvatar> {
             Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Icon(Icons.arrow_back_ios, size: 14, color: Colors.grey.shade300),
+                Icon(Icons.arrow_back_ios,
+                    size: 14, color: Colors.grey.shade300),
                 const SizedBox(width: 8),
                 Text(
                   "Swipe to choose",
@@ -134,7 +143,8 @@ class _SelectAvatarState extends State<SelectAvatar> {
                   ),
                 ),
                 const SizedBox(width: 8),
-                Icon(Icons.arrow_forward_ios, size: 14, color: Colors.grey.shade300),
+                Icon(Icons.arrow_forward_ios,
+                    size: 14, color: Colors.grey.shade300),
               ],
             ),
 
@@ -156,7 +166,7 @@ class _SelectAvatarState extends State<SelectAvatar> {
                     isSelected: selectedAvatarName == "Clara",
                     // isSelected: $selectedAvatarName,
                   ),
-                  
+
                   // 2. Karl Card
                   _buildAvatarCard(
                     index: 1,
@@ -251,7 +261,8 @@ class _SelectAvatarState extends State<SelectAvatar> {
               Expanded(
                 child: Container(
                   decoration: BoxDecoration(
-                    borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+                    borderRadius:
+                        const BorderRadius.vertical(top: Radius.circular(20)),
                     // Optional shadow for depth
                     boxShadow: isSelected
                         ? [
@@ -264,7 +275,8 @@ class _SelectAvatarState extends State<SelectAvatar> {
                         : [],
                   ),
                   child: ClipRRect(
-                    borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+                    borderRadius:
+                        const BorderRadius.vertical(top: Radius.circular(20)),
                     child: AvatarView(
                       avatarName: name,
                       controller: controller,
@@ -275,19 +287,21 @@ class _SelectAvatarState extends State<SelectAvatar> {
                   ),
                 ),
               ),
-              
+
               // Name Label Area
               Container(
                 padding: const EdgeInsets.symmetric(vertical: 20),
                 decoration: BoxDecoration(
-                  color: isSelected 
-                      ? AppColors.primaryOrange.withOpacity(0.1) 
+                  color: isSelected
+                      ? AppColors.primaryOrange.withOpacity(0.1)
                       : Colors.white,
                   borderRadius: const BorderRadius.vertical(
                     bottom: Radius.circular(20),
                   ),
                   border: isSelected
-                      ? Border.all(color: AppColors.primaryOrange.withOpacity(0.3), width: 1)
+                      ? Border.all(
+                          color: AppColors.primaryOrange.withOpacity(0.3),
+                          width: 1)
                       : Border.all(color: Colors.grey.shade200),
                 ),
                 child: Row(
@@ -296,7 +310,9 @@ class _SelectAvatarState extends State<SelectAvatar> {
                     Text(
                       name,
                       style: TextStyle(
-                        color: isSelected ? AppColors.primaryOrange : Colors.black87,
+                        color: isSelected
+                            ? AppColors.primaryOrange
+                            : Colors.black87,
                         fontSize: 24,
                         fontWeight: FontWeight.bold,
                         letterSpacing: 0.5,

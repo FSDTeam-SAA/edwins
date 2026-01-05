@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:language_app/Mainhomepage/view/conversation/select_avatar.dart';
 import 'package:language_app/Settings/Changepassword/changepassword.dart';
 import 'package:language_app/Settings/DeleteAccount/delete_account.dart';
 import 'package:language_app/Settings/Privacypolicy/privacy_policy.dart';
@@ -32,6 +33,39 @@ class SettingsPage extends StatelessWidget {
         padding: const EdgeInsets.all(24.0),
         child: Column(
           children: [
+            //Select Avatar
+            GestureDetector(
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => const SelectAvatar()),
+                );
+              },
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFFFF3E0),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: const Row(
+                  children: [
+                     Icon(Icons.groups_outlined, color: Colors.black87, size: 22),
+                     SizedBox(width: 12),
+                     Text(
+                      'Change Partner',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w500,
+                        color: Colors.black87,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+
+
+            const SizedBox(height: 12),
             // Change Password
             GestureDetector(
               onTap: () {
