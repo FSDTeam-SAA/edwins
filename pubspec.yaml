@@ -22,6 +22,7 @@ dependencies:
   lottie: ^3.3.2
   flutter_markdown: ^0.7.7+1
   model_viewer_plus: ^1.7.2 
+  webview_flutter: ^4.13.0
 
 dev_dependencies:
   flutter_test:
@@ -45,4 +46,5 @@ flutter:
     - ios/Runner/Assets.scnassets/ClaraAvatar.usdz
     - ios/Runner/Assets.scnassets/KarlAvatar.usdz
     - assets/models/clara.glb  
-    - assets/models/karl.glb  
+    - assets/models/karl.glb
+    - assets/profile_user.png
