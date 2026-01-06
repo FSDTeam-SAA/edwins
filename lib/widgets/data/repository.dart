@@ -11,13 +11,13 @@ class MockLearningRepository implements ILearningRepository {
   @override
   Future<UserProgress> fetchHomeProgress() async {
     // Simulate network delay
-    await Future.delayed(const Duration(milliseconds: 800));
+    // await Future.delayed(const Duration(milliseconds: 50));
     return UserProgress.fromJson(MockData.homeProgress);
   }
 
   @override
   Future<LessonStep> fetchNextStep(String lessonId) async {
-    await Future.delayed(const Duration(milliseconds: 500));
+    // await Future.delayed(const Duration(milliseconds: 50));
 
     // Logic to return Vocabulary 1 or Vocabulary 2 based on the ID
     if (lessonId == "lesson_2") {
@@ -30,6 +30,7 @@ class MockLearningRepository implements ILearningRepository {
       id: "step_1",
       type: "complete_mc",
       question: "Die Katze frisst _______",
+      audio: "Hähnchen", // String for Text-to-Speech
       choices: [
         Choice(id: "1", text: "Katze", isCorrect: false),
         Choice(id: "2", text: "Frisst", isCorrect: false),
@@ -56,7 +57,7 @@ class MockLearningRepository implements ILearningRepository {
   }
   @override
   Future<ConversationStep> fetchConversation(String id) async {
-      await Future.delayed(const Duration(milliseconds: 600));
+      // await Future.delayed(const Duration(milliseconds: 50));
 
       // Now using the mock data for conversation step
       return ConversationStep(

@@ -60,10 +60,11 @@ class _DifficultyRatingPopupState extends State<DifficultyRatingPopup> {
             ),
             const SizedBox(height: 24),
 
-            // Question
-            const Text(
-              'How the word is?',
-              style: TextStyle(
+            // Question - UPDATED HERE
+            Text(
+              'How difficult is the word "${widget.word}"?',
+              textAlign: TextAlign.center,
+              style: const TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.w500,
                 color: Colors.black87,
@@ -105,9 +106,7 @@ class _DifficultyRatingPopupState extends State<DifficultyRatingPopup> {
           color: Colors.white,
           borderRadius: BorderRadius.circular(20),
           border: Border.all(
-            color: isSelected
-                ? const Color(0xFFFF7043)
-                : Colors.white,
+            color: isSelected ? const Color(0xFFFF7043) : Colors.white,
             width: 2,
           ),
           boxShadow: [

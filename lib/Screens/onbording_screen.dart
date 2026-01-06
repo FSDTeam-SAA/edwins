@@ -484,7 +484,7 @@ Widget _buildPartnerStep() {
             Icon(Icons.arrow_back_ios, size: 16, color: Colors.grey.shade400),
             const SizedBox(width: 8),
             Text(
-              "Swipe to see more",
+              "Swipe and Tap to select",
               style: TextStyle(
                 fontSize: 14,
                 color: Colors.grey.shade600,

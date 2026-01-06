@@ -1,6 +1,8 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+// import 'package:language_app/Mainhomepage/home_view.dart';
 import 'package:language_app/Screens/splash.dart';
+// import 'package:language_app/Screens/splash.dart';
 import 'package:language_app/avatar/avatar_controller.dart';
 import 'package:language_app/avatar/avatar_view.dart';
 import 'package:language_app/components/message_bubble.dart';

@@ -46,9 +46,9 @@ class ChoiceChipWidget extends StatelessWidget {
   }
   Color _getColorForText(String text) {
     // Replicates your custom color logic
-    if (text == "Car" || text == "Katze") return const Color(0xFFFF6291);
+    if (text == "Car" || text == "Katze") return const Color(0xFFFF8000);
     if (text == "Cap" || text == "Frisst") return const Color(0xFFFF8000);
-    if (text == "Cat" || text == "Hähnchen") return const Color(0xFFFF3333);
-    return const Color(0xFFFF33FC); // Default for "Can" / "Die"
+    if (text == "Cat" || text == "Hähnchen") return const Color(0xFFFF8000);
+    return const Color(0xFFFF8000); // Default for "Can" / "Die"
   }
 }

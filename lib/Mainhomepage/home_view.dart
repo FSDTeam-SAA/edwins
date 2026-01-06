@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:language_app/Mainhomepage/view/conversation/conversation_chat.dart';
+import 'package:language_app/Mainhomepage/view/conversation/demo/demo_conversation.dart';
+import 'package:language_app/Mainhomepage/view/vocabulary/demo_vocabulary.dart';
 // import 'package:language_app/Mainhomepage/view/conversation/select_avatar.dart';
-import 'package:language_app/Mainhomepage/view/vocabulary/vocab_loop_view.dart';
+import 'package:language_app/Mainhomepage/view/vocabulary/vocabulary_lessons.dart';
 import 'package:language_app/providers/avatar_provider.dart';
 import 'package:provider/provider.dart';
 import '../../utils/app_style.dart';
@@ -18,7 +20,9 @@ class HomeView extends StatefulWidget {
 }
 
 class _HomeViewState extends State<HomeView> {
+  bool hasStartedLearning = false;
   Future<Map<String, dynamic>> _fetchHomeData() async {
+
     await Future.delayed(const Duration(milliseconds: 500));
     return MockData.homeProgress;
   }
@@ -64,11 +68,11 @@ class _HomeViewState extends State<HomeView> {
                   ),
                 ),
                 const SizedBox(height: 20),
+                // --- START / CONTINUE BUTTON ---
                 Container(
                   width: double.infinity,
                   height: 50,
                   decoration: BoxDecoration(
-                    // Your gradient implementation
                     gradient: const LinearGradient(
                       colors: [Color(0xFF4CAF50), Color(0xFF2E7D32)],
                       begin: Alignment.centerLeft,
@@ -78,6 +82,12 @@ class _HomeViewState extends State<HomeView> {
                   ),
                   child: ElevatedButton(
                     onPressed: () {
+                      // 1. Update state immediately
+                      setState(() {
+                        hasStartedLearning = true;
+                      });
+
+                      // 2. Navigate to Conversation
                       Navigator.push(
                         context,
                         MaterialPageRoute(
@@ -85,16 +95,16 @@ class _HomeViewState extends State<HomeView> {
                       );
                     },
                     style: ElevatedButton.styleFrom(
-                      backgroundColor:
-                          Colors.transparent, // Make button transparent
-                      shadowColor: Colors.transparent, // Remove default shadow
+                      backgroundColor: Colors.transparent,
+                      shadowColor: Colors.transparent,
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(16),
                       ),
                     ),
-                    child: const Text(
-                      "Start Learning",
-                      style: TextStyle(
+                    // 3. Conditional Text Rendering
+                    child: Text(
+                      hasStartedLearning ? "Continue Learning" : "Start Learning",
+                      style: const TextStyle(
                         fontSize: 18,
                         color: Colors.white,
                         fontWeight: FontWeight.w600,
@@ -103,6 +113,45 @@ class _HomeViewState extends State<HomeView> {
                     ),
                   ),
                 ),
+                // Container(
+                //   width: double.infinity,
+                //   height: 50,
+                //   decoration: BoxDecoration(
+                //     // Your gradient implementation
+                //     gradient: const LinearGradient(
+                //       colors: [Color(0xFF4CAF50), Color(0xFF2E7D32)],
+                //       begin: Alignment.centerLeft,
+                //       end: Alignment.centerRight,
+                //     ),
+                //     borderRadius: BorderRadius.circular(16),
+                //   ),
+                //   child: ElevatedButton(
+                //     onPressed: () {
+                //       Navigator.push(
+                //         context,
+                //         MaterialPageRoute(
+                //             builder: (context) => ConversationChat(selectedAvatarName: avatarProvider.selectedAvatarName,)),
+                //       );
+                //     },
+                //     style: ElevatedButton.styleFrom(
+                //       backgroundColor:
+                //           Colors.transparent, // Make button transparent
+                //       shadowColor: Colors.transparent, // Remove default shadow
+                //       shape: RoundedRectangleBorder(
+                //         borderRadius: BorderRadius.circular(16),
+                //       ),
+                //     ),
+                //     child: const Text(
+                //       "Start Learning",
+                //       style: TextStyle(
+                //         fontSize: 18,
+                //         color: Colors.white,
+                //         fontWeight: FontWeight.w600,
+                //         letterSpacing: 0.5,
+                //       ),
+                //     ),
+                //   ),
+                // ),
 
                 // 2. Toggle Buttons (Conversation vs Vocabulary)
                 // _buildToggleSection(),
@@ -130,46 +179,6 @@ class _HomeViewState extends State<HomeView> {
 
                  _buildToggleSection(),
 
-                // 5. Green "Continue Learning" Button
-                // Container(
-                //   width: double.infinity,
-                //   height: 56,
-                //   decoration: BoxDecoration(
-                //     // Your gradient implementation
-                //     gradient: const LinearGradient(
-                //       colors: [Color(0xFF4CAF50), Color(0xFF2E7D32)],
-                //       begin: Alignment.centerLeft,
-                //       end: Alignment.centerRight,
-                //     ),
-                //     borderRadius: BorderRadius.circular(16),
-                //   ),
-                //   child: ElevatedButton(
-                //     onPressed: () {
-                //       Navigator.push(
-                //         context,
-                //         MaterialPageRoute(
-                //             builder: (context) => const SelectAvatar()),
-                //       );
-                //     },
-                //     style: ElevatedButton.styleFrom(
-                //       backgroundColor:
-                //           Colors.transparent, // Make button transparent
-                //       shadowColor: Colors.transparent, // Remove default shadow
-                //       shape: RoundedRectangleBorder(
-                //         borderRadius: BorderRadius.circular(16),
-                //       ),
-                //     ),
-                //     child: const Text(
-                //       "Continue Learning",
-                //       style: TextStyle(
-                //         fontSize: 18,
-                //         color: Colors.white,
-                //         fontWeight: FontWeight.w600,
-                //         letterSpacing: 0.5,
-                //       ),
-                //     ),
-                //   ),
-                // ),
                 const SizedBox(height: 30),
               ],
             ),
@@ -306,7 +315,7 @@ class _HomeViewState extends State<HomeView> {
   PreferredSizeWidget _buildAppBar() {
     return AppBar(
       elevation: 0,
-      toolbarHeight: 70,
+      toolbarHeight: 50,
       backgroundColor: Colors.white,
       automaticallyImplyLeading: false,
       titleSpacing: 24,
@@ -352,8 +361,8 @@ class _HomeViewState extends State<HomeView> {
               Navigator.push(
                 context,
                 MaterialPageRoute(
-                  builder: (context) => ConversationChat(
-                    selectedAvatarName: avatarProvider.selectedAvatarName,
+                  builder: (context) => DemoConversation(
+                    selectedAvatar: avatarProvider.selectedAvatarName,
                   ),
                 ),
               );
@@ -390,7 +399,7 @@ class _HomeViewState extends State<HomeView> {
                   context,
                   MaterialPageRoute(
                     builder: (context) =>
-                        const VocabLoopView(lessonId: "lesson_1"),
+                        const DemoVocabulary(selectedAvatar: "default"),
                   ));
             },
             child: Container(

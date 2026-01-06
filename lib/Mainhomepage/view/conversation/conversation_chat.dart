@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:language_app/Mainhomepage/view/Result/Congratulation_screen.dart';
+import 'package:language_app/Mainhomepage/view/Result/lesson_end_result.dart';
 import 'package:language_app/Mainhomepage/view/conversation/widgets/recording_overlay.dart';
 import 'package:language_app/Mainhomepage/view/conversation/widgets/suggested_vocab_chip.dart';
 import '../../../utils/app_style.dart';
@@ -41,6 +41,14 @@ class _ConversationChatState extends State<ConversationChat> {
   final int maxMessages = 5;
 
   @override
+  void _cancelRecording() {
+    setState(() {
+      isRecording = false;
+    });
+    debugPrint("Recording Cancelled");
+    // We do NOT call _sendMessage here, effectively aborting the voice note.
+  }
+
   void initState() {
     super.initState();
     _avatarController = AvatarController();
@@ -60,12 +68,11 @@ class _ConversationChatState extends State<ConversationChat> {
   }
 
   void _loadConversation() {
-    // final thread = MockData.conversationThread;
     final messageData = MockData.conversationMessages;
 
     setState(() {
-      suggestedVocab =
-          List<Map<String, dynamic>>.from(MockData.conversationThread['suggested_vocab']);
+      suggestedVocab = List<Map<String, dynamic>>.from(
+          MockData.conversationThread['suggested_vocab']);
       messages = List<Map<String, dynamic>>.from(messageData['messages']);
     });
   }
@@ -78,14 +85,14 @@ class _ConversationChatState extends State<ConversationChat> {
   }
 
   void _sendMessage(String text, {bool isVoice = false}) {
-    if (text.trim().isEmpty) return;
+    if (text.trim().isEmpty && !isVoice) return;
 
     setState(() {
       messages.add({
         "id": "m_user_${DateTime.now().millisecondsSinceEpoch}",
         "role": "user",
         "text": text,
-        "is_voice": isVoice, // Ensure flag is stored
+        "is_voice": isVoice,
         "audio": isVoice ? "assets/audio/user_voice.mp3" : null,
         "created_at": DateTime.now().toIso8601String(),
       });
@@ -94,44 +101,85 @@ class _ConversationChatState extends State<ConversationChat> {
 
     _textController.clear();
     _scrollToBottom();
+    _getAvatarResponse();
 
-    // Show difficulty rating popup
-    Future.delayed(const Duration(milliseconds: 500), () {
-      _showDifficultyRating(text);
-    });
+    // if (isVoice) {
+    //   // Direct response for voice (skip rating)
+    //   _handleDifficultySelected("voice", "Voice Message");
+    // } else {
+    //   // Text flow: Show rating popup first
+    //   Future.delayed(const Duration(milliseconds: 500), () {
+    //     // _showDifficultyRating(
+    //     //   word: text,
+    //     //   onRatingDone: (difficulty) =>
+    //     //       _handleDifficultySelected(difficulty, text),
+    //     // );
+    //   });
+    // }
+
+    // Trigger popup after sending, passing a specific callback to continue chat flow
+    // Future.delayed(const Duration(milliseconds: 500), () {
+    //   _showDifficultyRating(
+    //       word: text,
+    //       onRatingDone: (difficulty) =>
+    //           _handleDifficultySelected(difficulty, text));
+    // });
   }
 
-  void _showDifficultyRating(String userMessage) {
+  // UPDATED: Now accepts the word and an optional callback
+  void _showDifficultyRating(
+      {required String word, Function(String)? onRatingDone}) {
     showDialog(
       context: context,
       barrierDismissible: false,
       builder: (context) => DifficultyRatingPopup(
-        word: 'Excellent',
+        word: word, // Pass dynamic word
         onRatingSelected: (difficulty) {
           Navigator.of(context).pop();
-          _handleDifficultySelected(difficulty, userMessage);
+          if (onRatingDone != null) {
+            // Use specific callback (e.g., for sending messages)
+            onRatingDone(difficulty);
+          } else {
+            // Default behavior for vocab chips (e.g., just log it)
+            debugPrint("User rated word '$word' as $difficulty");
+          }
         },
       ),
     );
   }
 
-  void _handleDifficultySelected(String difficulty, String userMessage) {
-    Future.delayed(const Duration(milliseconds: 500), () {
-      final response = MockData.mockMessageResponse(userMessage);
-      setState(() {
-        messages.add(response);
-      });
-      _scrollToBottom();
+  void _getAvatarResponse() {
+    // Simulate "thinking" delay for realism
+    Future.delayed(const Duration(milliseconds: 1000), () {
+      int currentAvatarCount =
+          messages.where((m) => m['role'] == 'avatar').length;
+      final response = MockData.getNextConversationStep(currentAvatarCount);
+      if (response != null) {
+        setState(() {
+          messages.add(response);
+        });
+        _scrollToBottom();
+      } else {
+        // Conversation Script Finished
+        debugPrint("Conversation finished. User can check results.");
+        setState(() {});
+      }
     });
   }
 
   void _navigateToResults() {
-    Navigator.pushReplacement(
-      context,
-      MaterialPageRoute(
-        builder: (context) => const LessonCompletionView(),
-      ),
-    );
+
+   final Map<String, int> newScores = {
+      "Speaking": 85, 
+      "Listening": 70, 
+      "Grammar": 92, 
+      "Vocabulary": 75, 
+      "Writing": 60
+    };
+
+    Navigator.push(context, MaterialPageRoute(builder: 
+      (context) => LessonEndResultView(skills: newScores),
+    ));
   }
 
   void _scrollToBottom() {
@@ -151,7 +199,7 @@ class _ConversationChatState extends State<ConversationChat> {
   void _stopRecording() {
     setState(() => isRecording = false);
     Future.delayed(const Duration(milliseconds: 300), () {
-      _sendMessage("That sounds like a great plan!", isVoice: true);
+      _sendMessage("", isVoice: true);
     });
   }
 
@@ -222,7 +270,8 @@ class _ConversationChatState extends State<ConversationChat> {
               child: GestureDetector(
                 onTap: _navigateToResults,
                 child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                   decoration: BoxDecoration(
                     color: Colors.white,
                     borderRadius: BorderRadius.circular(20),
@@ -318,20 +367,42 @@ class _ConversationChatState extends State<ConversationChat> {
               if (!isKeyboardOpen)
                 Padding(
                   padding: const EdgeInsets.symmetric(vertical: 12),
-                  child: SingleChildScrollView(
-                    scrollDirection: Axis.horizontal,
-                    padding: const EdgeInsets.symmetric(horizontal: 16),
-                    child: Row(
-                      children: suggestedVocab.map((vocab) {
-                        return Padding(
-                          padding: const EdgeInsets.only(right: 8),
-                          child: SuggestedVocabChip(
-                            text: vocab['text'],
-                            onTap: () => _insertSuggestedWord(vocab['text']),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    children: [
+                      // 1. New Helper Text
+                      Padding(
+                        padding: const EdgeInsets.only(
+                            left: 16, bottom: 8, right: 16),
+                        child: Text(
+                          textAlign: TextAlign.center,
+                          "Try to use these words in your responses",
+                          style: TextStyle(
+                            color: Colors.grey[600],
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
                           ),
-                        );
-                      }).toList(),
-                    ),
+                        ),
+                      ),
+
+                      // 2. Existing Horizontal Scroll List
+                      SingleChildScrollView(
+                        scrollDirection: Axis.horizontal,
+                        padding: const EdgeInsets.only(left: 16, right: 16),
+                        child: Row(
+                          children: suggestedVocab.map((vocab) {
+                            return Padding(
+                              padding: const EdgeInsets.only(right: 8),
+                              child: SuggestedVocabChip(
+                                text: vocab['text'],
+                                onTap: () =>
+                                    _showDifficultyRating(word: vocab['text']),
+                              ),
+                            );
+                          }).toList(),
+                        ),
+                      ),
+                    ],
                   ),
                 ),
               Expanded(
@@ -342,15 +413,21 @@ class _ConversationChatState extends State<ConversationChat> {
                   itemCount: messages.length,
                   itemBuilder: (context, index) {
                     final message = messages[index];
-                    // Logic: Show waveform only if Avatar message OR User Voice response
-                    final bool isVoiceMessage = message['role'] == 'avatar' || (message['is_voice'] ?? false);
-                    
+                    final bool isVoiceMessage = message['role'] == 'avatar' ||
+                        (message['is_voice'] ?? false);
+
                     return ChatMessage(
                       text: message['text'],
                       isUser: message['role'] == 'user',
                       audioUrl: message['audio'],
-                      showPlayButton: isVoiceMessage, // Wave only for voice
-                      translation: message['translation']?['de'], // Pass German text
+                      showPlayButton: isVoiceMessage,
+                      translation: message['translation']?['de'],
+
+                      // --- ADD THIS CALLBACK HERE ---
+                      onHighlightTap: (word) {
+                        // When a bold word is tapped, show the rating popup
+                        _showDifficultyRating(word: word);
+                      },
                     );
                   },
                 ),
@@ -407,8 +484,9 @@ class _ConversationChatState extends State<ConversationChat> {
                                 shape: BoxShape.circle,
                               ),
                               child: IconButton(
-                                onPressed: () =>
-                                    _sendMessage(_textController.text, isVoice: false), // Text only
+                                onPressed: () => _sendMessage(
+                                    _textController.text,
+                                    isVoice: false),
                                 icon: const Icon(
                                   Icons.send_rounded,
                                   color: Colors.white,
@@ -423,7 +501,10 @@ class _ConversationChatState extends State<ConversationChat> {
             ],
           ),
           if (isRecording)
-            RecordingOverlay(onRecordingComplete: _stopRecording),
+  RecordingOverlay(
+    onRecordingComplete: _stopRecording,
+    onRecordingCancelled: _cancelRecording, // <--- Add this
+  ),
         ],
       ),
     );

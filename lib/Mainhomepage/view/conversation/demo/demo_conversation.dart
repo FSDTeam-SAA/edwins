@@ -8,19 +8,19 @@ import 'package:language_app/avatar/avatar_view.dart';
 import 'dart:io' show Platform;
 import 'dart:math' as math;
 import 'package:flutter/services.dart';
-class TestConversationPage extends StatefulWidget {
+class DemoConversation extends StatefulWidget {
   final String selectedAvatar;
   
-  const TestConversationPage({
+  const DemoConversation({
     super.key,
     required this.selectedAvatar,
   });
 
   @override
-  State<TestConversationPage> createState() => _TestConversationPageState();
+  State<DemoConversation> createState() => _DemoConversationState();
 }
 
-class _TestConversationPageState extends State<TestConversationPage> with TickerProviderStateMixin {
+class _DemoConversationState extends State<DemoConversation> with TickerProviderStateMixin {
   final TextEditingController _textController = TextEditingController();
   bool isRecording = false;
   bool showWaveform = false;
@@ -2323,7 +2323,7 @@ class RadarChartPainter extends CustomPainter {
       canvas.drawCircle(Offset(x, y), 4, pointPaint);
     }
 
-    final textStyle = const TextStyle(
+    const textStyle = TextStyle(
       color: Color(0xFF757575),
       fontSize: 12,
       fontWeight: FontWeight.w500,

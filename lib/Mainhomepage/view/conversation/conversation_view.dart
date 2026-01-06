@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:language_app/Mainhomepage/view/Result/lesson_end_result.dart';
 import 'package:language_app/Mainhomepage/view/Result/result_view.dart';
 import 'package:language_app/models/learning_models.dart';
 import 'package:language_app/utils/app_style.dart';
@@ -260,18 +261,7 @@ class _ConversationViewState extends State<ConversationView> {
     };
 
     Navigator.push(context, MaterialPageRoute(builder: 
-      (context) => ResultView(skills: newScores),
+      (context) => LessonEndResultView(skills: newScores),
     ));
-
-    // Navigator.pushNamed(
-    //   context, 
-    //   '/vocab-result', 
-    //   arguments: newScores,
-    // );
-    // Navigator.pushNamed(
-    //   context, 
-    //   '/vocab-result', 
-    //   arguments: newScores,
-    // );
   }
 }

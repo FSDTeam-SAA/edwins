@@ -46,16 +46,61 @@ class MockData {
   };
 
   // Initial conversation messages
+  static List<Map<String, dynamic>> conversationScript = [
+    // Message 1 (Initial - already in conversationMessages)
+    {
+      "text":
+          "Hello! I'm excited to **practice** with you today. What's your **favourite place** to eat?",
+      "translation": {
+        "de":
+            "Hallo! Ich **freue** mich darauf, heute mit dir zu üben. Was ist dein Lieblingsort zum **Essen**?"
+      }
+    },
+    // Message 2
+    {
+      "text":
+          "That sounds **delicious**! I usually prefer **Italian cuisine**. Do you like **pizza** or **pasta**?",
+      "translation": {
+        "de":
+            "Das klingt **lecker**! Ich bevorzuge normalerweise **italienische Küche**. Magst du **Pizza** oder **Pasta**?"
+      }
+    },
+    // Message 3
+    {
+      "text":
+          "I agree! A good **sauce** makes all the difference. How often do you **cook** at home?",
+      "translation": {
+        "de":
+            "Ich stimme zu! Eine gute **Soße** macht den Unterschied. Wie oft **kochst** du zu Hause?"
+      }
+    },
+    // Message 4
+    {
+      "text":
+          "Cooking is a great **skill**. I am currently learning to make **sushi**. It is quite **challenging**. Do you have a **signature dish**?",
+      "translation": {
+        "de":
+            "Kochen ist eine tolle **Fähigkeit**. Ich lerne gerade, **Sushi** zu machen. Es ist ziemlich **anspruchsvoll**. Hast du ein **Lieblingsgericht**?"
+      }
+    },
+    // Message 5 (Final)
+    {
+      "text":
+          "That sounds **tasty**! I would love to **try** it someday. Let's wrap up for now. You did **excellent** today!",
+      "translation": {
+        "de":
+            "Das klingt **lecker**! Ich würde es gerne eines Tages **probieren**. Lass uns für heute Schluss machen. Du warst heute **ausgezeichnet**!"
+      }
+    },
+  ];
+
   static Map<String, dynamic> conversationMessages = {
     "messages": [
       {
         "id": "m_120",
         "role": "avatar",
-        "text": "Hello! I'm excited to **practice** with you today. What's your **favourite place** to eat?",
-        "translation": {
-          "de": "Hallo! Ich **freue** mich darauf, heute mit dir zu üben. Was ist dein Lieblingsort zum **Essen**?"
-        },
-        // "audio": "assets/audio/greeting.mp3",
+        "text": conversationScript[0]['text'], // Use script index 0
+        "translation": conversationScript[0]['translation'],
         "visemes": {"aa": "0:01"},
         "created_at": "2025-12-28T10:12:00Z"
       }
@@ -63,24 +108,19 @@ class MockData {
     "next_before": null
   };
 
-  // Mock avatar data
-  // static Map<String, dynamic> avatarData = {
-  //   "id": "clara",
-  //   "name": "Clara",
-  //   "image": "assets/images/clara_avatar.png",
-  //   "language": "English"
-  // };
 
-  // Mock response for user message submission
-  static Map<String, dynamic> mockMessageResponse(String userText) {
+static Map<String, dynamic>? getNextConversationStep(int nextIndex) {
+    // If we have run out of script, return null (Conversation End)
+    if (nextIndex >= conversationScript.length) return null;
+
+    final scriptData = conversationScript[nextIndex];
+
     return {
-      "id": "m_${DateTime.now().millisecondsSinceEpoch}",
-      "role": "avatar",
-      "text": "That sounds wonderful! I love visiting Cafe Maro. It's a beautiful restaurant with delicious food and I always recommend it.",
-      "translation": {
-        "de": "Das klingt wunderbar! Ich besuche gerne Cafe Maro. Es ist ein schönes Restaurant mit leckerem Essen und ich empfehle es immer."
-      },
-      "audio": "assets/audio/response.mp3",
+      "id": "m_avatar_${DateTime.now().millisecondsSinceEpoch}",
+      "role": "avatar", // Always avatar response
+      "text": scriptData['text'],
+      "translation": scriptData['translation'],
+      // "audio": "assets/audio/response.mp3", // Mock audio
       "visemes": {"aa": "0:01"},
       "created_at": DateTime.now().toIso8601String()
     };
@@ -97,9 +137,6 @@ class MockData {
         ]
       };
     }
-    return {
-      "corrected_text": text,
-      "highlights": []
-    };
+    return {"corrected_text": text, "highlights": []};
   }
 }

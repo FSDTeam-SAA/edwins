@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:language_app/Mainhomepage/home_view.dart';
 import 'package:provider/provider.dart';
 import 'package:language_app/providers/avatar_provider.dart';
-import 'package:language_app/Mainhomepage/view/conversation/conversation_chat.dart';
 import '../../../utils/app_style.dart';
 import 'package:language_app/avatar/avatar_controller.dart';
 import 'package:language_app/avatar/avatar_view.dart';
@@ -63,21 +62,12 @@ class _SelectAvatarState extends State<SelectAvatar> {
   }
 
   void _startConversation() {
-    final avatarProvider = Provider.of<AvatarProvider>(context, listen: false);
     Navigator.push(
       context,
       MaterialPageRoute(
         builder: (context) => const HomeView(),
       ),
     );
-    // Navigator.push(
-    //   context,
-    //   MaterialPageRoute(
-    //     builder: (context) => ConversationChat(
-    //       selectedAvatarName: avatarProvider.selectedAvatarName,
-    //     ),
-    //   ),
-    // );
   }
 
   // Helper to get accent color based on name (Optional visual flair)

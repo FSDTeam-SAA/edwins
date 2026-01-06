@@ -1,13 +1,15 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
-import 'dart:math' as math;
-import '../../../../utils/app_style.dart';
+import '../../../../utils/app_style.dart'; 
 
 class RecordingOverlay extends StatefulWidget {
   final VoidCallback onRecordingComplete;
+  final VoidCallback onRecordingCancelled; // NEW callback
 
   const RecordingOverlay({
     super.key,
     required this.onRecordingComplete,
+    required this.onRecordingCancelled,
   });
 
   @override
@@ -15,183 +17,428 @@ class RecordingOverlay extends StatefulWidget {
 }
 
 class _RecordingOverlayState extends State<RecordingOverlay>
-    with TickerProviderStateMixin {
-  late AnimationController _waveController;
-  late AnimationController _glowController;
-  final List<double> _waveHeights = List.generate(20, (index) => 0.3);
+    with SingleTickerProviderStateMixin {
+  late AnimationController _blinkController;
+  Timer? _timer;
+  int _seconds = 0;
+  
+  // NEW: Track drag offset
+  double _dragOffset = 0.0;
 
   @override
   void initState() {
     super.initState();
-
-    // Waveform animation
-    _waveController = AnimationController(
-      duration: const Duration(milliseconds: 150),
+    _blinkController = AnimationController(
       vsync: this,
-    )..repeat();
+      duration: const Duration(milliseconds: 800),
+    )..repeat(reverse: true);
 
-    // Glow pulse animation
-    _glowController = AnimationController(
-      duration: const Duration(milliseconds: 1500),
-      vsync: this,
-    )..repeat();
-
-    _waveController.addListener(() {
+    _timer = Timer.periodic(const Duration(seconds: 1), (timer) {
       setState(() {
-        for (int i = 0; i < _waveHeights.length; i++) {
-          _waveHeights[i] = 0.3 +
-              math.Random().nextDouble() * 0.7 +
-              math.sin((i + _waveController.value * 10) * 0.5) * 0.3;
-        }
+        _seconds++;
       });
     });
   }
 
   @override
   void dispose() {
-    _waveController.dispose();
-    _glowController.dispose();
+    _blinkController.dispose();
+    _timer?.cancel();
+    super.dispose();
+  }
+
+  String get _timerText {
+    final minutes = _seconds ~/ 60;
+    final seconds = _seconds % 60;
+    return '${minutes.toString().padLeft(2, '0')}:${seconds.toString().padLeft(2, '0')}';
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Stack(
+      children: [
+        Positioned.fill(
+          child: Container(color: Colors.transparent),
+        ),
+        Align(
+          alignment: Alignment.bottomCenter,
+          child: Container(
+            width: double.infinity,
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.1),
+                  blurRadius: 10,
+                  offset: const Offset(0, -2),
+                )
+              ],
+            ),
+            child: SafeArea(
+              top: false,
+              child: Row(
+                children: [
+                  // A. Mic Icon (Changes to Trash Bin when dragging far left)
+                  AnimatedSwitcher(
+                    duration: const Duration(milliseconds: 300),
+                    child: _dragOffset < -100 // Threshold check
+                        ? const Icon(
+                            Icons.delete_outline,
+                            key: ValueKey("trash"),
+                            color: Colors.red,
+                            size: 28,
+                          )
+                        : FadeTransition(
+                            key: const ValueKey("mic"),
+                            opacity: _blinkController,
+                            child: const Icon(
+                              Icons.mic,
+                              color: Colors.red,
+                              size: 28,
+                            ),
+                          ),
+                  ),
+                  const SizedBox(width: 16),
+
+                  // B. Timer
+                  Text(
+                    _timerText,
+                    style: const TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.w600,
+                      color: Colors.black87,
+                      fontFamily: "Inter",
+                    ),
+                  ),
+
+                  // C. SLIDE TO CANCEL AREA
+                  Expanded(
+                    child: GestureDetector(
+                      // 1. Detect Drag Update
+                      onHorizontalDragUpdate: (details) {
+                        setState(() {
+                          // Only allow dragging to the left (negative values)
+                          if (details.primaryDelta! < 0 || _dragOffset < 0) {
+                             _dragOffset += details.primaryDelta!;
+                          }
+                        });
+                      },
+                      // 2. Detect Drag End
+                      onHorizontalDragEnd: (details) {
+                        // If dragged significantly to the left (e.g., -100 pixels)
+                        if (_dragOffset < -100) {
+                          widget.onRecordingCancelled();
+                        } else {
+                          // Snap back if not dragged enough
+                          setState(() {
+                            _dragOffset = 0.0;
+                          });
+                        }
+                      },
+                      child: Container(
+                        // Important: Transparent color ensures the whole area captures touches
+                        color: Colors.transparent, 
+                        height: 50,
+                        alignment: Alignment.centerRight,
+                        child: Transform.translate(
+                          offset: Offset(_dragOffset, 0),
+                          child: Opacity(
+                            // Fade out as you drag left
+                            opacity: (1 - (-_dragOffset / 150)).clamp(0.0, 1.0),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                ShimmerText(
+                                  text: "Slide to cancel",
+                                  textColor: Colors.grey[400]!,
+                                ),
+                                const SizedBox(width: 20), // Spacing from send button
+                              ],
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+
+                  // D. Send Button (Scales down when dragging to cancel)
+                  AnimatedScale(
+                    scale: _dragOffset < -50 ? 0.0 : 1.0,
+                    duration: const Duration(milliseconds: 200),
+                    child: GestureDetector(
+                      onTap: widget.onRecordingComplete,
+                      child: Container(
+                        padding: const EdgeInsets.all(12),
+                        decoration: const BoxDecoration(
+                          color: AppColors.primaryOrange,
+                          shape: BoxShape.circle,
+                        ),
+                        child: const Icon(
+                          Icons.send_rounded,
+                          color: Colors.white,
+                          size: 24,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+// (ShimmerText remains the same as previous)
+class ShimmerText extends StatefulWidget {
+  final String text;
+  final Color textColor;
+
+  const ShimmerText({super.key, required this.text, required this.textColor});
+
+  @override
+  State<ShimmerText> createState() => _ShimmerTextState();
+}
+
+class _ShimmerTextState extends State<ShimmerText>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _controller;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(seconds: 2),
+    )..repeat();
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: () {}, // Prevent taps from going through
-      child: Container(
-        color: Colors.black.withOpacity(0.3),
-        child: Stack(
+    return AnimatedBuilder(
+      animation: _controller,
+      builder: (context, child) {
+        return Row(
+          mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            // Waveform in the center
-            Center(
-              child: AnimatedBuilder(
-                animation: _waveController,
-                builder: (context, child) {
-                  return Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    crossAxisAlignment: CrossAxisAlignment.center,
-                    children: List.generate(_waveHeights.length, (index) {
-                      return Container(
-                        width: 4,
-                        height: 80 * _waveHeights[index],
-                        margin: const EdgeInsets.symmetric(horizontal: 2),
-                        decoration: BoxDecoration(
-                          gradient: const LinearGradient(
-                            colors: [
-                              Color(0xFFFF609D),
-                              Color(0xFFFF7A06),
-                            ],
-                            begin: Alignment.topCenter,
-                            end: Alignment.bottomCenter,
-                          ),
-                          borderRadius: BorderRadius.circular(2),
-                        ),
-                      );
-                    }),
-                  );
-                },
-              ),
+            Transform.translate(
+              offset: Offset(-5 * _controller.value, 0),
+              child: Icon(Icons.chevron_left, color: widget.textColor, size: 18),
             ),
-
-            // Microphone button at bottom center
-            Positioned(
-              bottom: 100,
-              left: 0,
-              right: 0,
-              child: Center(
-                child: GestureDetector(
-                  onTapUp: (_) => widget.onRecordingComplete(),
-                  onTapCancel: () => widget.onRecordingComplete(),
-                  child: AnimatedBuilder(
-                    animation: _glowController,
-                    builder: (context, child) {
-                      return Stack(
-                        alignment: Alignment.center,
-                        children: [
-                          // Outer glow ring
-                          Container(
-                            width: 180 + (20 * _glowController.value),
-                            height: 180 + (20 * _glowController.value),
-                            decoration: BoxDecoration(
-                              shape: BoxShape.circle,
-                              gradient: RadialGradient(
-                                colors: [
-                                  AppColors.micButtonOrange.withOpacity(
-                                      0.4 * (1 - _glowController.value)),
-                                  AppColors.micButtonPink.withOpacity(
-                                      0.2 * (1 - _glowController.value)),
-                                  Colors.transparent,
-                                ],
-                                stops: const [0.0, 0.5, 1.0],
-                              ),
-                            ),
-                          ),
-                          // Middle glow ring
-                          Container(
-                            width: 150 + (15 * _glowController.value),
-                            height: 150 + (15 * _glowController.value),
-                            decoration: BoxDecoration(
-                              shape: BoxShape.circle,
-                              gradient: RadialGradient(
-                                colors: [
-                                  AppColors.micButtonOrange.withOpacity(
-                                      0.5 * (1 - _glowController.value)),
-                                  AppColors.micButtonPink.withOpacity(
-                                      0.3 * (1 - _glowController.value)),
-                                  Colors.transparent,
-                                ],
-                                stops: const [0.0, 0.6, 1.0],
-                              ),
-                            ),
-                          ),
-                          // Inner glow
-                          Container(
-                            width: 120,
-                            height: 120,
-                            decoration: BoxDecoration(
-                              shape: BoxShape.circle,
-                              gradient: RadialGradient(
-                                colors: [
-                                  AppColors.micButtonOrange.withOpacity(0.6),
-                                  AppColors.micButtonPink.withOpacity(0.4),
-                                  Colors.transparent,
-                                ],
-                                stops: const [0.0, 0.7, 1.0],
-                              ),
-                            ),
-                          ),
-                          // Main microphone button
-                          Container(
-                            width: 90,
-                            height: 90,
-                            decoration: BoxDecoration(
-                              gradient: AppColors.micGradient,
-                              shape: BoxShape.circle,
-                              boxShadow: [
-                                BoxShadow(
-                                  color:
-                                      AppColors.micButtonOrange.withOpacity(0.6),
-                                  blurRadius: 20,
-                                  spreadRadius: 5,
-                                ),
-                              ],
-                            ),
-                            child: const Icon(
-                              Icons.mic,
-                              color: Colors.white,
-                              size: 45,
-                            ),
-                          ),
-                        ],
-                      );
-                    },
-                  ),
-                ),
+            Text(
+              widget.text,
+              style: TextStyle(
+                color: widget.textColor,
+                fontSize: 14,
               ),
             ),
           ],
-        ),
-      ),
+        );
+      },
     );
   }
 }
+// import 'dart:async';
+// import 'package:flutter/material.dart';
+// import '../../../../utils/app_style.dart'; // Ensure this path matches your project structure
+
+// class RecordingOverlay extends StatefulWidget {
+//   final VoidCallback onRecordingComplete;
+
+//   const RecordingOverlay({
+//     super.key,
+//     required this.onRecordingComplete,
+//   });
+
+//   @override
+//   State<RecordingOverlay> createState() => _RecordingOverlayState();
+// }
+
+// class _RecordingOverlayState extends State<RecordingOverlay>
+//     with SingleTickerProviderStateMixin {
+//   late AnimationController _blinkController;
+//   Timer? _timer;
+//   int _seconds = 0;
+
+//   @override
+//   void initState() {
+//     super.initState();
+//     // 1. Blinking Animation for the Red Mic
+//     _blinkController = AnimationController(
+//       vsync: this,
+//       duration: const Duration(milliseconds: 800),
+//     )..repeat(reverse: true);
+
+//     // 2. Start the Timer
+//     _timer = Timer.periodic(const Duration(seconds: 1), (timer) {
+//       setState(() {
+//         _seconds++;
+//       });
+//     });
+//   }
+
+//   @override
+//   void dispose() {
+//     _blinkController.dispose();
+//     _timer?.cancel();
+//     super.dispose();
+//   }
+
+//   // Format seconds into MM:SS
+//   String get _timerText {
+//     final minutes = _seconds ~/ 60;
+//     final seconds = _seconds % 60;
+//     return '${minutes.toString().padLeft(2, '0')}:${seconds.toString().padLeft(2, '0')}';
+//   }
+
+//   @override
+//   Widget build(BuildContext context) {
+//     // 3. Align to BottomCenter to cover the existing input field
+//     return Stack(
+//       children: [
+//         // Transparent barrier to capture taps outside (optional)
+//         Positioned.fill(
+//           child: Container(color: Colors.transparent),
+//         ),
+
+//         // The Recording Bar
+//         Align(
+//           alignment: Alignment.bottomCenter,
+//           child: Container(
+//             width: double.infinity,
+//             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+//             decoration: BoxDecoration(
+//               color: Colors.white,
+//               boxShadow: [
+//                 BoxShadow(
+//                   color: Colors.black.withOpacity(0.1),
+//                   blurRadius: 10,
+//                   offset: const Offset(0, -2),
+//                 )
+//               ],
+//             ),
+//             child: SafeArea(
+//               top: false,
+//               child: Row(
+//                 children: [
+//                   // A. Blinking Red Mic Icon
+//                   FadeTransition(
+//                     opacity: _blinkController,
+//                     child: const Icon(
+//                       Icons.mic,
+//                       color: Colors.red, // Classic Recording Red
+//                       size: 28,
+//                     ),
+//                   ),
+//                   const SizedBox(width: 16),
+
+//                   // B. Timer
+//                   Text(
+//                     _timerText,
+//                     style: const TextStyle(
+//                       fontSize: 18,
+//                       fontWeight: FontWeight.w600,
+//                       color: Colors.black87,
+//                       fontFamily: "Inter",
+//                     ),
+//                   ),
+
+//                   // C. "Slide to cancel" visual (Center)
+//                   Expanded(
+//                     child: ShimmerText(
+//                       text: "Slide to cancel",
+//                       textColor: Colors.grey[400]!,
+//                     ),
+//                   ),
+
+//                   // D. Send Button (Completes Recording)
+//                   GestureDetector(
+//                     onTap: widget.onRecordingComplete,
+//                     child: Container(
+//                       padding: const EdgeInsets.all(12),
+//                       decoration: const BoxDecoration(
+//                         color: AppColors.primaryOrange, // Matches your theme
+//                         shape: BoxShape.circle,
+//                       ),
+//                       child: const Icon(
+//                         Icons.send_rounded,
+//                         color: Colors.white,
+//                         size: 24,
+//                       ),
+//                     ),
+//                   ),
+//                 ],
+//               ),
+//             ),
+//           ),
+//         ),
+//       ],
+//     );
+//   }
+// }
+
+// // Helper Widget for the "Slide to cancel" Shimmer Effect
+// class ShimmerText extends StatefulWidget {
+//   final String text;
+//   final Color textColor;
+
+//   const ShimmerText({super.key, required this.text, required this.textColor});
+
+//   @override
+//   State<ShimmerText> createState() => _ShimmerTextState();
+// }
+
+// class _ShimmerTextState extends State<ShimmerText>
+//     with SingleTickerProviderStateMixin {
+//   late AnimationController _controller;
+
+//   @override
+//   void initState() {
+//     super.initState();
+//     _controller = AnimationController(
+//       vsync: this,
+//       duration: const Duration(seconds: 2),
+//     )..repeat();
+//   }
+
+//   @override
+//   void dispose() {
+//     _controller.dispose();
+//     super.dispose();
+//   }
+
+//   @override
+//   Widget build(BuildContext context) {
+//     return AnimatedBuilder(
+//       animation: _controller,
+//       builder: (context, child) {
+//         return Row(
+//           mainAxisAlignment: MainAxisAlignment.center,
+//           children: [
+//             // Moving Arrow
+//             Transform.translate(
+//               offset: Offset(-5 * _controller.value, 0),
+//               child: Icon(Icons.chevron_left, color: widget.textColor, size: 18),
+//             ),
+//             Text(
+//               widget.text,
+//               style: TextStyle(
+//                 color: widget.textColor,
+//                 fontSize: 14,
+//               ),
+//             ),
+//           ],
+//         );
+//       },
+//     );
+//   }
+// }
