@@ -46,7 +46,7 @@ class AvatarController {
     return _visemeHelper.loadVisemesFromAsset(assetPath);
   }
 
-  // ✅ NEW METHOD: Play viseme for text-based lip sync
+  // ✅ Play viseme for text-based lip sync
   Future<void> playVisemeForText(String text, List<Map<String, dynamic>> visemeEvents) async {
     try {
       await _channel?.invokeMethod('playVisemeForText', {
@@ -58,7 +58,7 @@ class AvatarController {
     }
   }
 
-  // ✅ NEW METHOD: Trigger single viseme
+  // ✅ Trigger single viseme
   Future<void> triggerViseme(String visemeName, {double duration = 0.1}) async {
     try {
       await _channel?.invokeMethod('triggerViseme', {
@@ -70,12 +70,33 @@ class AvatarController {
     }
   }
 
-  // ✅ NEW METHOD: Reset avatar to neutral state
+  // ✅ Reset avatar to neutral state
   Future<void> resetToNeutral() async {
     try {
       await _channel?.invokeMethod('resetToNeutral');
     } catch (e) {
       print('Error resetting avatar: $e');
+    }
+  }
+
+  // ✅ NEW METHOD: Trigger hand wave animation
+  Future<void> triggerHandWave({double duration = 2.0}) async {
+    try {
+      print('👋 Triggering hand wave for ${duration}s');
+      await _channel?.invokeMethod('triggerHandWave', {
+        'duration': duration,
+      });
+    } catch (e) {
+      print('Error triggering hand wave: $e');
+    }
+  }
+
+  // ✅ NEW METHOD: Stop hand wave animation
+  Future<void> stopHandWave() async {
+    try {
+      await _channel?.invokeMethod('stopHandWave');
+    } catch (e) {
+      print('Error stopping hand wave: $e');
     }
   }
 }

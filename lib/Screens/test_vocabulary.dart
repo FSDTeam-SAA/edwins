@@ -27,14 +27,13 @@ class _TestVocabularyPageState extends State<TestVocabularyPage> with TickerProv
   bool isAvatarSpeaking = false;
   String translatedText = '';
   bool showTranslation = false;
+
   
   late FlutterTts flutterTts;
   late AvatarController avatarController;
   
-  // Viseme data
   Map<String, List<VisemeData>> visemeMap = {};
   
-  // Animation Controllers
   late AnimationController _shakeController;
   late AnimationController _correctController;
   late AnimationController _avatarController;
@@ -54,7 +53,8 @@ class _TestVocabularyPageState extends State<TestVocabularyPage> with TickerProv
     _loadVisemeData();
   }
 
-  // Load viseme data from file
+
+
   Future<void> _loadVisemeData() async {
     try {
       final String data = await rootBundle.loadString('test/data/viseme.txt');
@@ -64,7 +64,6 @@ class _TestVocabularyPageState extends State<TestVocabularyPage> with TickerProv
     }
   }
 
-  // Parse viseme data
   void _parseVisemeData(String data) {
     final lines = data.split('\n');
     String? currentWord;
@@ -74,7 +73,6 @@ class _TestVocabularyPageState extends State<TestVocabularyPage> with TickerProv
       line = line.trim();
       if (line.isEmpty) continue;
 
-      // Check if it's a word line (doesn't start with parenthesis)
       if (!line.startsWith('(')) {
         if (currentWord != null && currentVisemes.isNotEmpty) {
           visemeMap[currentWord.toLowerCase()] = List.from(currentVisemes);
@@ -82,7 +80,6 @@ class _TestVocabularyPageState extends State<TestVocabularyPage> with TickerProv
         currentWord = line;
         currentVisemes.clear();
       } else {
-        // Parse viseme line: ('viseme_PP', 0.03, 0.07)
         final regex = RegExp(r"\('([^']+)',\s*([\d.]+),\s*([\d.]+)\)");
         final match = regex.firstMatch(line);
         if (match != null) {
@@ -94,7 +91,6 @@ class _TestVocabularyPageState extends State<TestVocabularyPage> with TickerProv
       }
     }
 
-    // Add last word
     if (currentWord != null && currentVisemes.isNotEmpty) {
       visemeMap[currentWord.toLowerCase()] = currentVisemes;
     }
@@ -137,83 +133,77 @@ class _TestVocabularyPageState extends State<TestVocabularyPage> with TickerProv
     );
   }
 
-Future<void> _initTts() async {
-  flutterTts = FlutterTts();
-  
-  // Set language and speech parameters
-  await flutterTts.setLanguage("en-US");
-  
-  // Set voice based on avatar selection
-  if (widget.selectedAvatar.toLowerCase() == 'karl') {
-    // Karl = Male voice
-    if (Platform.isAndroid) {
-      await flutterTts.setVoice({"name": "en-us-x-tpd-local", "locale": "en-US"});
-    } else if (Platform.isIOS) {
-      await flutterTts.setVoice({"name": "com.apple.ttsbundle.Daniel-compact", "locale": "en-US"});
+  Future<void> _initTts() async {
+    flutterTts = FlutterTts();
+    
+    await flutterTts.setLanguage("en-US");
+    
+    if (widget.selectedAvatar.toLowerCase() == 'karl') {
+      if (Platform.isAndroid) {
+        await flutterTts.setVoice({"name": "en-us-x-tpd-local", "locale": "en-US"});
+      } else if (Platform.isIOS) {
+        await flutterTts.setVoice({"name": "com.apple.ttsbundle.Daniel-compact", "locale": "en-US"});
+      }
+    } else {
+      if (Platform.isAndroid) {
+        await flutterTts.setVoice({"name": "en-us-x-tpf-local", "locale": "en-US"});
+      } else if (Platform.isIOS) {
+        await flutterTts.setVoice({"name": "com.apple.ttsbundle.Samantha-compact", "locale": "en-US"});
+      }
     }
-  } else {
-    // Clara = Female voice (default)
-    if (Platform.isAndroid) {
-      await flutterTts.setVoice({"name": "en-us-x-tpf-local", "locale": "en-US"});
-    } else if (Platform.isIOS) {
-      await flutterTts.setVoice({"name": "com.apple.ttsbundle.Samantha-compact", "locale": "en-US"});
+    
+    await flutterTts.setSpeechRate(0.4);
+    await flutterTts.setVolume(1.0);
+    await flutterTts.setPitch(1.0);
+
+    if (Platform.isIOS) {
+      await flutterTts.setIosAudioCategory(
+        IosTextToSpeechAudioCategory.ambient,
+        [
+          IosTextToSpeechAudioCategoryOptions.allowBluetooth,
+          IosTextToSpeechAudioCategoryOptions.allowBluetoothA2DP,
+          IosTextToSpeechAudioCategoryOptions.mixWithOthers,
+          IosTextToSpeechAudioCategoryOptions.defaultToSpeaker,
+        ],
+        IosTextToSpeechAudioMode.voicePrompt,
+      );
+      await flutterTts.setSharedInstance(true);
     }
+
+    flutterTts.setStartHandler(() {
+      if (mounted) {
+        setState(() => isAvatarSpeaking = true);
+      }
+    });
+
+    flutterTts.setCompletionHandler(() {
+      if (mounted) {
+        setState(() => isAvatarSpeaking = false);
+      }
+    });
+
+    flutterTts.setErrorHandler((msg) {
+      print('TTS Error: $msg');
+      if (mounted) {
+        setState(() => isAvatarSpeaking = false);
+      }
+    });
+    
+    flutterTts.setCancelHandler(() {
+      if (mounted) {
+        setState(() => isAvatarSpeaking = false);
+      }
+    });
   }
-  
-  await flutterTts.setSpeechRate(0.4);
-  await flutterTts.setVolume(1.0);
-  await flutterTts.setPitch(1.0);
-
-  if (Platform.isIOS) {
-    await flutterTts.setIosAudioCategory(
-      IosTextToSpeechAudioCategory.ambient,
-      [
-        IosTextToSpeechAudioCategoryOptions.allowBluetooth,
-        IosTextToSpeechAudioCategoryOptions.allowBluetoothA2DP,
-        IosTextToSpeechAudioCategoryOptions.mixWithOthers,
-        IosTextToSpeechAudioCategoryOptions.defaultToSpeaker,
-      ],
-      IosTextToSpeechAudioMode.voicePrompt,
-    );
-    await flutterTts.setSharedInstance(true);
-  }
-
-  flutterTts.setStartHandler(() {
-    if (mounted) {
-      setState(() => isAvatarSpeaking = true);
-    }
-  });
-
-  flutterTts.setCompletionHandler(() {
-    if (mounted) {
-      setState(() => isAvatarSpeaking = false);
-    }
-  });
-
-  flutterTts.setErrorHandler((msg) {
-    print('TTS Error: $msg');
-    if (mounted) {
-      setState(() => isAvatarSpeaking = false);
-    }
-  });
-  
-  flutterTts.setCancelHandler(() {
-    if (mounted) {
-      setState(() => isAvatarSpeaking = false);
-    }
-  });
-}
 
   Future<void> _speak(String text) async {
     if (!isMuted) {
       await flutterTts.stop();
       await Future.delayed(const Duration(milliseconds: 100));
       
-      // Start lip sync animation BEFORE speaking
       print('🎤 Speaking: $text');
       _startLipSync(text);
       
-      // Speak with await to ensure it completes
       var result = await flutterTts.speak(text);
       if (result == 1) {
         print('✅ TTS started successfully');
@@ -223,44 +213,59 @@ Future<void> _initTts() async {
     }
   }
 
-  // Start lip sync based on viseme data
-  void _startLipSync(String text) {
-    final words = text.toLowerCase().split(' ');
-    print('📝 Words to sync: $words');
+void _startLipSync(String text) {
+  final words = text.toLowerCase().split(' ');
+  print('📝 Words to sync: $words');
+  
+  for (var word in words) {
+    // Remove punctuation but keep accent characters
+    word = word.replaceAll(RegExp(r'[^\wäöüß\s]', unicode: true), '').trim();
     
-    for (var word in words) {
-      // Remove punctuation
-      word = word.replaceAll(RegExp(r'[^\w\s]'), '');
+    if (word.isEmpty) continue;
+    
+    print('🔍 Looking for viseme data: "$word"');
+    
+    // Try to find exact match first
+    String? lookupWord = word;
+    
+    // If not found, try without accents
+    if (!visemeMap.containsKey(lookupWord)) {
+      // Convert ä->a, ö->o, ü->u for fallback
+      lookupWord = word
+          .replaceAll('ä', 'a')
+          .replaceAll('ö', 'o')
+          .replaceAll('ü', 'u')
+          .replaceAll('ß', 'ss');
+      print('🔄 Trying without accents: "$lookupWord"');
+    }
+    
+    if (visemeMap.containsKey(lookupWord)) {
+      final visemes = visemeMap[lookupWord]!;
+      print('✅ Found ${visemes.length} visemes for "$lookupWord"');
       
-      print('🔍 Looking for viseme data: "$word"');
-      
-      if (visemeMap.containsKey(word)) {
-        final visemes = visemeMap[word]!;
-        print('✅ Found ${visemes.length} visemes for "$word"');
+      for (var viseme in visemes) {
+        final delay = (viseme.startTime * 1000).toInt();
+        final duration = (viseme.endTime - viseme.startTime);
         
-        // Play each viseme with proper timing
-        for (var viseme in visemes) {
-          final delay = (viseme.startTime * 1000).toInt();
-          final duration = (viseme.endTime - viseme.startTime);
-          
-          print('⏱️ Scheduling ${viseme.name} at ${delay}ms for ${duration}s');
-          
-          Future.delayed(Duration(milliseconds: delay), () {
-            if (mounted && isAvatarSpeaking) {
-              print('🎭 Playing viseme: ${viseme.name}');
-              avatarController.triggerViseme(viseme.name, duration: duration);
-            }
-          });
-        }
-      } else {
-        print('❌ No viseme data found for "$word"');
-        print('📋 Available words: ${visemeMap.keys.toList()}');
+        print('⏱️ Scheduling ${viseme.name} at ${delay}ms for ${duration}s');
+        
+        Future.delayed(Duration(milliseconds: delay), () {
+          if (mounted && isAvatarSpeaking) {
+            print('🎭 Playing viseme: ${viseme.name}');
+            avatarController.triggerViseme(viseme.name, duration: duration);
+          }
+        });
       }
+    } else {
+      print('❌ No viseme data found for "$word" or "$lookupWord"');
+      print('📋 Available words: ${visemeMap.keys.toList()}');
     }
   }
+}
 
   Future<void> _stop() async {
     await flutterTts.stop();
+    await avatarController.stopHandWave();
     setState(() => isAvatarSpeaking = false);
   }
 
@@ -307,6 +312,7 @@ Future<void> _initTts() async {
     _avatarController.dispose();
     _buttonScaleController.dispose();
     flutterTts.stop();
+    avatarController.stopHandWave();
     avatarController.disposeView();
     super.dispose();
   }
@@ -319,9 +325,9 @@ Future<void> _initTts() async {
       'options': [
         {
           'text': 'Car',
-          'textColor': const Color(0xFFFF6291),
-          'bgColor': const Color(0xFFFFF0F4),
-          'borderColor': const Color(0xFFFF6291),
+          'textColor': const Color(0xFFFF8000),
+          'bgColor': const Color(0xFFFFF6ED),
+          'borderColor': const Color(0xFFFF8000),
         },
         {
           'text': 'Cap',
@@ -331,15 +337,15 @@ Future<void> _initTts() async {
         },
         {
           'text': 'Cat',
-          'textColor': const Color(0xFFFF6666),
-          'bgColor': const Color(0xFFFFF0F0),
-          'borderColor': const Color(0xFFFF6666),
+          'textColor': const Color(0xFFFF8000),
+          'bgColor': const Color(0xFFFFF6ED),
+          'borderColor': const Color(0xFFFF8000),
         },
         {
           'text': 'Can',
-          'textColor': const Color(0xFFFF66CC),
-          'bgColor': const Color(0xFFFFF0F9),
-          'borderColor': const Color(0xFFFF66CC),
+          'textColor': const Color(0xFFFF8000),
+          'bgColor': const Color(0xFFFFF6ED),
+          'borderColor': const Color(0xFFFF8000),
         },
       ],
     },
@@ -350,9 +356,9 @@ Future<void> _initTts() async {
       'options': [
         {
           'text': 'Katze',
-          'textColor': const Color(0xFFFF6291),
-          'bgColor': const Color(0xFFFFF0F4),
-          'borderColor': const Color(0xFFFF6291),
+          'textColor': const Color(0xFFFF8000),
+          'bgColor': const Color(0xFFFFF6ED),
+          'borderColor': const Color(0xFFFF8000),
         },
         {
           'text': 'Frisst',
@@ -362,9 +368,9 @@ Future<void> _initTts() async {
         },
         {
           'text': 'Hähnchen',
-          'textColor': const Color(0xFFFF6666),
-          'bgColor': const Color(0xFFFFF0F0),
-          'borderColor': const Color(0xFFFF6666),
+          'textColor': const Color(0xFFFF8000),
+          'bgColor': const Color(0xFFFFF6ED),
+          'borderColor': const Color(0xFFFF8000),
         },
         {
           'text': 'Die',
@@ -376,66 +382,81 @@ Future<void> _initTts() async {
     },
   ];
 
-  void handleOptionTap(String option) {
-    // Prevent multiple taps on the same option or when error is showing
-    if (showError || selectedOption == option) return;
-    
-    setState(() {
-      selectedOption = option;
-      String correctAnswer = questions[currentQuestionIndex]['correctAnswer'];
-      
-      _speak(option);
-      
-      if (option != correctAnswer) {
+
+void handleOptionTap(String option) {
+  if (selectedOption == option) return; // Allow changing selection
+  
+  setState(() {
+    selectedOption = option;
+    _speak(option); // Only speak the option, no validation yet
+  });
+}
+
+
+
+void handleContinue() {
+  // If no option is selected, do nothing
+  if (selectedOption == null) return;
+  
+  String correctAnswer = questions[currentQuestionIndex]['correctAnswer'];
+  
+  // ✅ Validation happens ONLY when Continue is clicked
+  if (!showError) {
+    if (selectedOption != correctAnswer) {
+      // Wrong answer
+      setState(() {
         showError = true;
         _vibratePhone();
         _shakeController.forward().then((_) => _shakeController.reverse());
-        
-        // Speak correct answer once after delay
-        Future.delayed(const Duration(milliseconds: 800), () {
-          if (mounted && showError) {
-            _speakCorrectAnswer(correctAnswer);
-          }
-        });
-      } else {
-        _correctController.forward();
-        _playCorrectSound();
-      }
-    });
-  }
-
-  void handleContinue() {
-    String correctAnswer = questions[currentQuestionIndex]['correctAnswer'];
-    
-    if (selectedOption == correctAnswer) {
-      if (currentQuestionIndex < questions.length - 1) {
-        setState(() {
-          currentQuestionIndex++;
-          selectedOption = null;
-          showError = false;
-          showTranslation = false;
-          _correctController.reset();
-        });
-      } else {
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(
-            builder: (context) => TestConversationPage(
-              selectedAvatar: widget.selectedAvatar,
-            ),
-          ),
-        );
-      }
+      });
+      
+      Future.delayed(const Duration(milliseconds: 800), () {
+        if (mounted && showError) {
+          _speakCorrectAnswer(correctAnswer); // Avatar speaks with lip sync
+        }
+      });
+      return; // Stop here, don't continue
     } else {
-      setState(() {
-        showError = false;
-        selectedOption = null;
+      // Correct answer
+      _correctController.forward();
+      _playCorrectSound();
+      _speak("Well done"); // Avatar says "Well done" with lip sync
+      
+      // Small delay before moving to next question
+      Future.delayed(const Duration(milliseconds: 1500), () {
+        if (mounted) {
+          if (currentQuestionIndex < questions.length - 1) {
+            setState(() {
+              currentQuestionIndex++;
+              selectedOption = null;
+              showError = false;
+              showTranslation = false;
+              _correctController.reset();
+            });
+          } else {
+            Navigator.pushReplacement(
+              context,
+              MaterialPageRoute(
+                builder: (context) => TestConversationPage(
+                  selectedAvatar: widget.selectedAvatar,
+                ),
+              ),
+            );
+          }
+        }
       });
     }
+  } else {
+    // User clicked Continue after seeing error popup
+    setState(() {
+      showError = false;
+      selectedOption = null;
+    });
   }
+}
+
 
   void _speakCorrectAnswer(String answer) {
-    // Stop any ongoing speech first
     _stop().then((_) {
       Future.delayed(const Duration(milliseconds: 300), () {
         _speak("The right answer is $answer");
@@ -604,7 +625,7 @@ Future<void> _initTts() async {
                                       ),
                                       child: Icon(
                                         isAvatarMaximized 
-                                            ? Icons.minimize 
+                                            ? Icons.fullscreen_exit 
                                             : Icons.fullscreen,
                                         color: Colors.white,
                                         size: 18,
@@ -921,9 +942,9 @@ Future<void> _initTts() async {
 
   Widget _buildOptionButton(Map<String, dynamic> option, double height, [bool isSmallText = false]) {
     final isSelected = selectedOption == option['text'];
-    final isCorrect = selectedOption == option['text'] && 
-                      selectedOption == questions[currentQuestionIndex]['correctAnswer'];
-    
+    final isCorrect = selectedOption == option['text'] &&
+        selectedOption == questions[currentQuestionIndex]['correctAnswer'];
+
     return GestureDetector(
       onTap: () => handleOptionTap(option['text']),
       child: AnimatedBuilder(
@@ -980,7 +1001,6 @@ Future<void> _initTts() async {
   }
 }
 
-// Viseme data model
 class VisemeData {
   final String name;
   final double startTime;

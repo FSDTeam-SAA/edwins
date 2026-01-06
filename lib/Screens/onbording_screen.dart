@@ -1,4 +1,8 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:flutter_tts/flutter_tts.dart';
 import 'package:language_app/Auth/login.dart';
 import 'package:language_app/Screens/test_vocabulary.dart';
 import 'package:language_app/avatar/avatar_controller.dart';
@@ -16,6 +20,8 @@ class _OnboardingScreenState extends State<OnboardingScreen> with TickerProvider
   final PageController _pageController = PageController();
   int _currentPage = 0;
 
+  late FlutterTts flutterTts;
+  Map<String, List<VisemeData>> visemeMap = {};
   String selectedNative = "English";
   String selectedTarget = "German";
   String selectedGoal = "";
@@ -42,17 +48,19 @@ class _OnboardingScreenState extends State<OnboardingScreen> with TickerProvider
     _buttonScaleAnimation = Tween<double>(begin: 1.0, end: 0.95).animate(
       CurvedAnimation(parent: _buttonScaleController, curve: Curves.easeInOut),
     );
+    _initTts();
+    _loadVisemeData(); // ✅ এটা add করুন
   }
 
   @override
   void dispose() {
-    _pageController.dispose();
-    _buttonScaleController.dispose();
-    claraController.disposeView();
-    karlController.disposeView();
-    super.dispose();
-  }
-
+  _pageController.dispose();
+  _buttonScaleController.dispose();
+  claraController.disposeView();
+  karlController.disposeView();
+  flutterTts.stop(); // এই line add করুন
+  super.dispose();
+}
   _completeOnboarding() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
     await prefs.setBool('onboarded', true);
@@ -119,75 +127,231 @@ class _OnboardingScreenState extends State<OnboardingScreen> with TickerProvider
     action();
   }
 
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
+
+@override
+Widget build(BuildContext context) {
+  return Scaffold(
+    backgroundColor: Colors.white,
+    appBar: AppBar(
       backgroundColor: Colors.white,
-      appBar: AppBar(
-        backgroundColor: Colors.white,
-        elevation: 0,
-        leading: _currentPage == 0
-            ? null
-            : _AnimatedBackButton(
-                onPressed: () {
-                  _pageController.previousPage(
-                    duration: const Duration(milliseconds: 400),
-                    curve: Curves.easeInOutCubic,
-                  );
-                },
-              ),
-      ),
-      body: SafeArea(
-        child: Column(
-          children: [
-            Expanded(
-              child: PageView(
-                controller: _pageController,
-                physics: const NeverScrollableScrollPhysics(),
-                onPageChanged: (int page) => setState(() => _currentPage = page),
-                children: [
-                  _AnimatedPageWrapper(
-                    key: const ValueKey(0),
-                    child: _buildLanguageStep("What is your target language?", ["German", "English", "Spanish"], false),
-                  ),
-                  _AnimatedPageWrapper(
-                    key: const ValueKey(1),
-                    child: _buildGoalStep(),
-                  ),
-                  _AnimatedPageWrapper(
-                    key: const ValueKey(2),
-                    child: _buildLanguageStep("What is your native language?", ["English", "French", "Arabic"], true),
-                  ),
-                  _AnimatedPageWrapper(
-                    key: const ValueKey(3),
-                    child: _buildTimeStep(),
-                  ),
-                  _AnimatedPageWrapper(
-                    key: const ValueKey(4),
-                    child: _buildPartnerStep(),
-                  ),
-                  _AnimatedPageWrapper(
-                    key: const ValueKey(5),
-                    child: _buildHobbiesStep(),
-                  ),
-                  _AnimatedPageWrapper(
-                    key: const ValueKey(6),
-                    child: _buildLevelStep(),
-                  ),
-                ],
-              ),
+      elevation: 0,
+      leading: _currentPage == 0
+          ? null
+          : _AnimatedBackButton(
+              onPressed: () {
+                _pageController.previousPage(
+                  duration: const Duration(milliseconds: 400),
+                  curve: Curves.easeInOutCubic,
+                );
+              },
             ),
-            Padding(
-              padding: const EdgeInsets.only(bottom: 20.0),
-              child: _buildIndicator(),
-            ),
-            _buildNextButton(),
-            const SizedBox(height: 30),
-          ],
-        ),
-      ),
-    );
+    ),
+    body: SafeArea(
+      child: Column(
+        children: [
+          Expanded(
+            child: PageView(
+              controller: _pageController,
+              physics: const NeverScrollableScrollPhysics(),
+              onPageChanged: (int page) {
+                setState(() => _currentPage = page);
+                
+                // যখন Partner page এ আসবে, Clara এর greeting play করবে
+                  if (page == 4) {
+    Future.delayed(const Duration(milliseconds: 800), () {
+      if (mounted) {
+        _playAvatarGreeting("Clara");
+      }
+    });
   }
+              },
+              children: [
+                _AnimatedPageWrapper(
+                  key: const ValueKey(0),
+                  child: _buildLanguageStep("What is your target language?", ["German", "English", "Spanish"], false),
+                ),
+                _AnimatedPageWrapper(
+                  key: const ValueKey(1),
+                  child: _buildGoalStep(),
+                ),
+                _AnimatedPageWrapper(
+                  key: const ValueKey(2),
+                  child: _buildLanguageStep("What is your native language?", ["English", "French", "Arabic"], true),
+                ),
+                _AnimatedPageWrapper(
+                  key: const ValueKey(3),
+                  child: _buildTimeStep(),
+                ),
+                _AnimatedPageWrapper(
+                  key: const ValueKey(4),
+                  child: _buildPartnerStep(),
+                ),
+                _AnimatedPageWrapper(
+                  key: const ValueKey(5),
+                  child: _buildHobbiesStep(),
+                ),
+                _AnimatedPageWrapper(
+                  key: const ValueKey(6),
+                  child: _buildLevelStep(),
+                ),
+              ],
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.only(bottom: 20.0),
+            child: _buildIndicator(),
+          ),
+          _buildNextButton(),
+          const SizedBox(height: 30),
+        ],
+      ),
+    ),
+  );
+}
+
+Future<void> _loadVisemeData() async {
+  try {
+    final String data = await rootBundle.loadString('test/data/viseme.txt');
+    _parseVisemeData(data);
+  } catch (e) {
+    print('Error loading viseme data: $e');
+  }
+}
+
+void _parseVisemeData(String data) {
+  final lines = data.split('\n');
+  String? currentWord;
+  List<VisemeData> currentVisemes = [];
+
+  for (var line in lines) {
+    line = line.trim();
+    if (line.isEmpty) continue;
+
+    if (!line.startsWith('(')) {
+      if (currentWord != null && currentVisemes.isNotEmpty) {
+        visemeMap[currentWord.toLowerCase()] = List.from(currentVisemes);
+      }
+      currentWord = line;
+      currentVisemes.clear();
+    } else {
+      final regex = RegExp(r"\('([^']+)',\s*([\d.]+),\s*([\d.]+)\)");
+      final match = regex.firstMatch(line);
+      if (match != null) {
+        final visemeName = match.group(1)!;
+        final startTime = double.parse(match.group(2)!);
+        final endTime = double.parse(match.group(3)!);
+        currentVisemes.add(VisemeData(visemeName, startTime, endTime));
+      }
+    }
+  }
+
+  if (currentWord != null && currentVisemes.isNotEmpty) {
+    visemeMap[currentWord.toLowerCase()] = currentVisemes;
+  }
+
+  print('✅ Loaded viseme data for ${visemeMap.length} words');
+}
+
+void _startLipSync(String text) {
+  final words = text.toLowerCase().split(' ');
+  print('📝 Words to sync: $words');
+  
+  for (var word in words) {
+    word = word.replaceAll(RegExp(r'[^\w\s]'), '').trim();
+    
+    if (word.isEmpty) continue;
+    
+    print('🔍 Looking for viseme data: "$word"');
+    
+    if (visemeMap.containsKey(word)) {
+      final visemes = visemeMap[word]!;
+      print('✅ Found ${visemes.length} visemes for "$word"');
+      
+      final controller = word == 'clara' || word == 'am' || word == 'i' 
+          ? claraController 
+          : karlController;
+      
+      for (var viseme in visemes) {
+        final delay = (viseme.startTime * 1000).toInt();
+        final duration = (viseme.endTime - viseme.startTime);
+        
+        print('⏱️ Scheduling ${viseme.name} at ${delay}ms for ${duration}s');
+        
+        Future.delayed(Duration(milliseconds: delay), () {
+          if (mounted) {
+            print('🎭 Playing viseme: ${viseme.name}');
+            controller.triggerViseme(viseme.name, duration: duration);
+          }
+        });
+      }
+    } else {
+      print('❌ No viseme data found for "$word"');
+    }
+  }
+}
+
+
+
+
+
+
+Future<void> _initTts() async {
+  flutterTts = FlutterTts();
+  await flutterTts.setLanguage("en-US");
+  await flutterTts.setSpeechRate(0.4);
+  await flutterTts.setVolume(1.0);
+  await flutterTts.setPitch(1.0);
+}
+
+Future<void> _playAvatarGreeting(String avatarName) async {
+
+  
+  String greetingText = avatarName == "Karl" 
+      ? "Hi, I am Karl" 
+      : "Hi, I am Clara";
+  
+  print('👋 Playing greeting: $greetingText');
+  
+  // Set voice based on avatar
+  if (avatarName == "Karl") {
+    if (Platform.isAndroid) {
+      await flutterTts.setVoice({"name": "en-us-x-tpd-local", "locale": "en-US"});
+    } else if (Platform.isIOS) {
+      await flutterTts.setVoice({"name": "com.apple.ttsbundle.Daniel-compact", "locale": "en-US"});
+    }
+  } else {
+    if (Platform.isAndroid) {
+      await flutterTts.setVoice({"name": "en-us-x-tpf-local", "locale": "en-US"});
+    } else if (Platform.isIOS) {
+      await flutterTts.setVoice({"name": "com.apple.ttsbundle.Samantha-compact", "locale": "en-US"});
+    }
+  }
+  
+  // Trigger hand wave
+  if (avatarName == "Clara") {
+    await claraController.triggerHandWave(duration: 2.5);
+
+  } else {
+    await karlController.triggerHandWave(duration: 2.5);
+   
+  }
+  
+  await Future.delayed(const Duration(milliseconds: 500));
+  
+  // ✅ Start lip sync BEFORE speaking
+  _startLipSync(greetingText);
+  
+  await flutterTts.speak(greetingText);
+}
+
+
+
+
+
+
+
+
+
 
   Widget _buildLanguageStep(String title, List<String> options, bool isNative) {
     return Padding(
@@ -337,6 +501,14 @@ Widget _buildPartnerStep() {
         Expanded(
           child: PageView(
             padEnds: false,
+            onPageChanged: (index) {
+              // Avatar swap করলে greeting play হবে
+              if (index == 0) {
+                _playAvatarGreeting("Clara");
+              } else if (index == 1) {
+                _playAvatarGreeting("Karl");
+              }
+            },
             children: [
               // Clara Avatar
               Padding(
@@ -753,6 +925,7 @@ class _AnimatedBackButtonState extends State<_AnimatedBackButton>
   void dispose() {
     _controller.dispose();
     super.dispose();
+    
   }
 
   @override
@@ -1407,4 +1580,11 @@ class _AnimatedPageWrapperState extends State<_AnimatedPageWrapper>
       ),
     );
   }
+}
+class VisemeData {
+  final String name;
+  final double startTime;
+  final double endTime;
+
+  VisemeData(this.name, this.startTime, this.endTime);
 }
