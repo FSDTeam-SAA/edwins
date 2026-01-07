@@ -45,13 +45,22 @@ class _TestVocabularyPageState extends State<TestVocabularyPage> with TickerProv
   late Animation<double> _avatarSizeAnimation;
 
   @override
-  void initState() {
-    super.initState();
-    avatarController = AvatarController();
-    _initAnimations();
-    _initTts();
-    _loadVisemeData();
-  }
+void initState() {
+  super.initState();
+  avatarController = AvatarController();
+  _initAnimations();
+  _initTts();
+  _loadVisemeData();
+  
+  // ✅ NEW: Page এ ঢোকার সাথে সাথে correct answer বলবে
+  WidgetsBinding.instance.addPostFrameCallback((_) {
+    Future.delayed(const Duration(milliseconds: 500), () {
+      if (mounted) {
+        _repeatCorrectAnswer();
+      }
+    });
+  });
+}
 
 
 
