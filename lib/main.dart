@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:language_app/features/home/home_view.dart';
-// import 'package:language_app/features/splash/splash.dart';
+//import 'package:language_app/features/splash/splash.dart';
 import 'package:language_app/core/providers/avatar_provider.dart';
 import 'package:language_app/app/constants/app_constants.dart';
 import 'package:provider/provider.dart';

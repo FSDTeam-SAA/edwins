@@ -163,10 +163,20 @@ final class AvatarPlatformView: NSObject, FlutterPlatformView {
             let wrapper = loadedRig.wrapper
             let localSphere = wrapper.boundingSphere
             let radius = max(0.01, localSphere.radius)
+//         --- OLD CODE (Portrait) ---
+//            let headY = radius * 150.6
+//            let target = SCNVector3(0, headY, 0)
+//            let distance: Float = radius * 110.0
+            
+//             --- NEW SUGGESTED CODE (Full Body) ---
+//            let headY = radius * 105.0
+//            let target = SCNVector3(0, headY, 0)
+//            let distance: Float = radius * 180.0
+//            let bodyCenterY = radius * 85.0
+            let headFocusY = radius * 140.0
+            let target = SCNVector3(0, headFocusY, 0)
+            let distance: Float = radius * 280.0
 
-            let headY = radius * 150.6
-            let target = SCNVector3(0, headY, 0)
-            let distance: Float = radius * 110.0
 
             let camNode = SCNNode()
             let camera = SCNCamera()
@@ -176,7 +186,7 @@ final class AvatarPlatformView: NSObject, FlutterPlatformView {
             camera.zFar  = 1000
             camera.fieldOfView = 35
 
-            camNode.position = SCNVector3(0, headY + radius * 0.2, distance)
+            camNode.position = SCNVector3(0, headFocusY + radius * 0.2, distance)
             camNode.look(at: target)
 
             wrapper.addChildNode(camNode)
@@ -314,149 +324,150 @@ private func animateCameraZoom(duration: Double) {
         print("📸 [NATIVE] FOV zoom completed")
     }
 }
-    
-// ✅ PERFECT: L-shaped hand wave (upper arm down, forearm up at 90°)
-// ✅ PERFECT: L-shaped hand wave with fingers spread
-private func animateHandWave(armNode: SCNNode, duration: Double) {
-    print("👋 [NATIVE] Starting L-shaped hand wave animation")
-    
-    let handNode = rightHandNode
-    let forearmNode = rightForeArmNode
-    
-    // Stop all existing animations
-    armNode.removeAllAnimations()
-    handNode?.removeAllAnimations()
-    forearmNode?.removeAllAnimations()
-    
-    // ========== UPPER ARM (Shoulder to Elbow) - Keep DOWN ==========
-    let armLiftX = CAKeyframeAnimation(keyPath: "eulerAngles.x")
-    armLiftX.values = [
-        0,          // Start (relaxed)
-        -0.3,       // Slight forward (to help elbow position)
-        -0.3,       // Hold
-        -0.3,       // Hold
-        -0.2,       // Relax
-        0           // Back to rest
-    ]
-    armLiftX.keyTimes = [0, 0.2, 0.4, 0.7, 0.85, 1.0]
-    armLiftX.duration = duration
-    armLiftX.timingFunction = CAMediaTimingFunction(name: .easeInEaseOut)
-    
-    let armSide = CAKeyframeAnimation(keyPath: "eulerAngles.y")
-    armSide.values = [0, 0.2, 0.2, 0.2, 0.1, 0]
-    armSide.keyTimes = [0, 0.2, 0.4, 0.7, 0.85, 1.0]
-    armSide.duration = duration
-    armSide.timingFunction = CAMediaTimingFunction(name: .easeInEaseOut)
-    
-    let armRotate = CAKeyframeAnimation(keyPath: "eulerAngles.z")
-    armRotate.values = [0, -0.3, -0.3, -0.3, -0.15, 0]
-    armRotate.keyTimes = [0, 0.2, 0.4, 0.7, 0.85, 1.0]
-    armRotate.duration = duration
-    armRotate.timingFunction = CAMediaTimingFunction(name: .easeInEaseOut)
-    
-    let armGroup = CAAnimationGroup()
-    armGroup.animations = [armLiftX, armSide, armRotate]
-    armGroup.duration = duration
-    armGroup.fillMode = .both
-    armGroup.isRemovedOnCompletion = false
-    
-    // ========== FOREARM (Elbow to Wrist) - BEND UP 90° ==========
-    if let forearm = forearmNode {
-        let forearmBend = CAKeyframeAnimation(keyPath: "eulerAngles.x")
-        forearmBend.values = [
-            0,          // Start straight
-            -1.57,      // Bend up 90° (π/2 radians)
-            -1.57,      // Hold L-shape
-            -1.57,      // Hold
-            -1.2,       // Start straightening
-            0           // Back to straight
-        ]
-        forearmBend.keyTimes = [0, 0.25, 0.4, 0.7, 0.85, 1.0]
-        forearmBend.duration = duration
-        forearmBend.timingFunction = CAMediaTimingFunction(name: .easeInEaseOut)
-        forearmBend.fillMode = .both
-        forearmBend.isRemovedOnCompletion = false
+    // ✅ PERFECT: Playful, controlled hand wave (lower height, tighter wave)
+    private func animateHandWave(armNode: SCNNode, duration: Double) {
+        print("👋 [NATIVE] Starting PLAYFUL hand wave animation")
         
-        forearm.addAnimation(forearmBend, forKey: "forearmBend")
-        print("✅ [NATIVE] Forearm L-shape bend applied")
+        let handNode = rightHandNode
+        let forearmNode = rightForeArmNode
+        
+        // Stop all existing animations
+        armNode.removeAllAnimations()
+        handNode?.removeAllAnimations()
+        forearmNode?.removeAllAnimations()
+        
+        // ========== UPPER ARM (Shoulder to Elbow) - Keep DOWN ==========
+        let armLiftX = CAKeyframeAnimation(keyPath: "eulerAngles.x")
+        armLiftX.values = [
+            0,          // Start (relaxed)
+            -0.3,       // Slight forward
+            -0.3,       // Hold
+            -0.3,       // Hold
+            -0.2,       // Relax
+            0           // Back to rest
+        ]
+        armLiftX.keyTimes = [0, 0.2, 0.4, 0.7, 0.85, 1.0]
+        armLiftX.duration = duration
+        armLiftX.timingFunction = CAMediaTimingFunction(name: .easeInEaseOut)
+        
+        let armSide = CAKeyframeAnimation(keyPath: "eulerAngles.y")
+        armSide.values = [0, 0.2, 0.2, 0.2, 0.1, 0]
+        armSide.keyTimes = [0, 0.2, 0.4, 0.7, 0.85, 1.0]
+        armSide.duration = duration
+        armSide.timingFunction = CAMediaTimingFunction(name: .easeInEaseOut)
+        
+        let armRotate = CAKeyframeAnimation(keyPath: "eulerAngles.z")
+        // Sympathetic rotation: "Bobble" with the wave
+        armRotate.values = [
+            0,
+            -0.3,
+            -0.25, // Bobble
+            -0.3,
+            -0.25, // Bobble
+            -0.3,
+            -0.15,
+            0
+        ]
+        armRotate.keyTimes = [0, 0.2, 0.35, 0.5, 0.65, 0.8, 0.9, 1.0]
+        armRotate.duration = duration
+        armRotate.timingFunction = CAMediaTimingFunction(name: .easeInEaseOut)
+        
+        let armGroup = CAAnimationGroup()
+        armGroup.animations = [armLiftX, armSide, armRotate]
+        armGroup.duration = duration
+        armGroup.fillMode = .both
+        armGroup.isRemovedOnCompletion = false
+        
+        // ========== FOREARM (Elbow to Wrist) - LOWERED HEIGHT ==========
+        if let forearm = forearmNode {
+            let forearmBend = CAKeyframeAnimation(keyPath: "eulerAngles.x")
+            // Reduced bend from -1.6 to -1.3 (approx 75 degrees vs 90+)
+            // Keeps hand around chin/shoulder level, not over head
+            let targetBend = -1.3 
+            
+            forearmBend.values = [
+                0,          // Start
+                targetBend, // Bend up (Lower height)
+                targetBend, // Hold
+                targetBend, // Hold
+                -1.0,       // Start straightening
+                0           // End
+            ]
+            forearmBend.keyTimes = [0, 0.2, 0.3, 0.8, 0.9, 1.0]
+            forearmBend.duration = duration
+            forearmBend.timingFunction = CAMediaTimingFunction(name: .easeInEaseOut)
+            forearmBend.fillMode = .both
+            forearmBend.isRemovedOnCompletion = false
+            
+            forearm.addAnimation(forearmBend, forKey: "forearmBend")
+        }
+        
+        // ========== HAND (Wrist) - TIGHTER, CUTER WAVE ==========
+        if let hand = handNode {
+            // Y-axis: Wave LEFT and RIGHT (horizontal motion)
+            let handWave = CAKeyframeAnimation(keyPath: "eulerAngles.y")
+            
+            // Tighter range: 0.5 to 1.0 (width of ~0.5 rad)
+            // Previous was: 0.2 to 1.4 (width of ~1.2 rad - too wide)
+            let center = 0.75
+            let left = 0.5
+            let right = 1.0
+            
+            handWave.values = [
+                0.8,        // Start facing forward
+                left,       // Tilt left to start
+                right,      // Wave RIGHT (Cycle 1)
+                left,       // Wave LEFT
+                right,      // Wave RIGHT (Cycle 2)
+                left,       // Wave LEFT
+                right,      // Wave RIGHT (Cycle 3)
+                left,       // Wave LEFT
+                0.8,        // Back to center
+                0.8         // Hold center
+            ]
+            // Snappy timing
+            handWave.keyTimes = [0, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0]
+            handWave.duration = duration
+            handWave.timingFunction = CAMediaTimingFunction(name: .easeInEaseOut)
+            handWave.fillMode = .both
+            handWave.isRemovedOnCompletion = false
+            
+            // Z-axis: No rotation
+            let handRotate = CAKeyframeAnimation(keyPath: "eulerAngles.z")
+            handRotate.values = [0, 0]
+            handRotate.duration = duration
+            handRotate.fillMode = .both
+            handRotate.isRemovedOnCompletion = false
+            
+            // X-axis: Slight forward tilt
+            let handTilt = CAKeyframeAnimation(keyPath: "eulerAngles.x")
+            handTilt.values = [0, 0.2, 0.2, 0]
+            handTilt.keyTimes = [0, 0.2, 0.8, 1.0]
+            handTilt.duration = duration
+            handTilt.timingFunction = CAMediaTimingFunction(name: .easeInEaseOut)
+            handTilt.fillMode = .both
+            handTilt.isRemovedOnCompletion = false
+            
+            let handGroup = CAAnimationGroup()
+            handGroup.animations = [handWave, handRotate, handTilt]
+            handGroup.duration = duration
+            handGroup.fillMode = .both
+            handGroup.isRemovedOnCompletion = false
+            
+            hand.addAnimation(handGroup, forKey: "handWave")
+            print("✅ [NATIVE] Hand waving PLAYFULLY (tighter, lower)")
+        }
+        
+        // Apply upper arm animation
+        CATransaction.begin()
+        CATransaction.setCompletionBlock {
+            print("✅ [NATIVE] Playful wave completed")
+        }
+        armNode.addAnimation(armGroup, forKey: "armLift")
+        CATransaction.commit()
+        
+        print("✅ [NATIVE] All playful animations applied")
     }
-    
-    // ========== HAND (Wrist) - WAVE WITH FINGERS SPREAD ==========
-// ========== HAND (Wrist) - WAVE LEFT-RIGHT (NOT FRONT-BACK) ==========
-if let hand = handNode {
-    // Y-axis: Wave LEFT and RIGHT (horizontal motion)
-    let handWave = CAKeyframeAnimation(keyPath: "eulerAngles.y")
-    handWave.values = [
-        0.8,        // Start facing forward
-        0.8,        // Hold forward
-        1.3,        // Wave RIGHT
-        0.3,        // Wave LEFT
-        1.3,        // Wave RIGHT
-        0.3,        // Wave LEFT
-        0.8,        // Back to center
-        0.8         // Hold center
-    ]
-    handWave.keyTimes = [0, 0.3, 0.42, 0.54, 0.66, 0.78, 0.88, 1.0]
-    handWave.duration = duration
-    handWave.timingFunction = CAMediaTimingFunction(name: .easeInEaseOut)
-    handWave.fillMode = .both
-    handWave.isRemovedOnCompletion = false
-    
-    // Z-axis: Keep palm facing forward (no rotation)
-    let handRotate = CAKeyframeAnimation(keyPath: "eulerAngles.z")
-    handRotate.values = [
-        0,          // Start neutral
-        0,          // Hold
-        0,          // No rotation during wave
-        0,          // No rotation
-        0,          // No rotation
-        0,          // No rotation
-        0,          // Hold
-        0           // Neutral
-    ]
-    handRotate.keyTimes = [0, 0.25, 0.4, 0.5, 0.7, 0.85, 0.92, 1.0]
-    handRotate.duration = duration
-    handRotate.timingFunction = CAMediaTimingFunction(name: .easeInEaseOut)
-    handRotate.fillMode = .both
-    handRotate.isRemovedOnCompletion = false
-    
-    // X-axis: Slight forward tilt (natural position)
-    let handTilt = CAKeyframeAnimation(keyPath: "eulerAngles.x")
-    handTilt.values = [
-        0,          // Start
-        0,          // Wait
-        0.2,        // Slight forward tilt
-        0.2,        // Hold
-        0.2,        // Hold
-        0.1,        // Relax
-        0           // Neutral
-    ]
-    handTilt.keyTimes = [0, 0.3, 0.4, 0.7, 0.85, 0.92, 1.0]
-    handTilt.duration = duration
-    handTilt.timingFunction = CAMediaTimingFunction(name: .easeInEaseOut)
-    handTilt.fillMode = .both
-    handTilt.isRemovedOnCompletion = false
-    
-    let handGroup = CAAnimationGroup()
-    handGroup.animations = [handWave, handRotate, handTilt]
-    handGroup.duration = duration
-    handGroup.fillMode = .both
-    handGroup.isRemovedOnCompletion = false
-    
-    hand.addAnimation(handGroup, forKey: "handWave")
-    print("✅ [NATIVE] Hand waving LEFT-RIGHT with palm facing forward")
-}
-    
-    // Apply upper arm animation
-    CATransaction.begin()
-    CATransaction.setCompletionBlock {
-        print("✅ [NATIVE] L-shaped hand wave completed")
-    }
-    armNode.addAnimation(armGroup, forKey: "armLift")
-    CATransaction.commit()
-    
-    print("✅ [NATIVE] All hand wave animations applied")
-}
     
     // ✅ Stop hand wave
  private func stopHandWave() {

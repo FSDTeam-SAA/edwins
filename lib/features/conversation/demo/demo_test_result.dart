@@ -173,7 +173,7 @@ class _AnimatedStartButtonState extends State<_AnimatedStartButton>
               ),
             ),
             child: const Text(
-              'Start Now',
+              'Continue Learning',
               style: TextStyle(
                 color: Colors.white,
                 fontSize: 18,

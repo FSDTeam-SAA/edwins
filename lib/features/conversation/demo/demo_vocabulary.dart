@@ -619,7 +619,8 @@ class _DemoVocabularyState extends State<DemoVocabulary>
                               child: Row(
                                 children: [
                                   GestureDetector(
-                                    onTap: _toggleAvatarSize,
+                                    // onTap: _toggleAvatarSize,
+                                    onTap: () {},
                                     child: Container(
                                       padding: const EdgeInsets.all(8),
                                       decoration: const BoxDecoration(
@@ -773,7 +774,7 @@ class _DemoVocabularyState extends State<DemoVocabulary>
                                     Text(
                                       correctAnswer,
                                       style: const TextStyle(
-                                        color: Color(0xFFFF6666),
+                                        color: Color(0xFFFF8000),
                                         fontSize: 26,
                                         fontWeight: FontWeight.bold,
                                       ),
@@ -791,7 +792,7 @@ class _DemoVocabularyState extends State<DemoVocabulary>
                                           gradient: const LinearGradient(
                                             colors: [
                                               Color(0xFFFF609D),
-                                              Color(0xFFFF7A06)
+                                              Color(0xFFFF8000)
                                             ],
                                           ),
                                           borderRadius:
@@ -948,13 +949,13 @@ class _DemoVocabularyState extends State<DemoVocabulary>
           const SizedBox(height: 30),
           Row(
             children: [
-              Expanded(child: _buildOptionButton(options[0], 60, true)),
+              Expanded(child: _buildOptionButton(options[0], 60, false)),
               const SizedBox(width: 12),
-              Expanded(child: _buildOptionButton(options[1], 60, true)),
+              Expanded(child: _buildOptionButton(options[1], 60, false)),
               const SizedBox(width: 12),
-              Expanded(child: _buildOptionButton(options[2], 60, true)),
+              Expanded(child: _buildOptionButton(options[2], 60, false)),
               const SizedBox(width: 12),
-              Expanded(child: _buildOptionButton(options[3], 60, true)),
+              Expanded(child: _buildOptionButton(options[3], 60, false)),
             ],
           ),
         ],
@@ -980,12 +981,12 @@ class _DemoVocabularyState extends State<DemoVocabulary>
               height: height,
               decoration: BoxDecoration(
                 color: isCorrect
-                    ? const Color(0xFF4CAF50)
+                    ? const Color(0xFFFF8000)
                     : (isSelected ? option['textColor'] : option['bgColor']),
                 borderRadius: BorderRadius.circular(12),
                 border: Border.all(
                   color: isCorrect
-                      ? const Color(0xFF4CAF50)
+                      ? const Color(0xFFFF8000)
                       : option['borderColor'],
                   width: 2,
                 ),

@@ -11,6 +11,7 @@ class AvatarView extends StatefulWidget {
   final double? borderRadius;
   final double? height;
   final String? avatarName;
+  final VoidCallback? onViewCreated;
 
   const AvatarView({
     super.key,
@@ -19,6 +20,7 @@ class AvatarView extends StatefulWidget {
     this.backgroundImagePath,
     this.borderRadius,
     this.avatarName,
+    this.onViewCreated,
   });
 
   @override
@@ -37,6 +39,12 @@ class _AvatarViewState extends State<AvatarView> {
     if (defaultTargetPlatform != TargetPlatform.iOS) {
       _initWebView();
     }
+  }
+
+  void _onPlatfromViewCreated(int id) {
+    _controller.attach(id);
+    widget.onViewCreated?.call();
+    debugPrint('[FLUTTER] Platform view created with id: $id');
   }
 
   void _initWebView() {

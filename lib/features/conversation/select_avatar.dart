@@ -1,4 +1,7 @@
+import 'dart:io';
+import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:flutter_tts/flutter_tts.dart';
 import 'package:language_app/features/home/home_view.dart';
 import 'package:provider/provider.dart';
 import 'package:language_app/core/providers/avatar_provider.dart';
@@ -15,6 +18,8 @@ class SelectAvatar extends StatefulWidget {
 
 class _SelectAvatarState extends State<SelectAvatar> {
   late PageController _pageController;
+  late FlutterTts flutterTts;
+  bool isAvatarSpeaking = false;
   int currentPageIndex = 0;
 
   final AvatarController _claraController = AvatarController();
@@ -23,6 +28,7 @@ class _SelectAvatarState extends State<SelectAvatar> {
   @override
   void initState() {
     super.initState();
+    _initTts();
     final avatarProvider = Provider.of<AvatarProvider>(context, listen: false);
 
     // Set initial page based on saved avatar
@@ -33,6 +39,100 @@ class _SelectAvatarState extends State<SelectAvatar> {
       viewportFraction: 0.85,
       initialPage: initialIndex,
     );
+  }
+
+  Future<void> _initTts() async {
+    flutterTts = FlutterTts();
+    flutterTts.setLanguage("en-US");
+    flutterTts.setSpeechRate(0.4);
+    flutterTts.setVolume(1.0);
+
+    flutterTts.setStartHandler(() => setState(() => isAvatarSpeaking = true));
+    flutterTts
+        .setCompletionHandler(() => setState(() => isAvatarSpeaking = false));
+    flutterTts
+        .setErrorHandler((msg) => setState(() => isAvatarSpeaking = false));
+  }
+
+  void _startLipSync(String text, AvatarController controller) {
+    final visemeMap = {
+      'hi': [
+        VisemeData('viseme_kk', 0.0, 0.1),
+        VisemeData('viseme_I', 0.1, 0.25)
+      ],
+      'i': [VisemeData('viseme_I', 0.0, 0.2)],
+      'am': [
+        VisemeData('viseme_aa', 0.0, 0.15),
+        VisemeData('viseme_nn', 0.15, 0.3)
+      ],
+      'karl': [
+        VisemeData('viseme_kk', 0.0, 0.12),
+        VisemeData('viseme_aa', 0.12, 0.28),
+        VisemeData('viseme_RR', 0.28, 0.4),
+        VisemeData('viseme_nn', 0.4, 0.55)
+      ],
+      'clara': [
+        VisemeData('viseme_kk', 0.0, 0.1),
+        VisemeData('viseme_nn', 0.1, 0.2),
+        VisemeData('viseme_aa', 0.2, 0.35),
+        VisemeData('viseme_RR', 0.35, 0.45),
+        VisemeData('viseme_E', 0.45, 0.6)
+      ],
+    };
+
+    final words = text.toLowerCase().split(' ');
+    double currentDelay = 0.0;
+
+    for (var word in words) {
+      word = word.replaceAll(RegExp(r'[^\w]'), '');
+      if (visemeMap.containsKey(word)) {
+        for (var viseme in visemeMap[word]!) {
+          final delay = ((currentDelay + viseme.startTime) * 1000).toInt();
+          final duration = viseme.endTime - viseme.startTime;
+
+          Future.delayed(Duration(milliseconds: delay), () {
+            if (mounted && isAvatarSpeaking) {
+              controller.triggerViseme(viseme.name, duration: duration);
+            }
+          });
+        }
+        currentDelay += visemeMap[word]!.last.endTime + 0.1;
+      }
+    }
+  }
+
+  Future<void> _playAvatarGreeting(String avatarName) async {
+    final controller =
+        avatarName == "Karl" ? _karlController : _claraController;
+    final greetingText =
+        avatarName == "Karl" ? "Hi, I am Karl" : "Hi, I am Clara";
+
+    await flutterTts.stop();
+
+    if (avatarName == "Karl") {
+      if (Platform.isAndroid) {
+        await flutterTts
+            .setVoice({"name": "en-us-x-tpd-local", "locale": "en-US"});
+      } else if (Platform.isIOS) {
+        await flutterTts.setVoice(
+            {"name": "com.apple.ttsbundle.Daniel-compact", "locale": "en-US"});
+      }
+    } else {
+      if (Platform.isAndroid) {
+        await flutterTts
+            .setVoice({"name": "en-us-x-tpf-local", "locale": "en-US"});
+      } else if (Platform.isIOS) {
+        await flutterTts.setVoice({
+          "name": "com.apple.ttsbundle.Samantha-compact",
+          "locale": "en-US"
+        });
+      }
+    }
+
+    await controller.triggerHandWave(duration: 3.5);
+    await Future.delayed(const Duration(milliseconds: 500));
+    _startLipSync(greetingText, controller);
+    await flutterTts.speak(greetingText);
   }
 
   @override
@@ -51,13 +151,32 @@ class _SelectAvatarState extends State<SelectAvatar> {
     final avatarProvider = Provider.of<AvatarProvider>(context, listen: false);
     final avatarName = index == 0 ? "Clara" : "Karl";
     avatarProvider.setSelectedAvatar(avatarName);
+
+    // ✅ Trigger wave on swipe
+    if (index == 0) {
+      _playAvatarGreeting(avatarName);
+      // _claraController.triggerHandWave();
+    } else {
+      _playAvatarGreeting(avatarName);
+      // _karlController.triggerHandWave();
+    }
   }
 
+  // void _onAvatarCardTap(int index) {
+  //   _pageController.animateToPage(
+  //     index,
+  //     duration: const Duration(milliseconds: 300),
+  //     curve: Curves.easeInOut,
+  //   );
+  // }
   void _onAvatarCardTap(int index) {
     _pageController.animateToPage(
       index,
-      duration: const Duration(milliseconds: 300),
-      curve: Curves.easeInOut,
+      duration: const Duration(
+          milliseconds: 500), // Slightly longer duration helps seeing the curve
+      // The numbers represent control points (x1, y1, x2, y2)
+      // This is a steeper/more dramatic ease-in-out than standard
+      curve: const Cubic(5.9, 0.0, 0.2, 1.0),
     );
   }
 
@@ -273,6 +392,14 @@ class _SelectAvatarState extends State<SelectAvatar> {
                       height: 400,
                       backgroundImagePath: "assets/images/background.png",
                       borderRadius: 0,
+                      // ✅ Trigger wave on swipe
+                      onViewCreated: () {
+                        if (index == 0) {
+                          _claraController.triggerHandWave();
+                        } else {
+                          _karlController.triggerHandWave();
+                        }
+                      },
                     ),
                   ),
                 ),
