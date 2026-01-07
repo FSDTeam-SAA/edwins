@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:language_app/features/conversation/conversation_chat.dart';
-import 'package:language_app/features/conversation/demo/demo_conversation.dart';
-import 'package:language_app/features/learning/demo_vocabulary.dart';
+// import 'package:language_app/features/conversation/demo/demo_conversation.dart';
+import 'package:language_app/features/conversation/demo/demo_vocabulary.dart';
 import 'package:language_app/core/providers/avatar_provider.dart';
 import 'package:provider/provider.dart';
 import 'package:language_app/app/theme/app_style.dart';
@@ -11,14 +11,23 @@ import 'package:language_app/core/widgets/weekly_activity_chart.dart';
 import 'package:language_app/features/profile/menu_view.dart';
 
 class HomeView extends StatefulWidget {
-  const HomeView({super.key});
+  final bool initialHasStartedLearning;
+
+  const HomeView({super.key, this.initialHasStartedLearning = false});
 
   @override
   State<HomeView> createState() => _HomeViewState();
 }
 
 class _HomeViewState extends State<HomeView> {
-  bool hasStartedLearning = false;
+  late bool hasStartedLearning;
+
+  @override
+  void initState() {
+    super.initState();
+    hasStartedLearning = widget.initialHasStartedLearning;
+  }
+
   Future<Map<String, dynamic>> _fetchHomeData() async {
     await Future.delayed(const Duration(milliseconds: 500));
     return MockData.homeProgress;
@@ -80,20 +89,32 @@ class _HomeViewState extends State<HomeView> {
                   ),
                   child: ElevatedButton(
                     onPressed: () {
-                      // 1. Update state immediately
-                      setState(() {
-                        hasStartedLearning = true;
-                      });
-
-                      // 2. Navigate to Conversation
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
+                      if (!hasStartedLearning) {
+                        // --- CASE 1: START LEARNING ---
+                        // Update state and go to Dummy Page
+                        setState(() {
+                          hasStartedLearning = true;
+                        });
+                        Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => DemoVocabulary(
+                                  selectedAvatar:
+                                      avatarProvider.selectedAvatarName),
+                            ));
+                      } else {
+                        // --- CASE 2: CONTINUE LEARNING ---
+                        // Go directly to ConversationChat
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
                             builder: (context) => ConversationChat(
-                                  selectedAvatarName:
-                                      avatarProvider.selectedAvatarName,
-                                )),
-                      );
+                              selectedAvatarName:
+                                  avatarProvider.selectedAvatarName,
+                            ),
+                          ),
+                        );
+                      }
                     },
                     style: ElevatedButton.styleFrom(
                       backgroundColor: Colors.transparent,
@@ -116,48 +137,6 @@ class _HomeViewState extends State<HomeView> {
                     ),
                   ),
                 ),
-                // Container(
-                //   width: double.infinity,
-                //   height: 50,
-                //   decoration: BoxDecoration(
-                //     // Your gradient implementation
-                //     gradient: const LinearGradient(
-                //       colors: [Color(0xFF4CAF50), Color(0xFF2E7D32)],
-                //       begin: Alignment.centerLeft,
-                //       end: Alignment.centerRight,
-                //     ),
-                //     borderRadius: BorderRadius.circular(16),
-                //   ),
-                //   child: ElevatedButton(
-                //     onPressed: () {
-                //       Navigator.push(
-                //         context,
-                //         MaterialPageRoute(
-                //             builder: (context) => ConversationChat(selectedAvatarName: avatarProvider.selectedAvatarName,)),
-                //       );
-                //     },
-                //     style: ElevatedButton.styleFrom(
-                //       backgroundColor:
-                //           Colors.transparent, // Make button transparent
-                //       shadowColor: Colors.transparent, // Remove default shadow
-                //       shape: RoundedRectangleBorder(
-                //         borderRadius: BorderRadius.circular(16),
-                //       ),
-                //     ),
-                //     child: const Text(
-                //       "Start Learning",
-                //       style: TextStyle(
-                //         fontSize: 18,
-                //         color: Colors.white,
-                //         fontWeight: FontWeight.w600,
-                //         letterSpacing: 0.5,
-                //       ),
-                //     ),
-                //   ),
-                // ),
-
-                // 2. Toggle Buttons (Conversation vs Vocabulary)
-                // _buildToggleSection(),
                 const SizedBox(height: 25),
 
                 // 3. Gradient Progress Card
@@ -180,7 +159,7 @@ class _HomeViewState extends State<HomeView> {
                 ),
                 const SizedBox(height: 20),
 
-                _buildToggleSection(),
+                // _buildToggleSection(),
 
                 const SizedBox(height: 30),
               ],
@@ -350,94 +329,94 @@ class _HomeViewState extends State<HomeView> {
     );
   }
 
-  Widget _buildToggleSection() {
-    return Row(
-      children: [
-        // 1. Conversation Button (Outlined, White BG)
-        Expanded(
-          child: GestureDetector(
-            onTap: () {
-              // Get the selected avatar from provider
-              final avatarProvider =
-                  Provider.of<AvatarProvider>(context, listen: false);
+  // Widget _buildToggleSection() {
+  //   return Row(
+  //     children: [
+  //       // 1. Conversation Button (Outlined, White BG)
+  //       Expanded(
+  //         child: GestureDetector(
+  //           onTap: () {
+  //             // Get the selected avatar from provider
+  //             final avatarProvider =
+  //                 Provider.of<AvatarProvider>(context, listen: false);
 
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => DemoConversation(
-                    selectedAvatar: avatarProvider.selectedAvatarName,
-                  ),
-                ),
-              );
-            },
-            child: Container(
-              height: 50,
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: AppColors.primaryOrange, width: 1.5),
-              ),
-              child: const Center(
-                child: Text(
-                  "Conversation",
-                  style: TextStyle(
-                    color: AppColors.primaryOrange,
-                    fontWeight: FontWeight.bold,
-                    fontSize: 16,
-                  ),
-                ),
-              ),
-            ),
-          ),
-        ),
-        const SizedBox(width: 16),
+  //             Navigator.push(
+  //               context,
+  //               MaterialPageRoute(
+  //                 builder: (context) => DemoConversation(
+  //                   selectedAvatar: avatarProvider.selectedAvatarName,
+  //                 ),
+  //               ),
+  //             );
+  //           },
+  //           child: Container(
+  //             height: 50,
+  //             decoration: BoxDecoration(
+  //               color: Colors.white,
+  //               borderRadius: BorderRadius.circular(12),
+  //               border: Border.all(color: AppColors.primaryOrange, width: 1.5),
+  //             ),
+  //             child: const Center(
+  //               child: Text(
+  //                 "Conversation",
+  //                 style: TextStyle(
+  //                   color: AppColors.primaryOrange,
+  //                   fontWeight: FontWeight.bold,
+  //                   fontSize: 16,
+  //                 ),
+  //               ),
+  //             ),
+  //           ),
+  //         ),
+  //       ),
+  //       const SizedBox(width: 16),
 
-        // 2. Vocabulary Button (Gradient BG)
-        Expanded(
-          child: GestureDetector(
-            onTap: () {
-              // This is the current page, so we don't navigate or we just refresh
-              //  Navigator.pushNamed(context, '/vocab-loop');
-              final avatarProvider =
-                  Provider.of<AvatarProvider>(context, listen: false);
-              Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => DemoVocabulary(
-                        selectedAvatar: avatarProvider.selectedAvatarName),
-                  ));
-            },
-            child: Container(
-              height: 50,
-              decoration: BoxDecoration(
-                gradient: const LinearGradient(
-                  colors: [Color(0xFFFF8A65), Color(0xFFFF5252)],
-                  begin: Alignment.centerLeft,
-                  end: Alignment.centerRight,
-                ),
-                borderRadius: BorderRadius.circular(12),
-                boxShadow: [
-                  BoxShadow(
-                    color: AppColors.primaryOrange.withOpacity(0.3),
-                    blurRadius: 8,
-                    offset: const Offset(0, 4),
-                  ),
-                ],
-              ),
-              child: const Center(
-                child: Text(
-                  "Vocabulary",
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontWeight: FontWeight.bold,
-                    fontSize: 16,
-                  ),
-                ),
-              ),
-            ),
-          ),
-        ),
-      ],
-    );
-  }
+  //       // 2. Vocabulary Button (Gradient BG)
+  //       Expanded(
+  //         child: GestureDetector(
+  //           onTap: () {
+  //             // This is the current page, so we don't navigate or we just refresh
+  //             //  Navigator.pushNamed(context, '/vocab-loop');
+  //             final avatarProvider =
+  //                 Provider.of<AvatarProvider>(context, listen: false);
+  //             Navigator.push(
+  //                 context,
+  //                 MaterialPageRoute(
+  //                   builder: (context) => DemoVocabulary(
+  //                       selectedAvatar: avatarProvider.selectedAvatarName),
+  //                 ));
+  //           },
+  //           child: Container(
+  //             height: 50,
+  //             decoration: BoxDecoration(
+  //               gradient: const LinearGradient(
+  //                 colors: [Color(0xFFFF8A65), Color(0xFFFF5252)],
+  //                 begin: Alignment.centerLeft,
+  //                 end: Alignment.centerRight,
+  //               ),
+  //               borderRadius: BorderRadius.circular(12),
+  //               boxShadow: [
+  //                 BoxShadow(
+  //                   color: AppColors.primaryOrange.withOpacity(0.3),
+  //                   blurRadius: 8,
+  //                   offset: const Offset(0, 4),
+  //                 ),
+  //               ],
+  //             ),
+  //             child: const Center(
+  //               child: Text(
+  //                 "Vocabulary",
+  //                 style: TextStyle(
+  //                   color: Colors.white,
+  //                   fontWeight: FontWeight.bold,
+  //                   fontSize: 16,
+  //                 ),
+  //               ),
+  //             ),
+  //           ),
+  //         ),
+  //       ),
+  //     ],
+  //   );
+  // }
 }

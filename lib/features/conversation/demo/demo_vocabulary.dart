@@ -2,10 +2,12 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_tts/flutter_tts.dart';
-import 'package:language_app/features/home/home_view.dart';
+import 'package:language_app/core/providers/avatar_provider.dart';
+import 'package:language_app/features/conversation/demo/demo_conversation.dart';
+// import 'package:language_app/features/home/home_view.dart';
 import 'package:language_app/features/avatar/avatar_controller.dart';
 import 'package:language_app/features/avatar/avatar_view.dart';
-import 'package:language_app/features/debug/test_conversation.dart';
+import 'package:provider/provider.dart';
 
 class DemoVocabulary extends StatefulWidget {
   final String selectedAvatar;
@@ -427,6 +429,8 @@ class _DemoVocabularyState extends State<DemoVocabulary>
         // Small delay before moving to next question
         Future.delayed(const Duration(milliseconds: 1500), () {
           if (mounted) {
+            final avatarProvider =
+                Provider.of<AvatarProvider>(context, listen: false);
             if (currentQuestionIndex < questions.length - 1) {
               setState(() {
                 currentQuestionIndex++;
@@ -436,10 +440,12 @@ class _DemoVocabularyState extends State<DemoVocabulary>
                 _correctController.reset();
               });
             } else {
-              Navigator.pushReplacement(
+              Navigator.push(
                 context,
                 MaterialPageRoute(
-                  builder: (context) => const HomeView(),
+                  builder: (context) => DemoConversation(
+                    selectedAvatar: avatarProvider.selectedAvatarName,
+                  ),
                 ),
               );
             }
