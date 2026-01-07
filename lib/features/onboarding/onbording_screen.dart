@@ -30,7 +30,7 @@ class _OnboardingScreenState extends State<OnboardingScreen>
   String selectedLevel = "";
   String selectedAvatar = "";
   List<String> selectedHobbies = [];
-
+  bool _isNextButtonActive = true;  // true = Next বাটনে অ্যানিমেশন, false = Test বাটনে
   // Avatar Controllers
   final AvatarController claraController = AvatarController();
   final AvatarController karlController = AvatarController();
@@ -790,37 +790,86 @@ class _OnboardingScreenState extends State<OnboardingScreen>
     );
   }
 
-  Widget _buildNextButton() {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 24.0),
-      child: Column(
-        children: [
+Widget _buildNextButton() {
+  return Padding(
+    padding: const EdgeInsets.symmetric(horizontal: 24.0),
+    child: Column(
+      children: [
+        // Next Button - শুধু যখন _isNextButtonActive = true তখনই অ্যানিমেশন চলবে
+        ScaleTransition(
+          scale: _isNextButtonActive 
+              ? _buttonScaleAnimation 
+              : const AlwaysStoppedAnimation<double>(1.0),
+          child: _AnimatedGradientButton(
+            onPressed: () {
+              _onButtonPressed(() {
+                bool isValid = true;
+                String message = "";
+
+                if (_currentPage == 1 && selectedGoal.isEmpty) {
+                  isValid = false;
+                  message = "Please select a goal!";
+                } else if (_currentPage == 4 && selectedAvatar.isEmpty) {
+                  isValid = false;
+                  message = "Please select an avatar!";
+                } else if (_currentPage == 5 && selectedHobbies.isEmpty) {
+                  isValid = false;
+                  message = "Please select at least one hobby!";
+                } else if (_currentPage == 6 && selectedLevel.isEmpty) {
+                  isValid = false;
+                  message = "Please select your speaking level!";
+                }
+
+                if (!isValid) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text(message),
+                      backgroundColor: Colors.redAccent,
+                      behavior: SnackBarBehavior.floating,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      margin: const EdgeInsets.all(16),
+                    ),
+                  );
+                  return;
+                }
+
+                if (_currentPage < 6) {
+                  _pageController.nextPage(
+                    duration: const Duration(milliseconds: 500),
+                    curve: Curves.easeInOutCubic,
+                  );
+                } else {
+                  // Level page এ Next চাপলে অ্যানিমেশন Next এ রাখা থাকবে (ডিফল্ট)
+                  _completeOnboarding();
+                  Navigator.pushReplacement(
+                    context,
+                    _createScaleRoute(const LoginPage()),
+                  );
+                }
+              });
+            },
+            text: "Next",
+          ),
+        ),
+
+        // শুধু level page এ দেখাবে (page == 6)
+        if (_currentPage == 6) ...[
+          const SizedBox(height: 15),
+
+          // Test Your Level Button - শুধু যখন _isNextButtonActive = false তখনই অ্যানিমেশন
           ScaleTransition(
-            scale: _buttonScaleAnimation,
-            child: _AnimatedGradientButton(
+            scale: !_isNextButtonActive 
+                ? _buttonScaleAnimation 
+                : const AlwaysStoppedAnimation<double>(1.0),
+            child: _AnimatedTestButton(
               onPressed: () {
                 _onButtonPressed(() {
-                  bool isValid = true;
-                  String message = "";
-
-                  if (_currentPage == 1 && selectedGoal.isEmpty) {
-                    isValid = false;
-                    message = "Please select a goal!";
-                  } else if (_currentPage == 4 && selectedAvatar.isEmpty) {
-                    isValid = false;
-                    message = "Please select an avatar!";
-                  } else if (_currentPage == 5 && selectedHobbies.isEmpty) {
-                    isValid = false;
-                    message = "Please select at least one hobby!";
-                  } else if (_currentPage == 6 && selectedLevel.isEmpty) {
-                    isValid = false;
-                    message = "Please select your speaking level!";
-                  }
-
-                  if (!isValid) {
+                  if (selectedAvatar.isEmpty) {
                     ScaffoldMessenger.of(context).showSnackBar(
                       SnackBar(
-                        content: Text(message),
+                        content: const Text("Please select an avatar first!"),
                         backgroundColor: Colors.redAccent,
                         behavior: SnackBarBehavior.floating,
                         shape: RoundedRectangleBorder(
@@ -832,62 +881,26 @@ class _OnboardingScreenState extends State<OnboardingScreen>
                     return;
                   }
 
-                  if (_currentPage < 6) {
-                    _pageController.nextPage(
-                      duration: const Duration(milliseconds: 500),
-                      curve: Curves.easeInOutCubic,
-                    );
-                  } else {
-                    // When on level page and clicking Next, go to LoginPage
-                    _completeOnboarding();
-                    Navigator.pushReplacement(
-                      context,
-                      _createScaleRoute(
-                        const LoginPage(),
-                      ),
-                    );
-                  }
+                  // Test বাটন চাপলে অ্যানিমেশন এখানে চলে আসবে
+                  setState(() {
+                    _isNextButtonActive = false;
+                  });
+
+                  Navigator.push(
+                    context,
+                    _createSlideRoute(
+                      TestVocabularyPage(selectedAvatar: selectedAvatar),
+                    ),
+                  );
                 });
               },
-              text: "Next",
             ),
           ),
-          if (_currentPage == 6) ...[
-            const SizedBox(height: 15),
-            ScaleTransition(
-              scale: _buttonScaleAnimation,
-              child: _AnimatedTestButton(
-                onPressed: () {
-                  _onButtonPressed(() {
-                    if (selectedAvatar.isEmpty) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          content: const Text("Please select an avatar first!"),
-                          backgroundColor: Colors.redAccent,
-                          behavior: SnackBarBehavior.floating,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(10),
-                          ),
-                          margin: const EdgeInsets.all(16),
-                        ),
-                      );
-                      return;
-                    }
-                    Navigator.push(
-                      context,
-                      _createSlideRoute(
-                        TestVocabularyPage(selectedAvatar: selectedAvatar),
-                      ),
-                    );
-                  });
-                },
-              ),
-            ),
-          ],
         ],
-      ),
-    );
-  }
+      ],
+    ),
+  );
+}
 }
 
 // 🎨 Animated Back Button

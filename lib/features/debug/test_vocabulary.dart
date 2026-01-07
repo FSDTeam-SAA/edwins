@@ -8,7 +8,7 @@ import 'package:language_app/features/debug/test_conversation.dart';
 
 class TestVocabularyPage extends StatefulWidget {
   final String selectedAvatar;
-
+  
   const TestVocabularyPage({
     super.key,
     required this.selectedAvatar,
@@ -18,8 +18,7 @@ class TestVocabularyPage extends StatefulWidget {
   State<TestVocabularyPage> createState() => _TestVocabularyPageState();
 }
 
-class _TestVocabularyPageState extends State<TestVocabularyPage>
-    with TickerProviderStateMixin {
+class _TestVocabularyPageState extends State<TestVocabularyPage> with TickerProviderStateMixin {
   int currentQuestionIndex = 0;
   String? selectedOption;
   bool showError = false;
@@ -29,16 +28,17 @@ class _TestVocabularyPageState extends State<TestVocabularyPage>
   String translatedText = '';
   bool showTranslation = false;
 
+  
   late FlutterTts flutterTts;
   late AvatarController avatarController;
-
+  
   Map<String, List<VisemeData>> visemeMap = {};
-
+  
   late AnimationController _shakeController;
   late AnimationController _correctController;
   late AnimationController _avatarController;
   late AnimationController _buttonScaleController;
-
+  
   late Animation<double> _shakeAnimation;
   late Animation<double> _correctScaleAnimation;
   late Animation<Color?> _correctColorAnimation;
@@ -52,6 +52,8 @@ class _TestVocabularyPageState extends State<TestVocabularyPage>
     _initTts();
     _loadVisemeData();
   }
+
+
 
   Future<void> _loadVisemeData() async {
     try {
@@ -133,29 +135,23 @@ class _TestVocabularyPageState extends State<TestVocabularyPage>
 
   Future<void> _initTts() async {
     flutterTts = FlutterTts();
-
+    
     await flutterTts.setLanguage("en-US");
-
+    
     if (widget.selectedAvatar.toLowerCase() == 'karl') {
       if (Platform.isAndroid) {
-        await flutterTts
-            .setVoice({"name": "en-us-x-tpd-local", "locale": "en-US"});
+        await flutterTts.setVoice({"name": "en-us-x-tpd-local", "locale": "en-US"});
       } else if (Platform.isIOS) {
-        await flutterTts.setVoice(
-            {"name": "com.apple.ttsbundle.Daniel-compact", "locale": "en-US"});
+        await flutterTts.setVoice({"name": "com.apple.ttsbundle.Daniel-compact", "locale": "en-US"});
       }
     } else {
       if (Platform.isAndroid) {
-        await flutterTts
-            .setVoice({"name": "en-us-x-tpf-local", "locale": "en-US"});
+        await flutterTts.setVoice({"name": "en-us-x-tpf-local", "locale": "en-US"});
       } else if (Platform.isIOS) {
-        await flutterTts.setVoice({
-          "name": "com.apple.ttsbundle.Samantha-compact",
-          "locale": "en-US"
-        });
+        await flutterTts.setVoice({"name": "com.apple.ttsbundle.Samantha-compact", "locale": "en-US"});
       }
     }
-
+    
     await flutterTts.setSpeechRate(0.4);
     await flutterTts.setVolume(1.0);
     await flutterTts.setPitch(1.0);
@@ -192,7 +188,7 @@ class _TestVocabularyPageState extends State<TestVocabularyPage>
         setState(() => isAvatarSpeaking = false);
       }
     });
-
+    
     flutterTts.setCancelHandler(() {
       if (mounted) {
         setState(() => isAvatarSpeaking = false);
@@ -204,10 +200,10 @@ class _TestVocabularyPageState extends State<TestVocabularyPage>
     if (!isMuted) {
       await flutterTts.stop();
       await Future.delayed(const Duration(milliseconds: 100));
-
+      
       print('🎤 Speaking: $text');
       _startLipSync(text);
-
+      
       var result = await flutterTts.speak(text);
       if (result == 1) {
         print('✅ TTS started successfully');
@@ -220,18 +216,18 @@ class _TestVocabularyPageState extends State<TestVocabularyPage>
   void _startLipSync(String text) {
     final words = text.toLowerCase().split(' ');
     print('📝 Words to sync: $words');
-
+    
     for (var word in words) {
       // Remove punctuation but keep accent characters
       word = word.replaceAll(RegExp(r'[^\wäöüß\s]', unicode: true), '').trim();
-
+      
       if (word.isEmpty) continue;
-
+      
       print('🔍 Looking for viseme data: "$word"');
-
+      
       // Try to find exact match first
       String? lookupWord = word;
-
+      
       // If not found, try without accents
       if (!visemeMap.containsKey(lookupWord)) {
         // Convert ä->a, ö->o, ü->u for fallback
@@ -242,17 +238,17 @@ class _TestVocabularyPageState extends State<TestVocabularyPage>
             .replaceAll('ß', 'ss');
         print('🔄 Trying without accents: "$lookupWord"');
       }
-
+      
       if (visemeMap.containsKey(lookupWord)) {
         final visemes = visemeMap[lookupWord]!;
         print('✅ Found ${visemes.length} visemes for "$lookupWord"');
-
+        
         for (var viseme in visemes) {
           final delay = (viseme.startTime * 1000).toInt();
           final duration = (viseme.endTime - viseme.startTime);
-
+          
           print('⏱️ Scheduling ${viseme.name} at ${delay}ms for ${duration}s');
-
+          
           Future.delayed(Duration(milliseconds: delay), () {
             if (mounted && isAvatarSpeaking) {
               print('🎭 Playing viseme: ${viseme.name}');
@@ -307,6 +303,12 @@ class _TestVocabularyPageState extends State<TestVocabularyPage>
       'Die Katze frisst _____': 'The cat eats _____',
     };
     return translations[text] ?? 'Translation not available';
+  }
+
+  // ✅ NEW: Repeat button function - শুধু সঠিক উত্তর বলবে
+  void _repeatCorrectAnswer() {
+    String correctAnswer = questions[currentQuestionIndex]['correctAnswer'];
+    _speak(correctAnswer);
   }
 
   @override
@@ -386,21 +388,22 @@ class _TestVocabularyPageState extends State<TestVocabularyPage>
     },
   ];
 
-  void handleOptionTap(String option) {
-    if (selectedOption == option) return; // Allow changing selection
 
+  // ✅ CHANGED: Option click এ আর কথা বলবে না
+  void handleOptionTap(String option) {
     setState(() {
-      selectedOption = option;
-      _speak(option); // Only speak the option, no validation yet
+      selectedOption = option; // শুধু select করবে
     });
   }
+
+
 
   void handleContinue() {
     // If no option is selected, do nothing
     if (selectedOption == null) return;
-
+    
     String correctAnswer = questions[currentQuestionIndex]['correctAnswer'];
-
+    
     // ✅ Validation happens ONLY when Continue is clicked
     if (!showError) {
       if (selectedOption != correctAnswer) {
@@ -410,7 +413,7 @@ class _TestVocabularyPageState extends State<TestVocabularyPage>
           _vibratePhone();
           _shakeController.forward().then((_) => _shakeController.reverse());
         });
-
+        
         Future.delayed(const Duration(milliseconds: 800), () {
           if (mounted && showError) {
             _speakCorrectAnswer(correctAnswer); // Avatar speaks with lip sync
@@ -418,11 +421,11 @@ class _TestVocabularyPageState extends State<TestVocabularyPage>
         });
         return; // Stop here, don't continue
       } else {
-        // Correct answer
+        // Correct answer - NOW it turns green
         _correctController.forward();
         _playCorrectSound();
         _speak("Well done"); // Avatar says "Well done" with lip sync
-
+        
         // Small delay before moving to next question
         Future.delayed(const Duration(milliseconds: 1500), () {
           if (mounted) {
@@ -456,6 +459,7 @@ class _TestVocabularyPageState extends State<TestVocabularyPage>
     }
   }
 
+
   void _speakCorrectAnswer(String answer) {
     _stop().then((_) {
       Future.delayed(const Duration(milliseconds: 300), () {
@@ -480,8 +484,7 @@ class _TestVocabularyPageState extends State<TestVocabularyPage>
             Column(
               children: [
                 Padding(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 4, vertical: 8),
+                  padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 8),
                   child: Row(
                     children: [
                       IconButton(
@@ -515,7 +518,9 @@ class _TestVocabularyPageState extends State<TestVocabularyPage>
                     ],
                   ),
                 ),
+
                 const SizedBox(height: 4),
+
                 AnimatedBuilder(
                   animation: _avatarSizeAnimation,
                   builder: (context, child) {
@@ -538,24 +543,19 @@ class _TestVocabularyPageState extends State<TestVocabularyPage>
                         ),
                         child: Stack(
                           children: [
+                            // ✅ CHANGED: Avatar এখন আর zoom in/out হবে না
                             Center(
-                              child: AnimatedContainer(
-                                duration: const Duration(milliseconds: 200),
-                                transform: Matrix4.identity()
-                                  ..scale(isAvatarSpeaking ? 1.05 : 1.0),
-                                child: ClipRRect(
-                                  borderRadius: BorderRadius.circular(12),
-                                  child: SizedBox(
-                                    width: double.infinity,
+                              child: ClipRRect(
+                                borderRadius: BorderRadius.circular(12),
+                                child: SizedBox(
+                                  width: double.infinity,
+                                  height: _avatarSizeAnimation.value,
+                                  child: AvatarView(
+                                    avatarName: widget.selectedAvatar,
+                                    controller: avatarController,
                                     height: _avatarSizeAnimation.value,
-                                    child: AvatarView(
-                                      avatarName: widget.selectedAvatar,
-                                      controller: avatarController,
-                                      height: _avatarSizeAnimation.value,
-                                      backgroundImagePath:
-                                          "assets/images/background.png",
-                                      borderRadius: 12,
-                                    ),
+                                    backgroundImagePath: "assets/images/background.png",
+                                    borderRadius: 12,
                                   ),
                                 ),
                               ),
@@ -577,8 +577,7 @@ class _TestVocabularyPageState extends State<TestVocabularyPage>
                                         ),
                                         decoration: BoxDecoration(
                                           color: const Color(0xFFFF8000),
-                                          borderRadius:
-                                              BorderRadius.circular(20),
+                                          borderRadius: BorderRadius.circular(20),
                                         ),
                                         child: const Row(
                                           mainAxisSize: MainAxisSize.min,
@@ -614,22 +613,38 @@ class _TestVocabularyPageState extends State<TestVocabularyPage>
                               right: 10,
                               child: Row(
                                 children: [
+                                  // ✅ NEW: Repeat button
+                                  GestureDetector(
+                                    onTap: _repeatCorrectAnswer,
+                                    child: Container(
+                                      padding: const EdgeInsets.all(8),
+                                      decoration: const BoxDecoration(
+                                        gradient: LinearGradient(
+                                          colors: [Color(0xFFFF8000), Color(0xFFFF609D)],
+                                        ),
+                                        shape: BoxShape.circle,
+                                      ),
+                                      child: const Icon(
+                                        Icons.repeat,
+                                        color: Colors.white,
+                                        size: 18,
+                                      ),
+                                    ),
+                                  ),
+                                  const SizedBox(width: 8),
                                   GestureDetector(
                                     onTap: _toggleAvatarSize,
                                     child: Container(
                                       padding: const EdgeInsets.all(8),
                                       decoration: const BoxDecoration(
                                         gradient: LinearGradient(
-                                          colors: [
-                                            Color(0xFFFF609D),
-                                            Color(0xFFFF7A06)
-                                          ],
+                                          colors: [Color(0xFFFF609D), Color(0xFFFF7A06)],
                                         ),
                                         shape: BoxShape.circle,
                                       ),
                                       child: Icon(
-                                        isAvatarMaximized
-                                            ? Icons.fullscreen_exit
+                                        isAvatarMaximized 
+                                            ? Icons.fullscreen_exit 
                                             : Icons.fullscreen,
                                         color: Colors.white,
                                         size: 18,
@@ -643,22 +658,14 @@ class _TestVocabularyPageState extends State<TestVocabularyPage>
                                       padding: const EdgeInsets.all(8),
                                       decoration: BoxDecoration(
                                         gradient: LinearGradient(
-                                          colors: isMuted
-                                              ? [
-                                                  Colors.grey.shade400,
-                                                  Colors.grey.shade600
-                                                ]
-                                              : [
-                                                  const Color(0xFFFF609D),
-                                                  const Color(0xFFFF7A06)
-                                                ],
+                                          colors: isMuted 
+                                            ? [Colors.grey.shade400, Colors.grey.shade600]
+                                            : [const Color(0xFFFF609D), const Color(0xFFFF7A06)],
                                         ),
                                         shape: BoxShape.circle,
                                       ),
                                       child: Icon(
-                                        isMuted
-                                            ? Icons.volume_off
-                                            : Icons.volume_up,
+                                        isMuted ? Icons.volume_off : Icons.volume_up,
                                         color: Colors.white,
                                         size: 18,
                                       ),
@@ -673,12 +680,15 @@ class _TestVocabularyPageState extends State<TestVocabularyPage>
                     );
                   },
                 ),
+
                 const SizedBox(height: 24),
+
                 Expanded(
-                  child: questionType == 'multiple_choice'
-                      ? _buildMultipleChoiceLayout(options)
-                      : _buildFillBlankLayout(questionText, options),
+                  child: questionType == 'multiple_choice' 
+                    ? _buildMultipleChoiceLayout(options)
+                    : _buildFillBlankLayout(questionText, options),
                 ),
+
                 Padding(
                   padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
                   child: GestureDetector(
@@ -714,6 +724,7 @@ class _TestVocabularyPageState extends State<TestVocabularyPage>
                 ),
               ],
             ),
+
             if (showError)
               Container(
                 color: Colors.black.withOpacity(0.6),
@@ -722,12 +733,8 @@ class _TestVocabularyPageState extends State<TestVocabularyPage>
                     animation: _shakeAnimation,
                     builder: (context, child) {
                       return Transform.translate(
-                        offset: Offset(
-                            _shakeAnimation.value *
-                                ((_shakeController.value * 4).floor() % 2 == 0
-                                    ? 1
-                                    : -1),
-                            0),
+                        offset: Offset(_shakeAnimation.value * 
+                          ((_shakeController.value * 4).floor() % 2 == 0 ? 1 : -1), 0),
                         child: Container(
                           margin: const EdgeInsets.symmetric(horizontal: 40),
                           decoration: BoxDecoration(
@@ -749,8 +756,7 @@ class _TestVocabularyPageState extends State<TestVocabularyPage>
                                 ),
                               ),
                               Container(
-                                margin:
-                                    const EdgeInsets.fromLTRB(12, 0, 12, 12),
+                                margin: const EdgeInsets.fromLTRB(12, 0, 12, 12),
                                 padding: const EdgeInsets.all(20),
                                 decoration: BoxDecoration(
                                   color: Colors.white,
@@ -785,13 +791,9 @@ class _TestVocabularyPageState extends State<TestVocabularyPage>
                                         height: 46,
                                         decoration: BoxDecoration(
                                           gradient: const LinearGradient(
-                                            colors: [
-                                              Color(0xFFFF609D),
-                                              Color(0xFFFF7A06)
-                                            ],
+                                            colors: [Color(0xFFFF609D), Color(0xFFFF7A06)],
                                           ),
-                                          borderRadius:
-                                              BorderRadius.circular(8),
+                                          borderRadius: BorderRadius.circular(8),
                                         ),
                                         alignment: Alignment.center,
                                         child: const Text(
@@ -847,8 +849,7 @@ class _TestVocabularyPageState extends State<TestVocabularyPage>
     );
   }
 
-  Widget _buildFillBlankLayout(
-      String? questionText, List<Map<String, dynamic>> options) {
+  Widget _buildFillBlankLayout(String? questionText, List<Map<String, dynamic>> options) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16),
       child: Column(
@@ -916,26 +917,6 @@ class _TestVocabularyPageState extends State<TestVocabularyPage>
                         ),
                       ),
                     ),
-                    const SizedBox(width: 20),
-                    GestureDetector(
-                      onTap: () {
-                        if (questionText != null) {
-                          _speak(questionText);
-                        }
-                      },
-                      child: Container(
-                        padding: const EdgeInsets.all(12),
-                        decoration: BoxDecoration(
-                          color: const Color(0xFFFF609D).withOpacity(0.1),
-                          shape: BoxShape.circle,
-                        ),
-                        child: const Icon(
-                          Icons.volume_up,
-                          size: 24,
-                          color: Color(0xFFFF609D),
-                        ),
-                      ),
-                    ),
                   ],
                 ),
               ],
@@ -958,64 +939,56 @@ class _TestVocabularyPageState extends State<TestVocabularyPage>
     );
   }
 
-  Widget _buildOptionButton(Map<String, dynamic> option, double height,
-      [bool isSmallText = false]) {
+  Widget _buildOptionButton(Map<String, dynamic> option, double height, [bool isSmallText = false]) {
     final isSelected = selectedOption == option['text'];
-    final isCorrect = selectedOption == option['text'] &&
-        selectedOption == questions[currentQuestionIndex]['correctAnswer'];
+    // ✅ CHANGED: Continue press করার পর green হবে এবং সবসময় green থাকবে
+    final isCorrectAndValidated = selectedOption == option['text'] &&
+        selectedOption == questions[currentQuestionIndex]['correctAnswer'] &&
+        _correctController.status == AnimationStatus.forward;
 
     return GestureDetector(
       onTap: () => handleOptionTap(option['text']),
-      child: AnimatedBuilder(
-        animation: isCorrect ? _correctScaleAnimation : _shakeAnimation,
-        builder: (context, child) {
-          return Transform.scale(
-            scale: isCorrect ? _correctScaleAnimation.value : 1.0,
-            child: AnimatedContainer(
-              duration: const Duration(milliseconds: 300),
-              height: height,
-              decoration: BoxDecoration(
-                color: isCorrect
-                    ? const Color(0xFF4CAF50)
-                    : (isSelected ? option['textColor'] : option['bgColor']),
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(
-                  color: isCorrect
-                      ? const Color(0xFF4CAF50)
-                      : option['borderColor'],
-                  width: 2,
-                ),
-                boxShadow: isSelected
-                    ? [
-                        BoxShadow(
-                          color:
-                              (option['textColor'] as Color).withOpacity(0.3),
-                          blurRadius: 10,
-                          offset: const Offset(0, 4),
-                        ),
-                      ]
-                    : null,
-              ),
-              alignment: Alignment.center,
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 4),
-                child: Text(
-                  option['text'],
-                  style: TextStyle(
-                    color: isSelected || isCorrect
-                        ? Colors.white
-                        : option['textColor'],
-                    fontSize: isSmallText ? 14 : 18,
-                    fontWeight: FontWeight.w600,
-                  ),
-                  textAlign: TextAlign.center,
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 300),
+        height: height,
+        decoration: BoxDecoration(
+          color: isCorrectAndValidated 
+              ? const Color(0xFF4CAF50)  // Green - permanently থাকবে
+              : (isSelected 
+                  ? option['textColor']
+                  : option['bgColor']),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: isCorrectAndValidated 
+                ? const Color(0xFF4CAF50)
+                : option['borderColor'],
+            width: 2,
+          ),
+          boxShadow: isSelected ? [
+            BoxShadow(
+              color: (option['textColor'] as Color).withOpacity(0.3),
+              blurRadius: 10,
+              offset: const Offset(0, 4),
             ),
-          );
-        },
+          ] : null,
+        ),
+        alignment: Alignment.center,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 4),
+          child: Text(
+            option['text'],
+            style: TextStyle(
+              color: isSelected || isCorrectAndValidated
+                  ? Colors.white
+                  : option['textColor'],
+              fontSize: isSmallText ? 14 : 18,
+              fontWeight: FontWeight.w600,
+            ),
+            textAlign: TextAlign.center,
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+          ),
+        ),
       ),
     );
   }
