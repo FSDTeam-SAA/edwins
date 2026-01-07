@@ -14,21 +14,19 @@ final class AvatarPlatformView: NSObject, FlutterPlatformView {
     private var displayLink: CADisplayLink?
     private var blinkCtl: BlinkController?
     
-    private var animCtl: AvatarAnimationController?
-    
     private let cornerRadius: CGFloat
     
-    // ✅ Hand wave animation tracking
+    // ✅ Animation tracking
     private var handWaveTimer: Timer?
-    private var rightHandNode: SCNNode?
-    private var leftHandNode: SCNNode?
-    private var rightArmNode: SCNNode?
-    private var rightForeArmNode: SCNNode?
-    private var rightShoulderNode: SCNNode?
     
-    // ✅ Camera node tracking
+    // ✅ Camera tracking
     private var cameraNode: SCNNode?
-    private var originalCameraPosition: SCNVector3?
+    private var originalCameraFOV: Double = 35.0
+    private var isZoomedOut: Bool = false // ✅ Track zoom state
+    
+    // ✅ Animation cache
+    private var cachedAnimations: [String: [String: CAAnimation]] = [:]
+    private var currentAvatarName: String?
 
     init(frame: CGRect, viewId: Int64, messenger: FlutterBinaryMessenger, backgroundImagePath: String?, cornerRadius: CGFloat, registrar: FlutterPluginRegistrar, avatarName: String) {
         self.registrar = registrar
@@ -37,7 +35,6 @@ final class AvatarPlatformView: NSObject, FlutterPlatformView {
         super.init()
         
         print("🎯 [NATIVE] AvatarPlatformView.init() - viewId: \(viewId)")
-        print("🎯 [NATIVE] Channel will be: AvatarView/\(viewId)")
         print("🎯 [NATIVE] Avatar name: \(avatarName)")
         
         // SCNView setup
@@ -84,15 +81,16 @@ final class AvatarPlatformView: NSObject, FlutterPlatformView {
     }
     
     func loadAndPlayCombinedAnimation(from daeName: String, on rootNode: SCNNode) {
-        guard let sceneURL = Bundle.main.url(forResource: daeName, withExtension: "dae") else { 
-            print("DAE file not found."); return
+        guard let sceneURL = Bundle.main.url(forResource: daeName, withExtension: "dae") else {
+            print("❌ [NATIVE] Idle animation not found: \(daeName).dae")
+            return
         }
-        guard let sceneSource = SCNSceneSource(url: sceneURL, options: nil) else { 
-            print("Failed to load SCNSceneSource."); return 
+        guard let sceneSource = SCNSceneSource(url: sceneURL, options: nil) else {
+            print("❌ [NATIVE] Failed to load SCNSceneSource")
+            return
         }
 
         let animationIDs = sceneSource.identifiersOfEntries(withClass: CAAnimation.self)
-
         let animationGroup = CAAnimationGroup()
         var animations: [CAAnimation] = []
 
@@ -112,15 +110,17 @@ final class AvatarPlatformView: NSObject, FlutterPlatformView {
         animationGroup.isRemovedOnCompletion = false
 
         rootNode.addAnimation(animationGroup, forKey: "combinedIdle")
+        print("✅ [NATIVE] Idle animation loaded: \(daeName)")
     }
     
     private func loadAvatarAndSetupCamera(avatarName: String) {
+        currentAvatarName = avatarName // ✅ Store avatar name
         let avatarFile = "\(avatarName)Avatar"
         guard let modelURL = Bundle.main.url(
             forResource: avatarFile,
             withExtension: "usdz"
         ) else {
-            print("❌ \(avatarFile).usdz not found")
+            print("❌ [NATIVE] \(avatarFile).usdz not found")
             return
         }
 
@@ -163,20 +163,10 @@ final class AvatarPlatformView: NSObject, FlutterPlatformView {
             let wrapper = loadedRig.wrapper
             let localSphere = wrapper.boundingSphere
             let radius = max(0.01, localSphere.radius)
-//         --- OLD CODE (Portrait) ---
-//            let headY = radius * 150.6
-//            let target = SCNVector3(0, headY, 0)
-//            let distance: Float = radius * 110.0
-            
-//             --- NEW SUGGESTED CODE (Full Body) ---
-//            let headY = radius * 105.0
-//            let target = SCNVector3(0, headY, 0)
-//            let distance: Float = radius * 180.0
-//            let bodyCenterY = radius * 85.0
-            let headFocusY = radius * 140.0
-            let target = SCNVector3(0, headFocusY, 0)
-            let distance: Float = radius * 280.0
 
+            let headY = radius * 150.6
+            let target = SCNVector3(0, headY, 0)
+            let distance: Float = radius * 110.0
 
             let camNode = SCNNode()
             let camera = SCNCamera()
@@ -184,311 +174,178 @@ final class AvatarPlatformView: NSObject, FlutterPlatformView {
 
             camera.zNear = 0.01
             camera.zFar  = 1000
-            camera.fieldOfView = 35
+            camera.fieldOfView = 52.5  // ✅ START zoomed out (was 35)
+            originalCameraFOV = 52.5   // ✅ Store as default
 
-            camNode.position = SCNVector3(0, headFocusY + radius * 0.2, distance)
-            camNode.look(at: target)
+            // ✅ Position camera LOWER to see face better
+            let lowerY = headY - radius * 0.3  // Move down
+            camNode.position = SCNVector3(0, lowerY, distance)
+            
+            // ✅ Look at face (slightly above center)
+            let faceTarget = SCNVector3(0, headY + radius * 0.1, 0)
+            camNode.look(at: faceTarget)
 
             wrapper.addChildNode(camNode)
             scnView.pointOfView = camNode
             scnView.allowsCameraControl = false
             
-            // ✅ Store camera node and original position
             self.cameraNode = camNode
-            self.originalCameraPosition = camNode.position
-            print("📸 [NATIVE] Camera setup complete at position: \(camNode.position)")
+            self.isZoomedOut = true  // ✅ Already zoomed out from start
+            print("✅ [NATIVE] Camera setup complete (zoomed out + tilted down)")
 
             applyPendingBackgroundIfAny()
-            
-            // ✅ Find hand nodes after avatar loads
-            findHandNodes(in: scene.rootNode)
 
         } catch {
-            print("USD load failed: \(error)")
+            print("❌ [NATIVE] USD load failed: \(error)")
         }
     }
 
-    // ✅ AGGRESSIVE: Find hand and arm nodes
-    private func findHandNodes(in rootNode: SCNNode) {
-        print("🔍 [NATIVE] Searching for hand nodes in skeleton...")
-        
-        // Print ALL nodes to debug
-        print("📋 [NATIVE] Full skeleton hierarchy:")
-        printAllNodes(rootNode, level: 0, maxDepth: 8)
-        
-        // Search for right hand/arm nodes
-        rightHandNode = findNodeByName(rootNode, containing: ["hand", "right"], excluding: ["left"])
-        rightArmNode = findNodeByName(rootNode, containing: ["arm", "right"], excluding: ["left", "fore"])
-        rightForeArmNode = findNodeByName(rootNode, containing: ["forearm", "right"], excluding: ["left"])
-        rightShoulderNode = findNodeByName(rootNode, containing: ["shoulder", "right"], excluding: ["left"])
-        
-        // Fallback to any arm node
-        if rightArmNode == nil {
-            rightArmNode = rightShoulderNode ?? rightForeArmNode ?? rightHandNode
-        }
-        
-        print("✅ [NATIVE] Right hand: \(rightHandNode?.name ?? "NOT FOUND")")
-        print("✅ [NATIVE] Right arm: \(rightArmNode?.name ?? "NOT FOUND")")
-        print("✅ [NATIVE] Right forearm: \(rightForeArmNode?.name ?? "NOT FOUND")")
-        print("✅ [NATIVE] Right shoulder: \(rightShoulderNode?.name ?? "NOT FOUND")")
-    }
-    
-    // Find node by name patterns (case-insensitive)
-    private func findNodeByName(_ root: SCNNode, containing: [String], excluding: [String] = []) -> SCNNode? {
-        var foundNode: SCNNode?
-        
-        root.enumerateChildNodes { (node, stop) in
-            guard let name = node.name?.lowercased() else { return }
-            
-            // Check if name contains all required patterns
-            let hasAllRequired = containing.allSatisfy { name.contains($0.lowercased()) }
-            let hasExcluded = excluding.contains { name.contains($0.lowercased()) }
-            
-            if hasAllRequired && !hasExcluded {
-                print("🎯 [NATIVE] Found matching node: \(node.name ?? "unnamed")")
-                foundNode = node
-                stop.pointee = true
-            }
-        }
-        
-        return foundNode
-    }
-    
-    // Print node hierarchy for debugging
-    private func printAllNodes(_ node: SCNNode, level: Int, maxDepth: Int = 10) {
-        guard level < maxDepth else { return }
-        let indent = String(repeating: "  ", count: level)
-        if let name = node.name, !name.isEmpty {
-            print("\(indent)└─ \(name)")
-        }
-        for child in node.childNodes {
-            printAllNodes(child, level: level + 1, maxDepth: maxDepth)
-        }
-    }
-
-    // ✅ MAIN: Hand wave with camera zoom
-    private func triggerHandWave(duration: Double, result: @escaping FlutterResult) {
+    // ✅ MAIN: Trigger hand wave animation
+    private func triggerHandWave(duration: Double, animationPath: String?, result: @escaping FlutterResult) {
         print("👋 [NATIVE] Hand wave requested for \(duration)s")
+        print("🎬 [NATIVE] Animation path: \(animationPath ?? "nil")")
         
-        // Animate camera zoom regardless of hand nodes
-        animateCameraZoom(duration: duration)
-        
-        // Try to animate hand if nodes are found
-        if let armNode = rightArmNode {
-            animateHandWave(armNode: armNode, duration: duration)
-        } else {
-            print("⚠️ [NATIVE] No arm nodes found - camera zoom only")
+        guard let path = animationPath else {
+            print("❌ [NATIVE] No animation path provided")
+            result(FlutterError(code: "NO_ANIMATION", message: "animationPath required", details: nil))
+            return
         }
         
-        // Set completion timer
+        // ✅ Load and play DAE animation
+        loadAndPlayDAEAnimation(from: path, duration: duration)
+        
+        // ✅ Stop animation IMMEDIATELY when duration ends (no extra delay)
         handWaveTimer?.invalidate()
         handWaveTimer = Timer.scheduledTimer(withTimeInterval: duration, repeats: false) { [weak self] _ in
-            self?.stopHandWave()
+            self?.stopHandWaveImmediately()
         }
         
         result(nil)
     }
-    
-    // ✅ Camera zoom animation
-// ✅ IMPROVED: More aggressive camera zoom out to show full hand wave
-// ✅ Alternative: Use camera FOV instead of position
-private func animateCameraZoom(duration: Double) {
-    guard let camera = cameraNode, let cam = camera.camera else {
-        print("❌ [NATIVE] Camera not found")
-        return
+
+    // ✅ Camera zoom animation - PERMANENT zoom out
+    private func animateCameraZoom(duration: Double) {
+        // ✅ Camera already starts zoomed out, no animation needed
+        print("📸 [NATIVE] Camera already zoomed out from start")
     }
-    
-    print("📸 [NATIVE] Starting FOV zoom animation")
-    
-    let originalFOV = cam.fieldOfView
-    let zoomOutFOV = originalFOV * 1.5  // 50% wider view
-    
-    print("📸 [NATIVE] Original FOV: \(originalFOV)")
-    print("📸 [NATIVE] Zoom out FOV: \(zoomOutFOV)")
-    
-    // Zoom out
-    SCNTransaction.begin()
-    SCNTransaction.animationDuration = 0.6
-    SCNTransaction.animationTimingFunction = CAMediaTimingFunction(name: .easeOut)
-    cam.fieldOfView = zoomOutFOV
-    SCNTransaction.commit()
-    
-    // Zoom back
-    DispatchQueue.main.asyncAfter(deadline: .now() + duration - 0.6) {
-        SCNTransaction.begin()
-        SCNTransaction.animationDuration = 0.6
-        SCNTransaction.animationTimingFunction = CAMediaTimingFunction(name: .easeIn)
-        cam.fieldOfView = originalFOV
-        SCNTransaction.commit()
+
+    // ✅ Load and play DAE animation with caching
+    private func loadAndPlayDAEAnimation(from path: String, duration: Double) {
+        print("🎬 [NATIVE] Loading DAE animation from: \(path)")
         
-        print("📸 [NATIVE] FOV zoom completed")
-    }
-}
-    // ✅ PERFECT: Playful, controlled hand wave (lower height, tighter wave)
-    private func animateHandWave(armNode: SCNNode, duration: Double) {
-        print("👋 [NATIVE] Starting PLAYFUL hand wave animation")
+        // ✅ Extract filename without extension
+        let filename = (path as NSString).lastPathComponent
+        let name = (filename as NSString).deletingPathExtension
         
-        let handNode = rightHandNode
-        let forearmNode = rightForeArmNode
+        print("🔍 [NATIVE] Animation name: \(name)")
         
-        // Stop all existing animations
-        armNode.removeAllAnimations()
-        handNode?.removeAllAnimations()
-        forearmNode?.removeAllAnimations()
-        
-        // ========== UPPER ARM (Shoulder to Elbow) - Keep DOWN ==========
-        let armLiftX = CAKeyframeAnimation(keyPath: "eulerAngles.x")
-        armLiftX.values = [
-            0,          // Start (relaxed)
-            -0.3,       // Slight forward
-            -0.3,       // Hold
-            -0.3,       // Hold
-            -0.2,       // Relax
-            0           // Back to rest
-        ]
-        armLiftX.keyTimes = [0, 0.2, 0.4, 0.7, 0.85, 1.0]
-        armLiftX.duration = duration
-        armLiftX.timingFunction = CAMediaTimingFunction(name: .easeInEaseOut)
-        
-        let armSide = CAKeyframeAnimation(keyPath: "eulerAngles.y")
-        armSide.values = [0, 0.2, 0.2, 0.2, 0.1, 0]
-        armSide.keyTimes = [0, 0.2, 0.4, 0.7, 0.85, 1.0]
-        armSide.duration = duration
-        armSide.timingFunction = CAMediaTimingFunction(name: .easeInEaseOut)
-        
-        let armRotate = CAKeyframeAnimation(keyPath: "eulerAngles.z")
-        // Sympathetic rotation: "Bobble" with the wave
-        armRotate.values = [
-            0,
-            -0.3,
-            -0.25, // Bobble
-            -0.3,
-            -0.25, // Bobble
-            -0.3,
-            -0.15,
-            0
-        ]
-        armRotate.keyTimes = [0, 0.2, 0.35, 0.5, 0.65, 0.8, 0.9, 1.0]
-        armRotate.duration = duration
-        armRotate.timingFunction = CAMediaTimingFunction(name: .easeInEaseOut)
-        
-        let armGroup = CAAnimationGroup()
-        armGroup.animations = [armLiftX, armSide, armRotate]
-        armGroup.duration = duration
-        armGroup.fillMode = .both
-        armGroup.isRemovedOnCompletion = false
-        
-        // ========== FOREARM (Elbow to Wrist) - LOWERED HEIGHT ==========
-        if let forearm = forearmNode {
-            let forearmBend = CAKeyframeAnimation(keyPath: "eulerAngles.x")
-            // Reduced bend from -1.6 to -1.3 (approx 75 degrees vs 90+)
-            // Keeps hand around chin/shoulder level, not over head
-            let targetBend = -1.3 
-            
-            forearmBend.values = [
-                0,          // Start
-                targetBend, // Bend up (Lower height)
-                targetBend, // Hold
-                targetBend, // Hold
-                -1.0,       // Start straightening
-                0           // End
-            ]
-            forearmBend.keyTimes = [0, 0.2, 0.3, 0.8, 0.9, 1.0]
-            forearmBend.duration = duration
-            forearmBend.timingFunction = CAMediaTimingFunction(name: .easeInEaseOut)
-            forearmBend.fillMode = .both
-            forearmBend.isRemovedOnCompletion = false
-            
-            forearm.addAnimation(forearmBend, forKey: "forearmBend")
+        // ✅ Check cache first
+        if let cachedAnims = cachedAnimations[name] {
+            print("✅ [NATIVE] Using cached animations (\(cachedAnims.count) animations)")
+            playAnimations(cachedAnims, duration: duration)
+            animateCameraZoom(duration: duration)
+            return
         }
         
-        // ========== HAND (Wrist) - TIGHTER, CUTER WAVE ==========
-        if let hand = handNode {
-            // Y-axis: Wave LEFT and RIGHT (horizontal motion)
-            let handWave = CAKeyframeAnimation(keyPath: "eulerAngles.y")
-            
-            // Tighter range: 0.5 to 1.0 (width of ~0.5 rad)
-            // Previous was: 0.2 to 1.4 (width of ~1.2 rad - too wide)
-            let center = 0.75
-            let left = 0.5
-            let right = 1.0
-            
-            handWave.values = [
-                0.8,        // Start facing forward
-                left,       // Tilt left to start
-                right,      // Wave RIGHT (Cycle 1)
-                left,       // Wave LEFT
-                right,      // Wave RIGHT (Cycle 2)
-                left,       // Wave LEFT
-                right,      // Wave RIGHT (Cycle 3)
-                left,       // Wave LEFT
-                0.8,        // Back to center
-                0.8         // Hold center
-            ]
-            // Snappy timing
-            handWave.keyTimes = [0, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0]
-            handWave.duration = duration
-            handWave.timingFunction = CAMediaTimingFunction(name: .easeInEaseOut)
-            handWave.fillMode = .both
-            handWave.isRemovedOnCompletion = false
-            
-            // Z-axis: No rotation
-            let handRotate = CAKeyframeAnimation(keyPath: "eulerAngles.z")
-            handRotate.values = [0, 0]
-            handRotate.duration = duration
-            handRotate.fillMode = .both
-            handRotate.isRemovedOnCompletion = false
-            
-            // X-axis: Slight forward tilt
-            let handTilt = CAKeyframeAnimation(keyPath: "eulerAngles.x")
-            handTilt.values = [0, 0.2, 0.2, 0]
-            handTilt.keyTimes = [0, 0.2, 0.8, 1.0]
-            handTilt.duration = duration
-            handTilt.timingFunction = CAMediaTimingFunction(name: .easeInEaseOut)
-            handTilt.fillMode = .both
-            handTilt.isRemovedOnCompletion = false
-            
-            let handGroup = CAAnimationGroup()
-            handGroup.animations = [handWave, handRotate, handTilt]
-            handGroup.duration = duration
-            handGroup.fillMode = .both
-            handGroup.isRemovedOnCompletion = false
-            
-            hand.addAnimation(handGroup, forKey: "handWave")
-            print("✅ [NATIVE] Hand waving PLAYFULLY (tighter, lower)")
+        print("📥 [NATIVE] Loading from bundle: \(name).dae")
+        
+        // ✅ Load from bundle
+        guard let sceneURL = Bundle.main.url(forResource: name, withExtension: "dae") else {
+            print("❌ [NATIVE] DAE file not found in bundle: \(name).dae")
+            return
         }
         
-        // Apply upper arm animation
-        CATransaction.begin()
-        CATransaction.setCompletionBlock {
-            print("✅ [NATIVE] Playful wave completed")
-        }
-        armNode.addAnimation(armGroup, forKey: "armLift")
-        CATransaction.commit()
+        print("✅ [NATIVE] Found DAE file at: \(sceneURL.lastPathComponent)")
         
-        print("✅ [NATIVE] All playful animations applied")
+        guard let sceneSource = SCNSceneSource(url: sceneURL, options: nil) else {
+            print("❌ [NATIVE] Failed to load SCNSceneSource")
+            return
+        }
+        
+        let animationIDs = sceneSource.identifiersOfEntries(withClass: CAAnimation.self)
+        print("✅ [NATIVE] Found \(animationIDs.count) animations")
+        
+        // ✅ Cache animations
+        var animationsDict: [String: CAAnimation] = [:]
+        
+        for id in animationIDs where id.hasSuffix("-anim") {
+            if let anim = sceneSource.entryWithIdentifier(id, withClass: CAAnimation.self) {
+                // Clone animation to avoid reuse issues
+                if let clonedAnim = anim.copy() as? CAAnimation {
+                    animationsDict[id] = clonedAnim
+                    print("📦 [NATIVE] Cached animation: \(id)")
+                }
+            }
+        }
+        
+        // ✅ Store in cache
+        if !animationsDict.isEmpty {
+            cachedAnimations[name] = animationsDict
+            print("✅ [NATIVE] Cached \(animationsDict.count) animations for \(name)")
+        }
+        
+        // ✅ Play animations
+        playAnimations(animationsDict, duration: duration)
+        animateCameraZoom(duration: duration)
     }
     
-    // ✅ Stop hand wave
- private func stopHandWave() {
-    print("🛑 [NATIVE] Stopping hand wave")
-    handWaveTimer?.invalidate()
-    handWaveTimer = nil
-    
-    rightHandNode?.removeAnimation(forKey: "handWave")
-    leftHandNode?.removeAnimation(forKey: "handWave")
-    rightArmNode?.removeAnimation(forKey: "armLift")
-    rightForeArmNode?.removeAnimation(forKey: "forearmBend")  // ✅ ADD THIS LINE
-    rightForeArmNode?.removeAnimation(forKey: "handWave")     // ✅ ADD THIS LINE
-    
-    // Restore camera position
-    if let camera = cameraNode, let original = originalCameraPosition {
-        SCNTransaction.begin()
-        SCNTransaction.animationDuration = 0.3
-        camera.position = original
-        SCNTransaction.commit()
+    // ✅ Play cached animations - LOOP for full duration
+    private func playAnimations(_ animations: [String: CAAnimation], duration: Double) {
+        guard let rootNode = scnView.scene?.rootNode else {
+            print("❌ [NATIVE] No root node found")
+            return
+        }
+        
+        // ✅ Play all animations with REPEAT
+        var playedCount = 0
+        for (id, anim) in animations {
+            if let playAnim = anim.copy() as? CAAnimation {
+                // Get original animation duration
+                let originalDuration = playAnim.duration
+                
+                // ✅ Calculate how many times to repeat
+                let repeatCount = Float(duration / originalDuration)
+                
+                playAnim.duration = originalDuration  // Keep original timing
+                playAnim.repeatCount = repeatCount    // ✅ Repeat to fill duration
+                playAnim.fillMode = .forwards
+                playAnim.isRemovedOnCompletion = false  // ✅ Keep playing
+                playAnim.timingFunction = CAMediaTimingFunction(name: .linear)
+                
+                rootNode.addAnimation(playAnim, forKey: "waveAnimation_\(id)")
+                playedCount += 1
+                
+                print("🔁 [NATIVE] Animation \(id): \(originalDuration)s × \(repeatCount) = \(duration)s")
+            }
+        }
+        
+        print("✅ [NATIVE] Playing \(playedCount) animations (looping for \(duration)s)")
     }
-}
+
+    // ✅ Stop hand wave IMMEDIATELY - no fade, no delay
+    private func stopHandWaveImmediately() {
+        print("🛑 [NATIVE] Stopping hand wave IMMEDIATELY")
+        handWaveTimer?.invalidate()
+        handWaveTimer = nil
+        
+        guard let rootNode = scnView.scene?.rootNode else { return }
+        
+        // ✅ Just remove animations instantly - they auto-remove anyway
+        let animationKeys = rootNode.animationKeys.filter { $0.hasPrefix("waveAnimation_") }
+        
+        for key in animationKeys {
+            rootNode.removeAnimation(forKey: key)
+        }
+        
+        print("✅ [NATIVE] \(animationKeys.count) animations removed instantly")
+        print("📸 [NATIVE] Camera stays zoomed out")
+    }
+    
+    // ✅ Legacy method for compatibility
+    private func stopHandWave() {
+        stopHandWaveImmediately()
+    }
+    
     func view() -> UIView { scnView }
     
     private func handleCall(_ call: FlutterMethodCall, result: @escaping FlutterResult) {
@@ -499,9 +356,9 @@ private func animateCameraZoom(duration: Double) {
             guard
                 let args = call.arguments as? [String: Any],
                 let audioPath = args["audioPath"] as? String
-            else { 
+            else {
                 result(FlutterError(code: "bad_args", message: "audioPath missing", details: nil))
-                return 
+                return
             }
 
             do {
@@ -509,13 +366,13 @@ private func animateCameraZoom(duration: Double) {
                 if scheduler == nil, let rig, let clock = audioPlayer.clock {
                     scheduler = VisemeScheduler(clock: clock, morpher: rig)
                 }
-                if let list = args["visemes"] as? [[String:Any]] { 
-                    enqueueVisemes(list) 
+                if let list = args["visemes"] as? [[String:Any]] {
+                    enqueueVisemes(list)
                 }
                 result(nil)
             } catch {
-                result(FlutterError(code: "audio_failed", 
-                                  message: error.localizedDescription, 
+                result(FlutterError(code: "audio_failed",
+                                  message: error.localizedDescription,
                                   details: nil))
             }
             
@@ -528,8 +385,8 @@ private func animateCameraZoom(duration: Double) {
             guard let args = call.arguments as? [String: Any],
                   let visemeName = args["visemeName"] as? String,
                   let duration = args["duration"] as? Double else {
-                result(FlutterError(code: "INVALID_ARGS", 
-                                  message: "visemeName and duration required", 
+                result(FlutterError(code: "INVALID_ARGS",
+                                  message: "visemeName and duration required",
                                   details: nil))
                 return
             }
@@ -551,13 +408,17 @@ private func animateCameraZoom(duration: Double) {
             guard let args = call.arguments as? [String: Any],
                   let duration = args["duration"] as? Double else {
                 print("❌ [NATIVE] Invalid arguments for triggerHandWave")
-                result(FlutterError(code: "INVALID_ARGS", 
-                                  message: "duration required", 
+                result(FlutterError(code: "INVALID_ARGS",
+                                  message: "duration required",
                                   details: nil))
                 return
             }
+            
+            let animationPath = args["animationPath"] as? String
             print("⏱️ [NATIVE] Duration: \(duration)")
-            triggerHandWave(duration: duration, result: result)
+            print("🎬 [NATIVE] Animation path: \(animationPath ?? "nil")")
+            
+            triggerHandWave(duration: duration, animationPath: animationPath, result: result)
             
         case "stopHandWave":
             stopHandWave()
@@ -568,7 +429,7 @@ private func animateCameraZoom(duration: Double) {
             dispose()
             result(nil)
             
-        default: 
+        default:
             result(FlutterMethodNotImplemented)
         }
     }
@@ -585,13 +446,10 @@ private func animateCameraZoom(duration: Double) {
         
         handWaveTimer?.invalidate()
         handWaveTimer = nil
-        rightHandNode = nil
-        leftHandNode = nil
-        rightArmNode = nil
-        rightForeArmNode = nil
-        rightShoulderNode = nil
         cameraNode = nil
-        originalCameraPosition = nil
+        isZoomedOut = false // ✅ Reset zoom state
+        cachedAnimations.removeAll() // ✅ Clear cache
+        currentAvatarName = nil
 
         scnView.scene = nil
         scnView.delegate = nil
@@ -619,9 +477,9 @@ private func animateCameraZoom(duration: Double) {
             let start = Int64((startSec * sr).rounded())
             let end   = Int64((endSec   * sr).rounded())
             batch.append(VisemeEvent(
-                index: idx, 
-                start: start, 
-                end: end, 
+                index: idx,
+                start: start,
+                end: end,
                 weight: CGFloat((item["weight"] as? Double) ?? 0.9)
             ))
         }
