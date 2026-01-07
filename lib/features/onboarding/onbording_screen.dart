@@ -802,6 +802,10 @@ Widget _buildNextButton() {
               : const AlwaysStoppedAnimation<double>(1.0),
           child: _AnimatedGradientButton(
             onPressed: () {
+              setState(() {
+                _isNextButtonActive = true;  // ✅ Next button animated হবে
+              });
+              
               _onButtonPressed(() {
                 bool isValid = true;
                 String message = "";
@@ -841,7 +845,6 @@ Widget _buildNextButton() {
                     curve: Curves.easeInOutCubic,
                   );
                 } else {
-                  // Level page এ Next চাপলে অ্যানিমেশন Next এ রাখা থাকবে (ডিফল্ট)
                   _completeOnboarding();
                   Navigator.pushReplacement(
                     context,
@@ -865,6 +868,10 @@ Widget _buildNextButton() {
                 : const AlwaysStoppedAnimation<double>(1.0),
             child: _AnimatedTestButton(
               onPressed: () {
+                setState(() {
+                  _isNextButtonActive = false;  // ✅ Test button animated হবে
+                });
+                
                 _onButtonPressed(() {
                   if (selectedAvatar.isEmpty) {
                     ScaffoldMessenger.of(context).showSnackBar(
@@ -880,11 +887,6 @@ Widget _buildNextButton() {
                     );
                     return;
                   }
-
-                  // Test বাটন চাপলে অ্যানিমেশন এখানে চলে আসবে
-                  setState(() {
-                    _isNextButtonActive = false;
-                  });
 
                   Navigator.push(
                     context,
@@ -902,7 +904,6 @@ Widget _buildNextButton() {
   );
 }
 }
-
 // 🎨 Animated Back Button
 class _AnimatedBackButton extends StatefulWidget {
   final VoidCallback onPressed;
