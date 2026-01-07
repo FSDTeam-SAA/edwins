@@ -265,8 +265,9 @@ class _ChatMessageState extends State<ChatMessage>
       RegExp(r'\*\*(.*?)\*\*'), // Matches **text**
       onMatch: (Match match) {
         final String word = match.group(1) ?? "";
-        const TextStyle underlineStyle = TextStyle(
-          color: Colors.black,
+        final TextStyle underlineStyle = TextStyle(
+          fontSize: 16,
+          color: Colors.orange[500],
           decoration: TextDecoration.underline, // This creates the line
         );
         spans.add(

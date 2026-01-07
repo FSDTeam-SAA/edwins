@@ -9,7 +9,7 @@ Future<int> runCmd(List<String> args) async {
 }
 
 Future<void> main() async {
-  final dest = "platform=iOS Simulator,name=iPhone 17";
+  const dest = "platform=iOS Simulator,name=iPhone 17";
 
   var code = await runCmd([
     'test',

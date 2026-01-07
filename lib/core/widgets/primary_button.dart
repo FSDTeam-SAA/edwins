@@ -6,7 +6,8 @@ class PrimaryButton extends StatelessWidget {
   final VoidCallback onPressed;
   final Color? color;
 
-  const PrimaryButton({super.key, required this.text, required this.onPressed, this.color});
+  const PrimaryButton(
+      {super.key, required this.text, required this.onPressed, this.color});
 
   @override
   Widget build(BuildContext context) {
@@ -17,7 +18,7 @@ class PrimaryButton extends StatelessWidget {
         gradient: color == null ? AppColors.primaryGradient : null,
         color: color,
         borderRadius: BorderRadius.circular(12),
-        boxShadow: [
+        boxShadow: const [
           BoxShadow(color: Colors.black12, blurRadius: 4, offset: Offset(0, 4))
         ],
       ),
@@ -25,12 +26,14 @@ class PrimaryButton extends StatelessWidget {
         style: ElevatedButton.styleFrom(
           backgroundColor: Colors.transparent,
           shadowColor: Colors.transparent,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         ),
         onPressed: onPressed,
         child: Text(
           text,
-          style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold),
+          style: const TextStyle(
+              color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold),
         ),
       ),
     );

@@ -51,6 +51,7 @@ class _ConversationChatState extends State<ConversationChat> {
     // We do NOT call _sendMessage here, effectively aborting the voice note.
   }
 
+  @override
   void initState() {
     super.initState();
     _avatarController = AvatarController();

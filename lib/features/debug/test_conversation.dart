@@ -219,7 +219,7 @@ class _TestConversationPageState extends State<TestConversationPage>
   List<VisemeData> _generateVisemesFromGermanWord(String word) {
     List<VisemeData> visemes = [];
     double currentTime = 0.0;
-    final double phonemeDuration = 0.15; // Each sound lasts 150ms
+    const double phonemeDuration = 0.15; // Each sound lasts 150ms
 
     // Convert word to lowercase
     word = word.toLowerCase();
@@ -344,12 +344,10 @@ class _TestConversationPageState extends State<TestConversationPage>
           continue;
       }
 
-      if (visemeName != null) {
-        visemes.add(
-            VisemeData(visemeName, currentTime, currentTime + phonemeDuration));
-        currentTime += phonemeDuration;
-        print('  ➡️ $char → $visemeName');
-      }
+      visemes.add(
+          VisemeData(visemeName, currentTime, currentTime + phonemeDuration));
+      currentTime += phonemeDuration;
+      print('  ➡️ $char → $visemeName');
 
       i++;
     }
@@ -663,7 +661,7 @@ class _TestConversationPageState extends State<TestConversationPage>
     showDialog(
       context: context,
       barrierDismissible: false,
-      builder: (context) => _ErrorDialog(correctAnswer: 'Cat'),
+      builder: (context) => const _ErrorDialog(correctAnswer: 'Cat'),
     );
   }
 
@@ -2118,9 +2116,9 @@ class LanguageLevelPage extends StatelessWidget {
                           ),
                         );
                       },
-                      child: Column(
+                      child: const Column(
                         children: [
-                          const Text(
+                          Text(
                             'Your language level',
                             style: TextStyle(
                               fontSize: 20,
@@ -2128,8 +2126,8 @@ class LanguageLevelPage extends StatelessWidget {
                               color: Colors.black,
                             ),
                           ),
-                          const SizedBox(height: 12),
-                          const Row(
+                          SizedBox(height: 12),
+                          Row(
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
                               Text(
@@ -2294,7 +2292,7 @@ class RadarChartPainter extends CustomPainter {
   void paint(Canvas canvas, Size size) {
     final center = Offset(size.width / 2, size.height / 2);
     final radius = math.min(size.width, size.height) / 2 - 60;
-    final sides = 5;
+    const sides = 5;
     final angle = (2 * math.pi) / sides;
 
     final bgPaint = Paint()
@@ -2360,7 +2358,7 @@ class RadarChartPainter extends CustomPainter {
       canvas.drawCircle(Offset(x, y), 4, pointPaint);
     }
 
-    final textStyle = const TextStyle(
+    const textStyle = TextStyle(
       color: Color(0xFF757575),
       fontSize: 12,
       fontWeight: FontWeight.w500,
@@ -2381,9 +2379,9 @@ class RadarChartPainter extends CustomPainter {
       double offsetX = x - textPainter.width / 2;
       double offsetY = y - textPainter.height / 2;
 
-      if (i == 0)
+      if (i == 0) {
         offsetY -= 10;
-      else if (i == 1) {
+      } else if (i == 1) {
         offsetX += 5;
         offsetY -= 5;
       } else if (i == 2) {

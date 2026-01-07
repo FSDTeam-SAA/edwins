@@ -11,22 +11,23 @@ class DemoTestResult extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.white,
-      appBar: AppBar(
-        backgroundColor: Colors.white,
-        elevation: 0,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios, color: Colors.black, size: 20),
-          onPressed: () => Navigator.pop(context),
-        ),
-        title: const Text(
-          'Test result',
-          style: TextStyle(
-              color: Colors.black, fontSize: 16, fontWeight: FontWeight.w500),
-        ),
-        centerTitle: false,
-      ),
+      // appBar: AppBar(
+      //   backgroundColor: Colors.white,
+      //   elevation: 0,
+      //   leading: IconButton(
+      //     icon: const Icon(Icons.arrow_back_ios, color: Colors.black, size: 20),
+      //     onPressed: () => Navigator.pop(context),
+      //   ),
+      //   title: const Text(
+      //     'Test result',
+      //     style: TextStyle(
+      //         color: Colors.black, fontSize: 16, fontWeight: FontWeight.w500),
+      //   ),
+      //   centerTitle: false,
+      // ),
       body: Column(
         children: [
+          const SizedBox(height: 60),
           Expanded(
             child: SingleChildScrollView(
               child: Padding(
@@ -227,7 +228,7 @@ class RadarChartPainter extends CustomPainter {
   void paint(Canvas canvas, Size size) {
     final center = Offset(size.width / 2, size.height / 2);
     final radius = math.min(size.width, size.height) / 2 - 60;
-    final sides = 5;
+    const sides = 5;
     final angle = (2 * math.pi) / sides;
 
     final bgPaint = Paint()
@@ -314,9 +315,9 @@ class RadarChartPainter extends CustomPainter {
       double offsetX = x - textPainter.width / 2;
       double offsetY = y - textPainter.height / 2;
 
-      if (i == 0)
+      if (i == 0) {
         offsetY -= 10;
-      else if (i == 1) {
+      } else if (i == 1) {
         offsetX += 5;
         offsetY -= 5;
       } else if (i == 2) {

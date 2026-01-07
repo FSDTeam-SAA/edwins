@@ -15,23 +15,27 @@ class ProfileView extends StatefulWidget {
   State<ProfileView> createState() => _ProfileViewState();
 }
 
-class _ProfileViewState extends State<ProfileView> with TickerProviderStateMixin {
-  final TextEditingController _nameController = TextEditingController(text: "Jack Shobs");
-  final TextEditingController _emailController = TextEditingController(text: "jackshobs@gmail.com");
-  final TextEditingController _usernameController = TextEditingController(text: "Jack");
+class _ProfileViewState extends State<ProfileView>
+    with TickerProviderStateMixin {
+  final TextEditingController _nameController =
+      TextEditingController(text: "Jack Shobs");
+  final TextEditingController _emailController =
+      TextEditingController(text: "jackshobs@gmail.com");
+  final TextEditingController _usernameController =
+      TextEditingController(text: "Jack");
   String? _selectedLevel;
-  
+
   late AnimationController _profileController;
   late AnimationController _fieldsController;
   late AnimationController _saveButtonController;
-  
+
   late Animation<double> _profileScaleAnimation;
   late Animation<double> _profileFadeAnimation;
   late Animation<double> _profileRotateAnimation;
-  
+
   late List<Animation<double>> _fieldFadeAnimations;
   late List<Animation<Offset>> _fieldSlideAnimations;
-  
+
   late Animation<double> _saveButtonScale;
   late Animation<double> _saveButtonFade;
 
@@ -152,12 +156,14 @@ class _ProfileViewState extends State<ProfileView> with TickerProviderStateMixin
         backgroundColor: Colors.white,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios, color: AppColors.primaryOrange),
+          icon:
+              const Icon(Icons.arrow_back_ios, color: AppColors.primaryOrange),
           onPressed: () => Navigator.pop(context),
         ),
         title: const Text(
           "Profile",
-          style: TextStyle(color: AppColors.primaryOrange, fontWeight: FontWeight.bold),
+          style: TextStyle(
+              color: AppColors.primaryOrange, fontWeight: FontWeight.bold),
         ),
       ),
       body: SingleChildScrollView(
@@ -166,7 +172,7 @@ class _ProfileViewState extends State<ProfileView> with TickerProviderStateMixin
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             const SizedBox(height: 20),
-            
+
             // 1. Animated Profile Picture with Edit Badge
             Center(
               child: FadeTransition(
@@ -175,7 +181,7 @@ class _ProfileViewState extends State<ProfileView> with TickerProviderStateMixin
                   turns: _profileRotateAnimation,
                   child: ScaleTransition(
                     scale: _profileScaleAnimation,
-                    child: AnimatedProfilePicture(),
+                    child: const AnimatedProfilePicture(),
                   ),
                 ),
               ),
@@ -186,7 +192,7 @@ class _ProfileViewState extends State<ProfileView> with TickerProviderStateMixin
             _buildAnimatedField(0, "Name", _nameController),
             _buildAnimatedField(1, "Email", _emailController),
             _buildAnimatedField(2, "User name", _usernameController),
-            
+
             // 3. Animated Level Dropdown
             FadeTransition(
               opacity: _fieldFadeAnimations[3],
@@ -195,7 +201,9 @@ class _ProfileViewState extends State<ProfileView> with TickerProviderStateMixin
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text("Level", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                    const Text("Level",
+                        style: TextStyle(
+                            fontSize: 16, fontWeight: FontWeight.bold)),
                     const SizedBox(height: 8),
                     AnimatedDropdown(
                       selectedLevel: _selectedLevel,
@@ -248,7 +256,10 @@ class _ProfileViewState extends State<ProfileView> with TickerProviderStateMixin
                       child: const Center(
                         child: Text(
                           "Save",
-                          style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold),
+                          style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold),
                         ),
                       ),
                     ),
@@ -263,7 +274,8 @@ class _ProfileViewState extends State<ProfileView> with TickerProviderStateMixin
     );
   }
 
-  Widget _buildAnimatedField(int index, String label, TextEditingController controller) {
+  Widget _buildAnimatedField(
+      int index, String label, TextEditingController controller) {
     return FadeTransition(
       opacity: _fieldFadeAnimations[index],
       child: SlideTransition(
@@ -278,8 +290,8 @@ class _ProfileViewState extends State<ProfileView> with TickerProviderStateMixin
 
   void _handleSave() {
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: const Row(
+      const SnackBar(
+        content: Row(
           children: [
             Icon(Icons.check_circle, color: Colors.white),
             SizedBox(width: 10),
@@ -288,11 +300,11 @@ class _ProfileViewState extends State<ProfileView> with TickerProviderStateMixin
         ),
         backgroundColor: Colors.green,
         behavior: SnackBarBehavior.floating,
-        margin: const EdgeInsets.all(20),
-        duration: const Duration(milliseconds: 2000),
+        margin: EdgeInsets.all(20),
+        duration: Duration(milliseconds: 2000),
       ),
     );
-    
+
     Future.delayed(const Duration(milliseconds: 800), () {
       if (mounted) Navigator.pop(context);
     });
@@ -370,7 +382,7 @@ class _AnimatedProfilePictureState extends State<AnimatedProfilePicture>
                   );
                 },
               ),
-              
+
               // Profile picture
               Container(
                 width: 120,
@@ -391,7 +403,7 @@ class _AnimatedProfilePictureState extends State<AnimatedProfilePicture>
                   backgroundImage: AssetImage("assets/profile_user.png"),
                 ),
               ),
-              
+
               // Edit badge with pulse
               Positioned(
                 bottom: 0,
@@ -416,7 +428,8 @@ class _AnimatedProfilePictureState extends State<AnimatedProfilePicture>
                             ),
                           ],
                         ),
-                        child: const Icon(Icons.add, color: Colors.white, size: 20),
+                        child: const Icon(Icons.add,
+                            color: Colors.white, size: 20),
                       ),
                     );
                   },
@@ -468,7 +481,8 @@ class _AnimatedInputFieldState extends State<AnimatedInputField> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(widget.label, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+        Text(widget.label,
+            style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
         const SizedBox(height: 8),
         AnimatedContainer(
           duration: const Duration(milliseconds: 300),
@@ -490,14 +504,17 @@ class _AnimatedInputFieldState extends State<AnimatedInputField> {
             controller: widget.controller,
             focusNode: _focusNode,
             decoration: InputDecoration(
-              contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+              contentPadding:
+                  const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
               enabledBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12),
-                borderSide: BorderSide(color: Colors.pinkAccent.withOpacity(0.3)),
+                borderSide:
+                    BorderSide(color: Colors.pinkAccent.withOpacity(0.3)),
               ),
               focusedBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12),
-                borderSide: const BorderSide(color: AppColors.primaryOrange, width: 2),
+                borderSide:
+                    const BorderSide(color: AppColors.primaryOrange, width: 2),
               ),
             ),
           ),
@@ -535,8 +552,8 @@ class _AnimatedDropdownState extends State<AnimatedDropdown> {
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(12),
         border: Border.all(
-          color: _isOpen 
-              ? AppColors.primaryOrange 
+          color: _isOpen
+              ? AppColors.primaryOrange
               : Colors.orange.withOpacity(0.5),
           width: _isOpen ? 2 : 1,
         ),
@@ -560,7 +577,8 @@ class _AnimatedDropdownState extends State<AnimatedDropdown> {
             turns: _isOpen ? 0.5 : 0,
             duration: const Duration(milliseconds: 300),
             curve: Curves.easeOut,
-            child: const Icon(Icons.keyboard_arrow_down, color: Colors.blueGrey),
+            child:
+                const Icon(Icons.keyboard_arrow_down, color: Colors.blueGrey),
           ),
           items: ["Beginner", "Intermediate", "Advanced"].map((String value) {
             return DropdownMenuItem<String>(

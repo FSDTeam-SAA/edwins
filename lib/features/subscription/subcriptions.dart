@@ -23,7 +23,8 @@ class SubscriptionMainPage extends StatefulWidget {
   State<SubscriptionMainPage> createState() => _SubscriptionMainPageState();
 }
 
-class _SubscriptionMainPageState extends State<SubscriptionMainPage> with TickerProviderStateMixin {
+class _SubscriptionMainPageState extends State<SubscriptionMainPage>
+    with TickerProviderStateMixin {
   late List<AnimationController> _controllers;
   late List<Animation<double>> _fadeAnimations;
   late List<Animation<Offset>> _slideAnimations;
@@ -53,7 +54,8 @@ class _SubscriptionMainPageState extends State<SubscriptionMainPage> with Ticker
       return Tween<Offset>(
         begin: const Offset(0, 0.3),
         end: Offset.zero,
-      ).animate(CurvedAnimation(parent: controller, curve: Curves.easeOutCubic));
+      ).animate(
+          CurvedAnimation(parent: controller, curve: Curves.easeOutCubic));
     }).toList();
 
     // Start animations with delay
@@ -76,10 +78,12 @@ class _SubscriptionMainPageState extends State<SubscriptionMainPage> with Ticker
   Widget build(BuildContext context) {
     final screenWidth = MediaQuery.of(context).size.width;
     final isTablet = screenWidth > 600;
-    
+
     final List<SubscriptionPlan> plans = [
-      SubscriptionPlan(title: "Basic", price: "0.00", tests: "200", isSubscribed: true),
-      SubscriptionPlan(title: "Basic", price: "8.99", tests: "300", isSubscribed: false),
+      SubscriptionPlan(
+          title: "Basic", price: "0.00", tests: "200", isSubscribed: true),
+      SubscriptionPlan(
+          title: "Basic", price: "8.99", tests: "300", isSubscribed: false),
     ];
 
     return Scaffold(
@@ -107,10 +111,9 @@ class _SubscriptionMainPageState extends State<SubscriptionMainPage> with Ticker
       ),
       body: LayoutBuilder(
         builder: (context, constraints) {
-          final horizontal = constraints.maxWidth > 600 
-              ? constraints.maxWidth * 0.15 
-              : 20.0;
-          
+          final horizontal =
+              constraints.maxWidth > 600 ? constraints.maxWidth * 0.15 : 20.0;
+
           return ListView.separated(
             padding: EdgeInsets.symmetric(
               horizontal: horizontal,
@@ -133,9 +136,11 @@ class _SubscriptionMainPageState extends State<SubscriptionMainPage> with Ticker
                         Navigator.push(
                           context,
                           PageRouteBuilder(
-                            pageBuilder: (context, animation, secondaryAnimation) =>
-                                SubscriptionDetailPage(plan: plan),
-                            transitionsBuilder: (context, animation, secondaryAnimation, child) {
+                            pageBuilder:
+                                (context, animation, secondaryAnimation) =>
+                                    SubscriptionDetailPage(plan: plan),
+                            transitionsBuilder: (context, animation,
+                                secondaryAnimation, child) {
                               return FadeTransition(
                                 opacity: animation,
                                 child: SlideTransition(
@@ -150,7 +155,8 @@ class _SubscriptionMainPageState extends State<SubscriptionMainPage> with Ticker
                                 ),
                               );
                             },
-                            transitionDuration: const Duration(milliseconds: 400),
+                            transitionDuration:
+                                const Duration(milliseconds: 400),
                           ),
                         );
                       } else {
@@ -252,9 +258,11 @@ class _SubscriptionCardState extends State<SubscriptionCard>
                       borderRadius: BorderRadius.circular(isTablet ? 24 : 20),
                       boxShadow: [
                         BoxShadow(
-                          color: Colors.black.withOpacity(_elevationAnimation.value),
+                          color: Colors.black
+                              .withOpacity(_elevationAnimation.value),
                           blurRadius: 15 + (_elevationAnimation.value * 50),
-                          offset: Offset(0, 8 + (_elevationAnimation.value * 20)),
+                          offset:
+                              Offset(0, 8 + (_elevationAnimation.value * 20)),
                         ),
                       ],
                     ),
@@ -272,7 +280,7 @@ class _SubscriptionCardState extends State<SubscriptionCard>
                     child: SizedBox(
                       height: isTablet ? 200 : 160,
                       width: double.infinity,
-                      child: AnimatedWaveBackground(),
+                      child: const AnimatedWaveBackground(),
                     ),
                   ),
                   Padding(
@@ -386,7 +394,8 @@ class _SubscriptionCardState extends State<SubscriptionCard>
     return AnimatedButton(
       onPressed: widget.onTap,
       isGradient: !widget.plan.isSubscribed,
-      backgroundColor: widget.plan.isSubscribed ? const Color(0xFFC7B8B8) : null,
+      backgroundColor:
+          widget.plan.isSubscribed ? const Color(0xFFC7B8B8) : null,
       child: Text(
         widget.plan.isSubscribed ? "Subscribed" : "Subscribe",
         style: TextStyle(

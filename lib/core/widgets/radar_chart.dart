@@ -13,9 +13,8 @@ class ProgressRadarChart extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final dataEntries = skills.values
-        .map((e) => RadarEntry(value: e.toDouble()))
-        .toList();
+    final dataEntries =
+        skills.values.map((e) => RadarEntry(value: e.toDouble())).toList();
 
     return AspectRatio(
       aspectRatio: 2.2,
@@ -40,12 +39,11 @@ class ProgressRadarChart extends StatelessWidget {
             RadarChartData(
               radarShape: RadarShape.polygon,
               radarBackgroundColor: Colors.transparent,
-              gridBorderData: BorderSide(color: Colors.grey.withOpacity(0.3), width: 2),
+              gridBorderData:
+                  BorderSide(color: Colors.grey.withOpacity(0.3), width: 2),
 
               /// Outer border (solid)
-              radarBorderData: BorderSide(
-                color: Colors.transparent
-              ),
+              radarBorderData: const BorderSide(color: Colors.transparent),
 
               /// Hide built-in grid lines and axes
               tickBorderData: const BorderSide(color: Colors.transparent),

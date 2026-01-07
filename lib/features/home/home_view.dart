@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:language_app/features/conversation/conversation_chat.dart';
+import 'package:language_app/features/conversation/demo/demo_conversation.dart';
 // import 'package:language_app/features/conversation/demo/demo_conversation.dart';
 import 'package:language_app/features/conversation/demo/demo_vocabulary.dart';
 import 'package:language_app/core/providers/avatar_provider.dart';
@@ -159,7 +160,7 @@ class _HomeViewState extends State<HomeView> {
                 ),
                 const SizedBox(height: 20),
 
-                // _buildToggleSection(),
+                _buildToggleSection(),
 
                 const SizedBox(height: 30),
               ],
@@ -329,94 +330,94 @@ class _HomeViewState extends State<HomeView> {
     );
   }
 
-  // Widget _buildToggleSection() {
-  //   return Row(
-  //     children: [
-  //       // 1. Conversation Button (Outlined, White BG)
-  //       Expanded(
-  //         child: GestureDetector(
-  //           onTap: () {
-  //             // Get the selected avatar from provider
-  //             final avatarProvider =
-  //                 Provider.of<AvatarProvider>(context, listen: false);
+  Widget _buildToggleSection() {
+    return Row(
+      children: [
+        // 1. Conversation Button (Outlined, White BG)
+        Expanded(
+          child: GestureDetector(
+            onTap: () {
+              // Get the selected avatar from provider
+              final avatarProvider =
+                  Provider.of<AvatarProvider>(context, listen: false);
 
-  //             Navigator.push(
-  //               context,
-  //               MaterialPageRoute(
-  //                 builder: (context) => DemoConversation(
-  //                   selectedAvatar: avatarProvider.selectedAvatarName,
-  //                 ),
-  //               ),
-  //             );
-  //           },
-  //           child: Container(
-  //             height: 50,
-  //             decoration: BoxDecoration(
-  //               color: Colors.white,
-  //               borderRadius: BorderRadius.circular(12),
-  //               border: Border.all(color: AppColors.primaryOrange, width: 1.5),
-  //             ),
-  //             child: const Center(
-  //               child: Text(
-  //                 "Conversation",
-  //                 style: TextStyle(
-  //                   color: AppColors.primaryOrange,
-  //                   fontWeight: FontWeight.bold,
-  //                   fontSize: 16,
-  //                 ),
-  //               ),
-  //             ),
-  //           ),
-  //         ),
-  //       ),
-  //       const SizedBox(width: 16),
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => DemoConversation(
+                    selectedAvatar: avatarProvider.selectedAvatarName,
+                  ),
+                ),
+              );
+            },
+            child: Container(
+              height: 50,
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: AppColors.primaryOrange, width: 1.5),
+              ),
+              child: const Center(
+                child: Text(
+                  "Conversation",
+                  style: TextStyle(
+                    color: AppColors.primaryOrange,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 16,
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ),
+        const SizedBox(width: 16),
 
-  //       // 2. Vocabulary Button (Gradient BG)
-  //       Expanded(
-  //         child: GestureDetector(
-  //           onTap: () {
-  //             // This is the current page, so we don't navigate or we just refresh
-  //             //  Navigator.pushNamed(context, '/vocab-loop');
-  //             final avatarProvider =
-  //                 Provider.of<AvatarProvider>(context, listen: false);
-  //             Navigator.push(
-  //                 context,
-  //                 MaterialPageRoute(
-  //                   builder: (context) => DemoVocabulary(
-  //                       selectedAvatar: avatarProvider.selectedAvatarName),
-  //                 ));
-  //           },
-  //           child: Container(
-  //             height: 50,
-  //             decoration: BoxDecoration(
-  //               gradient: const LinearGradient(
-  //                 colors: [Color(0xFFFF8A65), Color(0xFFFF5252)],
-  //                 begin: Alignment.centerLeft,
-  //                 end: Alignment.centerRight,
-  //               ),
-  //               borderRadius: BorderRadius.circular(12),
-  //               boxShadow: [
-  //                 BoxShadow(
-  //                   color: AppColors.primaryOrange.withOpacity(0.3),
-  //                   blurRadius: 8,
-  //                   offset: const Offset(0, 4),
-  //                 ),
-  //               ],
-  //             ),
-  //             child: const Center(
-  //               child: Text(
-  //                 "Vocabulary",
-  //                 style: TextStyle(
-  //                   color: Colors.white,
-  //                   fontWeight: FontWeight.bold,
-  //                   fontSize: 16,
-  //                 ),
-  //               ),
-  //             ),
-  //           ),
-  //         ),
-  //       ),
-  //     ],
-  //   );
-  // }
+        // 2. Vocabulary Button (Gradient BG)
+        Expanded(
+          child: GestureDetector(
+            onTap: () {
+              // This is the current page, so we don't navigate or we just refresh
+              //  Navigator.pushNamed(context, '/vocab-loop');
+              final avatarProvider =
+                  Provider.of<AvatarProvider>(context, listen: false);
+              Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => DemoVocabulary(
+                        selectedAvatar: avatarProvider.selectedAvatarName),
+                  ));
+            },
+            child: Container(
+              height: 50,
+              decoration: BoxDecoration(
+                gradient: const LinearGradient(
+                  colors: [Color(0xFFFF8A65), Color(0xFFFF5252)],
+                  begin: Alignment.centerLeft,
+                  end: Alignment.centerRight,
+                ),
+                borderRadius: BorderRadius.circular(12),
+                boxShadow: [
+                  BoxShadow(
+                    color: AppColors.primaryOrange.withOpacity(0.3),
+                    blurRadius: 8,
+                    offset: const Offset(0, 4),
+                  ),
+                ],
+              ),
+              child: const Center(
+                child: Text(
+                  "Vocabulary",
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 16,
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
 }

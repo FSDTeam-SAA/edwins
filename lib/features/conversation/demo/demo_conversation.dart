@@ -218,7 +218,7 @@ class _DemoConversationState extends State<DemoConversation>
   List<VisemeData> _generateVisemesFromGermanWord(String word) {
     List<VisemeData> visemes = [];
     double currentTime = 0.0;
-    final double phonemeDuration = 0.15; // Each sound lasts 150ms
+    const double phonemeDuration = 0.15; // Each sound lasts 150ms
 
     // Convert word to lowercase
     word = word.toLowerCase();
@@ -343,12 +343,10 @@ class _DemoConversationState extends State<DemoConversation>
           continue;
       }
 
-      if (visemeName != null) {
-        visemes.add(
-            VisemeData(visemeName, currentTime, currentTime + phonemeDuration));
-        currentTime += phonemeDuration;
-        print('  ➡️ $char → $visemeName');
-      }
+      visemes.add(
+          VisemeData(visemeName, currentTime, currentTime + phonemeDuration));
+      currentTime += phonemeDuration;
+      print('  ➡️ $char → $visemeName');
 
       i++;
     }
@@ -662,7 +660,7 @@ class _DemoConversationState extends State<DemoConversation>
     showDialog(
       context: context,
       barrierDismissible: false,
-      builder: (context) => _ErrorDialog(correctAnswer: 'Cat'),
+      builder: (context) => const _ErrorDialog(correctAnswer: 'Cat'),
     );
   }
 
@@ -708,7 +706,8 @@ class _DemoConversationState extends State<DemoConversation>
       body: SafeArea(
         child: Column(
           children: [
-            _buildHeader(),
+            // _buildHeader(),
+            const SizedBox(height: 36),
             Expanded(
               child: Column(
                 children: [
@@ -740,39 +739,39 @@ class _DemoConversationState extends State<DemoConversation>
     );
   }
 
-  Widget _buildHeader() {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Row(
-            children: [
-              _AnimatedIconButton(
-                icon: Icons.arrow_back_ios,
-                color: const Color(0xFFFF8000),
-                onPressed: () => Navigator.pop(context),
-              ),
-              const SizedBox(width: 4),
-              Text(
-                widget.selectedAvatar,
-                style: const TextStyle(
-                  color: Color(0xFFFF8000),
-                  fontSize: 16,
-                  fontWeight: FontWeight.w500,
-                ),
-              ),
-            ],
-          ),
-          _AnimatedIconButton(
-            icon: Icons.menu,
-            color: const Color(0xFFFF8000),
-            onPressed: () {},
-          ),
-        ],
-      ),
-    );
-  }
+  // Widget _buildHeader() {
+  //   return Padding(
+  //     padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+  //     child: Row(
+  //       mainAxisAlignment: MainAxisAlignment.spaceBetween,
+  //       children: [
+  //         Row(
+  //           children: [
+  //             _AnimatedIconButton(
+  //               icon: Icons.arrow_back_ios,
+  //               color: const Color(0xFFFF8000),
+  //               onPressed: () => Navigator.pop(context),
+  //             ),
+  //             const SizedBox(width: 4),
+  //             Text(
+  //               widget.selectedAvatar,
+  //               style: const TextStyle(
+  //                 color: Color(0xFFFF8000),
+  //                 fontSize: 16,
+  //                 fontWeight: FontWeight.w500,
+  //               ),
+  //             ),
+  //           ],
+  //         ),
+  //         _AnimatedIconButton(
+  //           icon: Icons.menu,
+  //           color: const Color(0xFFFF8000),
+  //           onPressed: () {},
+  //         ),
+  //       ],
+  //     ),
+  //   );
+  // }
 
   Widget _buildQuestionHeader() {
     return AnimatedContainer(

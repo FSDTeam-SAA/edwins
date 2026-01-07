@@ -49,7 +49,7 @@ class PentagonPainter extends CustomPainter {
 
     const int sides = 5;
     const double fullCircle = 2 * pi;
-    final double angleStep = fullCircle / sides;
+    const double angleStep = fullCircle / sides;
     double startAngle = -pi / 2;
 
     // Äußerste Punkte
@@ -115,7 +115,7 @@ class PentagonPainter extends CustomPainter {
       final Offset dir = Offset(cos(angle), sin(angle));
 
       // Punkt etwas außerhalb der Ecke
-      final double textDistance = 10; // ggf. anpassen
+      const double textDistance = 10; // ggf. anpassen
       final Offset basePos = corner + dir * textDistance;
 
       late Offset drawPos;

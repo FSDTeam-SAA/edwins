@@ -19,15 +19,15 @@ class PrivacyPolicyPage extends StatelessWidget {
                   // Settings page-e niye jabe
                   Navigator.pop(context);
                 },
-                child: Row(
+                child: const Row(
                   children: [
-                    const Icon(
+                    Icon(
                       Icons.arrow_back_ios_new,
                       color: Colors.orange,
                       size: 20,
                     ),
-                    const SizedBox(width: 8),
-                    const Text(
+                    SizedBox(width: 8),
+                    Text(
                       'Privacy Policy',
                       style: TextStyle(
                         color: Colors.orange,

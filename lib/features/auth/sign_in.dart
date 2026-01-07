@@ -237,8 +237,8 @@ class _SignInPageState extends State<SignInPage> {
               const SizedBox(height: 30),
 
               // Divider
-              Row(
-                children: const [
+              const Row(
+                children: [
                   Expanded(child: Divider(color: Color(0xFFE0E0E0))),
                   Padding(
                     padding: EdgeInsets.symmetric(horizontal: 16),
@@ -264,7 +264,8 @@ class _SignInPageState extends State<SignInPage> {
                     decoration: BoxDecoration(
                       color: Colors.white,
                       borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: Color(0xFFE0E0E0), width: 1),
+                      border:
+                          Border.all(color: const Color(0xFFE0E0E0), width: 1),
                     ),
                     child: Center(
                       child: Image.asset(
@@ -282,7 +283,8 @@ class _SignInPageState extends State<SignInPage> {
                     decoration: BoxDecoration(
                       color: Colors.white,
                       borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: Color(0xFFE0E0E0), width: 1),
+                      border:
+                          Border.all(color: const Color(0xFFE0E0E0), width: 1),
                     ),
                     child: const Center(
                       child: Icon(Icons.apple, size: 32, color: Colors.black),

@@ -484,43 +484,42 @@ class _DemoVocabularyState extends State<DemoVocabulary>
           children: [
             Column(
               children: [
-                Padding(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 4, vertical: 8),
-                  child: Row(
-                    children: [
-                      IconButton(
-                        icon: const Icon(
-                          Icons.arrow_back_ios,
-                          color: Color(0xFFFF8000),
-                          size: 18,
-                        ),
-                        padding: EdgeInsets.zero,
-                        onPressed: () {
-                          if (currentQuestionIndex > 0) {
-                            setState(() {
-                              currentQuestionIndex--;
-                              selectedOption = null;
-                              showError = false;
-                              _correctController.reset();
-                            });
-                          } else {
-                            Navigator.pop(context);
-                          }
-                        },
-                      ),
-                      Text(
-                        widget.selectedAvatar,
-                        style: const TextStyle(
-                          color: Color(0xFFFF8000),
-                          fontSize: 16,
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 4),
+                // Padding(
+                //   padding: const EdgeInsets.only(top: 8, left: 4, right: 4),
+                //   child: Row(
+                //     children: [
+                //       // IconButton(
+                //       //   icon: const Icon(
+                //       //     Icons.arrow_back_ios,
+                //       //     color: Color(0xFFFF8000),
+                //       //     size: 18,
+                //       //   ),
+                //       //   padding: EdgeInsets.zero,
+                //       //   onPressed: () {
+                //       //     if (currentQuestionIndex > 0) {
+                //       //       setState(() {
+                //       //         currentQuestionIndex--;
+                //       //         selectedOption = null;
+                //       //         showError = false;
+                //       //         _correctController.reset();
+                //       //       });
+                //       //     } else {
+                //       //       Navigator.pop(context);
+                //       //     }
+                //       //   },
+                //       // ),
+                //       Text(
+                //         widget.selectedAvatar,
+                //         style: const TextStyle(
+                //           color: Color(0xFFFF8000),
+                //           fontSize: 16,
+                //           fontWeight: FontWeight.w500,
+                //         ),
+                //       ),
+                //     ],
+                //   ),
+                // ),
+                const SizedBox(height: 36),
                 AnimatedBuilder(
                   animation: _avatarSizeAnimation,
                   builder: (context, child) {
