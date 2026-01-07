@@ -446,6 +446,14 @@ void initState() {
                 showTranslation = false;
                 _correctController.reset();
               });
+              
+              // ✅ NEW: Next question এ গেলে আবার correct answer বলবে
+              Future.delayed(const Duration(milliseconds: 500), () {
+                if (mounted) {
+                  _repeatCorrectAnswer();
+                }
+              });
+              
             } else {
               Navigator.pushReplacement(
                 context,
