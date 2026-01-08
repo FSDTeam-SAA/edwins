@@ -1,5 +1,6 @@
 import 'package:language_app/core/utils/file_helper.dart';
 import 'package:language_app/core/utils/viseme_helper.dart';
+import 'package:language_app/app/constants/app_constants.dart';
 import 'package:webview_flutter/webview_flutter.dart';
 import 'dart:convert';
 
@@ -27,11 +28,27 @@ class AvatarController {
   // Helper Service
   TtsService? _ttsService;
 
+  // Avatar tracking
+  String? _currentAvatarName;
+
   AvatarController({
     FileHelper? fileHelper,
     VisemeHelper? visemeHelper,
   })  : _fileHelper = fileHelper ?? FileHelper(),
         _visemeHelper = visemeHelper ?? VisemeHelper();
+
+  // ✅ Set current avatar name
+  void setAvatarName(String avatarName) {
+    _currentAvatarName = avatarName;
+  }
+
+  // ✅ Get animation path for current avatar
+  String _getAnimationPath() {
+    if (_currentAvatarName?.toLowerCase() == 'clara') {
+      return AppConstants.claraAnimationPath;
+    }
+    return AppConstants.karlAnimationPath;
+  }
 
   // ✅ Attach Native Channel (iOS)
   void attach(int viewId) {
@@ -49,9 +66,9 @@ class AvatarController {
     try {
       await _channel?.invokeMethod('dispose');
     } catch (_) {}
-    // print("channel weg: ${_channel?.name}");
     _channel = null;
     _webViewController = null;
+    _currentAvatarName = null;
   }
 
   Future<void> playAudioViseme(
@@ -68,21 +85,9 @@ class AvatarController {
       });
     } else if (_webViewController != null) {
       // Android Implementation
-      // Send visemes to JS
       final visemesJson = jsonEncode(visemeEvents);
-      // Also handle Audio? For Android Web, we might need to play audio via Flutter or HTML Audio.
-      // For now, let's assume we trigger the JS function 'playVisemes'
-      // Important: The audio file format/path for web needs to be accessible.
-      // For simplicity, we just trigger visemes here. Handling audio sync on web is complex.
-      // We'll pass the path, assuming the webview can access it or we play it in Flutter.
-      // Let's adopt a "Flutter plays audio, JS handles visemes" approach for Android if needed,
-      // OR pass a file:// URL if valid.
-      // Simplified: Call JS function.
       _webViewController
           ?.runJavaScript("window.playAvatarVisemes('$visemesJson');");
-
-      // Note: To sync with audio, we'd need to play audio here.
-      // Ideally: pass audio url to JS.
     }
   }
 
@@ -147,17 +152,19 @@ class AvatarController {
     }
   }
 
-  // ✅ NEW METHOD: Trigger hand wave animation
+  // ✅ UPDATED METHOD: Trigger hand wave animation with proper animation path
   Future<void> triggerHandWave({double duration = 2.0}) async {
     try {
       print('👋 Triggering hand wave for ${duration}s');
       if (_channel != null) {
+        // iOS Implementation - Pass animation path
+        final animationPath = _getAnimationPath();
         await _channel?.invokeMethod('triggerHandWave', {
           'duration': duration,
+          'animationPath': animationPath,
         });
       } else {
         // Android / Web
-        // Assumes animation name 'Wave' exists
         _webViewController
             ?.runJavaScript("window.playAnimation('Wave', $duration);");
       }
@@ -166,7 +173,29 @@ class AvatarController {
     }
   }
 
-  // ✅ NEW METHOD: Stop hand wave animation
+// ✅ Play animation with custom path (direct from AppConstants)
+Future<void> triggerHandWaveWithPath(String animationPath, {double duration = 2.0}) async {
+  try {
+    print('👋 Triggering hand wave with path: $animationPath for ${duration}s');
+    if (_channel != null) {
+      await _channel?.invokeMethod('triggerHandWave', {
+        'duration': duration,
+        'animationPath': animationPath,
+      });
+    } else {
+      _webViewController?.runJavaScript("window.playAnimation('Wave', $duration);");
+    }
+  } catch (e) {
+    print('Error triggering hand wave: $e');
+  }
+}
+
+
+
+
+
+
+  // ✅ Stop hand wave animation
   Future<void> stopHandWave() async {
     try {
       if (_channel != null) {
@@ -178,6 +207,42 @@ class AvatarController {
       print('Error stopping hand wave: $e');
     }
   }
+
+  // ✅ NEW METHOD: Play custom animation by name
+  Future<void> playAnimation(String animationName, {double duration = 2.0}) async {
+    try {
+      print('🎬 Playing animation: $animationName for ${duration}s');
+      if (_channel != null) {
+        // iOS Implementation
+        final animationPath = _getAnimationPath();
+        await _channel?.invokeMethod('playAnimation', {
+          'animationName': animationName,
+          'duration': duration,
+          'animationPath': animationPath,
+        });
+      } else {
+        // Android / Web
+        _webViewController
+            ?.runJavaScript("window.playAnimation('$animationName', $duration);");
+      }
+    } catch (e) {
+      print('Error playing animation: $e');
+    }
+  }
+
+  // ✅ NEW METHOD: Stop any playing animation
+  Future<void> stopAnimation() async {
+    try {
+      if (_channel != null) {
+        await _channel?.invokeMethod('stopAnimation');
+      } else {
+        _webViewController?.runJavaScript("window.stopAnimation();");
+      }
+    } catch (e) {
+      print('Error stopping animation: $e');
+    }
+  }
+
   // --- Viseme & Lip Sync Logic ---
 
   Future<void> loadVisemeData() async {
