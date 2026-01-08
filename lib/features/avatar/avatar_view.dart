@@ -35,6 +35,11 @@ class _AvatarViewState extends State<AvatarView> {
   void initState() {
     super.initState();
     _controller = widget.controller ?? AvatarController();
+    
+    // ✅ Set avatar name in controller
+    if (widget.avatarName != null) {
+      _controller.setAvatarName(widget.avatarName!);
+    }
 
     if (defaultTargetPlatform != TargetPlatform.iOS) {
       _initWebView();
@@ -52,17 +57,6 @@ class _AvatarViewState extends State<AvatarView> {
     String modelPath = widget.avatarName?.toLowerCase() == 'clara'
         ? AppConstants.claraModel
         : AppConstants.karlModel;
-
-    // NOTE: In a real app complexity, we might need to copy the asset to a local temp file
-    // to ensure file:// access works reliably, or use a local server.
-    // For now, we assume standard asset loading or public URL capability.
-    // Since 'assets/...' is a flutter asset, WebView cannot read it directly via 'file:///android_asset'
-    // easily without some setup.
-    // A robust way: Read file bytes and encode to base64, OR use a public URL.
-    // We will use the CDN approach for model-viewer script and base64 for the model? No, that's too heavy.
-    // Best Approach for Prototype: Use a placeholder URL or assume the instructions imply local support.
-    // We will try using 'assets/...' as a relative path assuming we setup the baseUrl correctly or similar.
-    // actually, let's use the `loadFlutterAsset` helper if available or standard `file:///android_asset/flutter_assets/`
 
     final String fullModelPath =
         "file:///android_asset/flutter_assets/$modelPath";
@@ -113,7 +107,7 @@ class _AvatarViewState extends State<AvatarView> {
           const modelViewer = document.querySelector('#avatar');
           
           window.playAnimation = (name, duration) => {
-            if (modelViewer.availableAnimations.includes(name)) {
+            if (modelViewer.availableAnimations && modelViewer.availableAnimations.includes(name)) {
               modelViewer.animationName = name;
               modelViewer.play();
               if (duration > 0) {
@@ -124,42 +118,40 @@ class _AvatarViewState extends State<AvatarView> {
               }
             } else {
               console.log('Animation not found: ' + name);
+              console.log('Available animations:', modelViewer.availableAnimations);
             }
           };
 
           window.stopAnimation = () => {
             modelViewer.pause();
+            modelViewer.animationName = null;
           };
 
           window.setMorphTarget = (target, value) => {
-             // model-viewer exposes direct access? No, we access the internal model
-             // We need to wait for load
              if (!modelViewer.model) return;
-             // This part depends on how model-viewer exposes morphs. 
-             // As of v3.4, it supports `model.content` which handles the scene graph.
-             // But simpler: access `morphTargetInfluences` if exposed on the node.
-             // Actually, `model-viewer` doesn't expose a high-level API for morph targets easily yet via attributes.
-             // We have to traverse the scene graph.
-             // This is complex for a simple html string.
-             // Fallback: Just log for now as "Not fully implemented without Three.js access".
              console.log('Setting morph: ' + target + ' to ' + value);
+             // Note: Full morph target implementation requires Three.js scene access
           };
 
           window.playAvatarVisemes = (visemesJson) => {
              const visemes = JSON.parse(visemesJson);
              console.log('Playing ' + visemes.length + ' visemes');
-             // Mock implementation of playback loop
              visemes.forEach((v, index) => {
                 setTimeout(() => {
                    console.log('Viseme: ' + v.id);
-                   // Logic to apply morph target would go here
-                }, v.start * 1000); // map time
+                }, v.start * 1000);
              });
           };
           
           window.resetMorphs = () => {
              console.log('Reset morphs');
-          }
+          };
+
+          // ✅ Log available animations when model loads
+          modelViewer.addEventListener('load', () => {
+            console.log('Model loaded');
+            console.log('Available animations:', modelViewer.availableAnimations);
+          });
         </script>
       </body>
       </html>
@@ -168,7 +160,16 @@ class _AvatarViewState extends State<AvatarView> {
 
   void _onPlatformViewCreated(int id) {
     _controller.attach(id);
-    debugPrint('[FLUTTER] AvatarView attached $id');
+    
+    // ✅ Pass avatar name and animation path to native iOS
+    if (widget.avatarName != null) {
+      final animationPath = widget.avatarName?.toLowerCase() == 'clara'
+          ? AppConstants.claraAnimationPath
+          : AppConstants.karlAnimationPath;
+      
+      debugPrint('[FLUTTER] AvatarView attached $id with avatar: ${widget.avatarName}');
+      debugPrint('[FLUTTER] Animation path: $animationPath');
+    }
   }
 
   @override
@@ -179,8 +180,13 @@ class _AvatarViewState extends State<AvatarView> {
 
   @override
   Widget build(BuildContext context) {
-    // ✅ iOS এর জন্য - Native UiKitView (USDZ)
+    // ✅ iOS - Native UiKitView (USDZ)
     if (defaultTargetPlatform == TargetPlatform.iOS) {
+      // Get animation path based on avatar name
+      final animationPath = widget.avatarName?.toLowerCase() == 'clara'
+          ? AppConstants.claraAnimationPath
+          : AppConstants.karlAnimationPath;
+
       return SizedBox(
         height: widget.height ?? 220,
         child: UiKitView(
@@ -190,6 +196,7 @@ class _AvatarViewState extends State<AvatarView> {
             'backgroundImagePath': widget.backgroundImagePath,
             'borderRadius': widget.borderRadius,
             'avatarName': widget.avatarName,
+            'animationPath': animationPath, // ✅ Pass animation path
           },
           creationParamsCodec: const StandardMessageCodec(),
         ),

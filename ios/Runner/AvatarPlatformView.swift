@@ -81,13 +81,13 @@ final class AvatarPlatformView: NSObject, FlutterPlatformView {
     }
     
     func loadAndPlayCombinedAnimation(from daeName: String, on rootNode: SCNNode) {
-        guard let sceneURL = Bundle.main.url(forResource: daeName, withExtension: "dae") else {
+        guard let sceneURL = Bundle.main.url(forResource: daeName, withExtension: "dae") else { 
             print("❌ [NATIVE] Idle animation not found: \(daeName).dae")
             return
         }
-        guard let sceneSource = SCNSceneSource(url: sceneURL, options: nil) else {
+        guard let sceneSource = SCNSceneSource(url: sceneURL, options: nil) else { 
             print("❌ [NATIVE] Failed to load SCNSceneSource")
-            return
+            return 
         }
 
         let animationIDs = sceneSource.identifiersOfEntries(withClass: CAAnimation.self)

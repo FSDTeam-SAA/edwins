@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_tts/flutter_tts.dart';
+import 'package:language_app/app/constants/app_constants.dart';
 import 'package:language_app/features/auth/login.dart';
 import 'package:language_app/features/debug/test_vocabulary.dart';
 import 'package:language_app/features/avatar/avatar_controller.dart';
@@ -40,19 +41,20 @@ class _OnboardingScreenState extends State<OnboardingScreen>
   late AnimationController _buttonScaleController;
   late Animation<double> _buttonScaleAnimation;
 
-  @override
-  void initState() {
-    super.initState();
-    _buttonScaleController = AnimationController(
-      duration: const Duration(milliseconds: 150),
-      vsync: this,
-    );
-    _buttonScaleAnimation = Tween<double>(begin: 1.0, end: 0.95).animate(
-      CurvedAnimation(parent: _buttonScaleController, curve: Curves.easeInOut),
-    );
-    _initTts();
-    _loadVisemeData(); // ✅ এটা add করুন
-  }
+@override
+void initState() {
+  super.initState();
+  _buttonScaleController = AnimationController(
+    duration: const Duration(milliseconds: 150),
+    vsync: this,
+  );
+  _buttonScaleAnimation = Tween<double>(begin: 1.0, end: 0.95).animate(
+    CurvedAnimation(parent: _buttonScaleController, curve: Curves.easeInOut),
+  );
+  
+  _initTts();
+  _loadVisemeData();
+}
 
   @override
   void dispose() {
@@ -302,47 +304,55 @@ class _OnboardingScreenState extends State<OnboardingScreen>
     await flutterTts.setPitch(1.0);
   }
 
-  Future<void> _playAvatarGreeting(String avatarName) async {
-    String greetingText =
-        avatarName == "Karl" ? "Hi, I am Karl" : "Hi, I am Clara";
+Future<void> _playAvatarGreeting(String avatarName) async {
+  String greetingText =
+      avatarName == "Karl" ? "Hi, I am Karl" : "Hi, I am Clara";
 
-    print('👋 Playing greeting: $greetingText');
+  print('👋 Playing greeting: $greetingText');
 
-    // Set voice based on avatar
-    if (avatarName == "Karl") {
-      if (Platform.isAndroid) {
-        await flutterTts
-            .setVoice({"name": "en-us-x-tpd-local", "locale": "en-US"});
-      } else if (Platform.isIOS) {
-        await flutterTts.setVoice(
-            {"name": "com.apple.ttsbundle.Daniel-compact", "locale": "en-US"});
-      }
-    } else {
-      if (Platform.isAndroid) {
-        await flutterTts
-            .setVoice({"name": "en-us-x-tpf-local", "locale": "en-US"});
-      } else if (Platform.isIOS) {
-        await flutterTts.setVoice({
-          "name": "com.apple.ttsbundle.Samantha-compact",
-          "locale": "en-US"
-        });
-      }
+  // Set voice based on avatar
+  if (avatarName == "Karl") {
+    if (Platform.isAndroid) {
+      await flutterTts
+          .setVoice({"name": "en-us-x-tpd-local", "locale": "en-US"});
+    } else if (Platform.isIOS) {
+      await flutterTts.setVoice(
+          {"name": "com.apple.ttsbundle.Daniel-compact", "locale": "en-US"});
     }
-
-    // Trigger hand wave
-    if (avatarName == "Clara") {
-      await claraController.triggerHandWave(duration: 2.5);
-    } else {
-      await karlController.triggerHandWave(duration: 2.5);
+  } else {
+    if (Platform.isAndroid) {
+      await flutterTts
+          .setVoice({"name": "en-us-x-tpf-local", "locale": "en-US"});
+    } else if (Platform.isIOS) {
+      await flutterTts.setVoice({
+        "name": "com.apple.ttsbundle.Samantha-compact",
+        "locale": "en-US"
+      });
     }
-
-    await Future.delayed(const Duration(milliseconds: 500));
-
-    // ✅ Start lip sync BEFORE speaking
-    _startLipSync(greetingText);
-
-    await flutterTts.speak(greetingText);
   }
+
+  // ✅ Get animation path from AppConstants
+  final controller = avatarName == "Clara" ? claraController : karlController;
+  final animationPath = avatarName == "Clara" 
+      ? AppConstants.claraAnimationPath 
+      : AppConstants.karlAnimationPath;
+  
+  print('🎬 Using animation path: $animationPath');
+
+  // ✅ Trigger 8 second hand wave
+  await controller.triggerHandWaveWithPath(animationPath, duration: 5.0);
+
+  await Future.delayed(const Duration(milliseconds: 500));
+
+  // Start lip sync BEFORE speaking
+  _startLipSync(greetingText);
+
+  await flutterTts.speak(greetingText);
+}
+
+
+
+
 
   Widget _buildLanguageStep(String title, List<String> options, bool isNative) {
     return Padding(
@@ -525,6 +535,7 @@ class _OnboardingScreenState extends State<OnboardingScreen>
                               backgroundImagePath:
                                   "assets/images/background.png",
                               borderRadius: 0,
+                              
                             ),
                           ),
                         ),

@@ -44,7 +44,7 @@ class _TestVocabularyPageState extends State<TestVocabularyPage> with TickerProv
   late Animation<Color?> _correctColorAnimation;
   late Animation<double> _avatarSizeAnimation;
 
-  @override
+@override
 void initState() {
   super.initState();
   avatarController = AvatarController();
@@ -52,15 +52,22 @@ void initState() {
   _initTts();
   _loadVisemeData();
   
-  // ✅ NEW: Page এ ঢোকার সাথে সাথে correct answer বলবে
+  // ✅ CHANGED: শুধু fill_blank question এ sentence বলবে
   WidgetsBinding.instance.addPostFrameCallback((_) {
     Future.delayed(const Duration(milliseconds: 500), () {
       if (mounted) {
-        _repeatCorrectAnswer();
+        final currentQuestion = questions[currentQuestionIndex];
+        if (currentQuestion['type'] == 'fill_blank') {
+          // "Die Katze frisst" বলবে (blank বাদে)
+          String sentence = currentQuestion['question'];
+          sentence = sentence.replaceAll('_____', ''); // blank remove
+          _speak(sentence.trim());
+        }
       }
     });
   });
 }
+
 
 
 
@@ -315,10 +322,19 @@ void initState() {
   }
 
   // ✅ NEW: Repeat button function - শুধু সঠিক উত্তর বলবে
-  void _repeatCorrectAnswer() {
-    String correctAnswer = questions[currentQuestionIndex]['correctAnswer'];
+void _repeatCorrectAnswer() {
+  final currentQuestion = questions[currentQuestionIndex];
+  if (currentQuestion['type'] == 'fill_blank') {
+    // "Die Katze frisst" repeat করবে
+    String sentence = currentQuestion['question'];
+    sentence = sentence.replaceAll('_____', '');
+    _speak(sentence.trim());
+  } else {
+    // Multiple choice এ correct answer বলবে
+    String correctAnswer = currentQuestion['correctAnswer'];
     _speak(correctAnswer);
   }
+}
 
   @override
   void dispose() {
@@ -399,11 +415,17 @@ void initState() {
 
 
   // ✅ CHANGED: Option click এ আর কথা বলবে না
-  void handleOptionTap(String option) {
-    setState(() {
-      selectedOption = option; // শুধু select করবে
-    });
+void handleOptionTap(String option) {
+  setState(() {
+    selectedOption = option;
+  });
+  
+  // ✅ NEW: fill_blank question এ option click করলে সেই word বলবে
+  final currentQuestion = questions[currentQuestionIndex];
+  if (currentQuestion['type'] == 'fill_blank') {
+    _speak(option); // "Katze", "Frisst", "Hähnchen", "Die" বলবে
   }
+}
 
 
 
@@ -436,36 +458,44 @@ void initState() {
         _speak("Well done"); // Avatar says "Well done" with lip sync
         
         // Small delay before moving to next question
-        Future.delayed(const Duration(milliseconds: 1500), () {
-          if (mounted) {
-            if (currentQuestionIndex < questions.length - 1) {
-              setState(() {
-                currentQuestionIndex++;
-                selectedOption = null;
-                showError = false;
-                showTranslation = false;
-                _correctController.reset();
-              });
-              
-              // ✅ NEW: Next question এ গেলে আবার correct answer বলবে
-              Future.delayed(const Duration(milliseconds: 500), () {
-                if (mounted) {
-                  _repeatCorrectAnswer();
-                }
-              });
-              
-            } else {
-              Navigator.pushReplacement(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => TestConversationPage(
-                    selectedAvatar: widget.selectedAvatar,
-                  ),
-                ),
-              );
-            }
+Future.delayed(const Duration(milliseconds: 1500), () {
+  if (mounted) {
+    if (currentQuestionIndex < questions.length - 1) {
+      setState(() {
+        currentQuestionIndex++;
+        selectedOption = null;
+        showError = false;
+        showTranslation = false;
+        _correctController.reset();
+      });
+      
+      // ✅ CHANGED: Next question এ গেলে fill_blank হলে sentence বলবে
+      Future.delayed(const Duration(milliseconds: 500), () {
+        if (mounted) {
+          final currentQuestion = questions[currentQuestionIndex];
+          if (currentQuestion['type'] == 'fill_blank') {
+            String sentence = currentQuestion['question'];
+            sentence = sentence.replaceAll('_____', '');
+            _speak(sentence.trim());
+          } else {
+            String correctAnswer = currentQuestion['correctAnswer'];
+            _speak(correctAnswer);
           }
-        });
+        }
+      });
+      
+    } else {
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(
+          builder: (context) => TestConversationPage(
+            selectedAvatar: widget.selectedAvatar,
+          ),
+        ),
+      );
+    }
+  }
+});
       }
     } else {
       // User clicked Continue after seeing error popup

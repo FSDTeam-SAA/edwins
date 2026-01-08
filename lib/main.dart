@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-//import 'package:language_app/features/home/home_view.dart';
 import 'package:language_app/features/splash/splash.dart';
 import 'package:language_app/core/providers/avatar_provider.dart';
 import 'package:language_app/app/constants/app_constants.dart';
@@ -29,6 +28,6 @@ class MyApp extends StatelessWidget {
           primarySwatch: Colors.blue,
         ),
         home: const SplashScreen());
-    // home: const HomeView()); // AvatarDemoPage());
+        // home: const HomeView()); // AvatarDemoPage());
   }
 }

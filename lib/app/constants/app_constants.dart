@@ -1,8 +1,7 @@
 class AppConstants {
   // Assets
   static const String visemePath = 'test/data/viseme.txt';
-  static const String russianSampleAudio =
-      'test/test_assets/russian_sample.wav';
+  static const String russianSampleAudio ='test/test_assets/russian_sample.wav';
   static const String backgroundImage = 'assets/images/background.png';
   static const String logoImage = 'assets/images/logo.png';
   static const String googleIcon = 'assets/images/google_icon.png';
@@ -12,11 +11,10 @@ class AppConstants {
   static const String successAnimation = 'assets/animations/Success.json';
   static const String claraModel = 'assets/models/clara.glb';
   static const String karlModel = 'assets/models/karl.glb';
-  static const String claraAvatarUsdz =
-      'ios/Runner/Assets.scnassets/ClaraAvatar.usdz';
-  static const String karlAvatarUsdz =
-      'ios/Runner/Assets.scnassets/KarlAvatar.usdz';
-
+  static const String claraAvatarUsdz = 'ios/Runner/Assets.scnassets/ClaraAvatar.usdz';
+  static const String karlAvatarUsdz ='ios/Runner/Assets.scnassets/KarlAvatar.usdz';
+  static const String claraAnimationPath = "ios/Runner/Assets.scnassets/ClaraWaving.dae";
+  static const String karlAnimationPath = "ios/Runner/Assets.scnassets/KarlWaving.dae";
   // Avatars
   static const String avatarKarl = 'Karl';
   static const String avatarClara = 'Clara';

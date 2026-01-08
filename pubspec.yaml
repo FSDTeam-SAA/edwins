@@ -43,8 +43,4 @@ flutter:
     - assets/logo.png
     - assets/avatar/avatar1.png
     - assets/animations/Success.json
-    - ios/Runner/Assets.scnassets/ClaraAvatar.usdz
-    - ios/Runner/Assets.scnassets/KarlAvatar.usdz
-    - assets/models/clara.glb  
-    - assets/models/karl.glb
     - assets/profile_user.png
