@@ -16,6 +16,13 @@ class DifficultyRatingPopup extends StatefulWidget {
 
 class _DifficultyRatingPopupState extends State<DifficultyRatingPopup> {
   String? selectedDifficulty;
+  String phoneticSpelling = '';
+
+  @override
+  void initState() {
+    super.initState();
+    phoneticSpelling = WordPhonetics.get(widget.word);
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -39,15 +46,25 @@ class _DifficultyRatingPopupState extends State<DifficultyRatingPopup> {
             // Word display
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              crossAxisAlignment: CrossAxisAlignment.center,
               children: [
-                const Text(
-                  'Excited',
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w500,
-                    color: Colors.black87,
+                if (phoneticSpelling.isNotEmpty)
+                  Container(
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                    decoration: BoxDecoration(
+                      color: Colors.black.withOpacity(0.05),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Text(
+                      phoneticSpelling,
+                      style: const TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w500,
+                        color: Colors.black87,
+                      ),
+                    ),
                   ),
-                ),
                 Text(
                   widget.word,
                   style: const TextStyle(
@@ -123,12 +140,48 @@ class _DifficultyRatingPopupState extends State<DifficultyRatingPopup> {
           style: TextStyle(
             fontSize: 15,
             fontWeight: FontWeight.w600,
-            color: isSelected
-                ? const Color(0xFFFF7043)
-                : const Color(0xFFFF9800),
+            color:
+                isSelected ? const Color(0xFFFF7043) : const Color(0xFFFF9800),
           ),
         ),
       ),
     );
+  }
+}
+
+class WordPhonetics {
+  // Normalize keys to lowercase for easier lookup
+  static const Map<String, String> dictionary = {
+    // Message 1
+    'practice': '/ˈpræktɪs/',
+    'favourite': '/ˈfeɪvərɪt/',
+
+    // Message 2
+    'delicious': '/dɪˈlɪʃəs/',
+    'cuisine': '/kwɪˈziːn/',
+    'italian': '/ɪˈtæljən/',
+    'pizza': '/ˈpiːtsə/',
+    'pasta': '/ˈpɑːstə/',
+
+    // Message 3
+    'sauce': '/sɔːs/',
+    'cook': '/kʊk/',
+
+    // Message 4
+    'skill': '/skɪl/',
+    'sushi': '/ˈsuːʃi/',
+    'challenging': '/ˈtʃælɪndʒɪŋ/',
+    'signature': '/ˈsɪɡnətʃə/',
+    'dish': '/dɪʃ/',
+
+    // Message 5
+    'tasty': '/ˈteɪsti/',
+    'try': '/traɪ/',
+    'excellent': '/ˈeksələnt/',
+  };
+
+  static String get(String word) {
+    // Clean the word (lowercase, trim) and lookup
+    return dictionary[word.toLowerCase().trim()] ?? '';
   }
 }

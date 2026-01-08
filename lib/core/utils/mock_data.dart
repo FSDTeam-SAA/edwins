@@ -50,7 +50,7 @@ class MockData {
     // Message 1 (Initial - already in conversationMessages)
     {
       "text":
-          "Hello! I'm excited to **practice** with you today. What's your **favourite place** to eat?",
+          "Hello! I'm excited to **practice** with you today. What's your **favourite** Place to eat?",
       "translation": {
         "de":
             "Hallo! Ich **freue** mich darauf, heute mit dir zu üben. Was ist dein Lieblingsort zum **Essen**?"
@@ -59,10 +59,10 @@ class MockData {
     // Message 2
     {
       "text":
-          "That sounds **delicious**! I usually prefer **Italian cuisine**. Do you like **pizza** or **pasta**?",
+          "That sounds **delicious**! I usually prefer **Italian** **cuisine**. Do you like **pizza** or **pasta**?",
       "translation": {
         "de":
-            "Das klingt **lecker**! Ich bevorzuge normalerweise **italienische Küche**. Magst du **Pizza** oder **Pasta**?"
+            "Das klingt **lecker**! Ich bevorzuge normalerweise **italienische** **Küche**. Magst du **Pizza** oder **Pasta**?"
       }
     },
     // Message 3
@@ -77,7 +77,7 @@ class MockData {
     // Message 4
     {
       "text":
-          "Cooking is a great **skill**. I am currently learning to make **sushi**. It is quite **challenging**. Do you have a **signature dish**?",
+          "Cooking is a great **skill**. I am currently learning to make **sushi**. It is quite **challenging**. Do you have a **signature** **dish**?",
       "translation": {
         "de":
             "Kochen ist eine tolle **Fähigkeit**. Ich lerne gerade, **Sushi** zu machen. Es ist ziemlich **anspruchsvoll**. Hast du ein **Lieblingsgericht**?"
@@ -108,8 +108,7 @@ class MockData {
     "next_before": null
   };
 
-
-static Map<String, dynamic>? getNextConversationStep(int nextIndex) {
+  static Map<String, dynamic>? getNextConversationStep(int nextIndex) {
     // If we have run out of script, return null (Conversation End)
     if (nextIndex >= conversationScript.length) return null;
 
