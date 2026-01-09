@@ -28,6 +28,14 @@ class AppColors {
     begin: Alignment.topCenter,
     end: Alignment.bottomCenter,
   );
+  static const LinearGradient greenGradient = LinearGradient(
+    colors: [
+      Color(0xFF00E676), // neon green
+      Color(0xFF00C853), // strong green
+    ],
+    begin: Alignment.topCenter,
+    end: Alignment.bottomCenter,
+  );
 
   // Microphone button gradient
   static const LinearGradient micGradient = LinearGradient(
@@ -63,7 +71,8 @@ class AppColors {
   // Avatar Theme Colors
   static Color getAvatarTheme(String avatarName) {
     if (avatarName == "Clara") {
-      return const Color(0xFF4CAF50).withOpacity(0.5); // Clara's green
+      return const Color.fromARGB(255, 69, 130, 71)
+          .withOpacity(0.5); // Clara's green
     }
     return const Color(0xFF2E7D32).withOpacity(
         0.5); // Karl's blue (actually Dark Green in code, keeping existing logic)

@@ -1,15 +1,15 @@
 import 'package:flutter/material.dart';
-import 'package:language_app/features/conversation/conversation_chat.dart';
-import 'package:language_app/features/conversation/demo/demo_conversation.dart';
-// import 'package:language_app/features/conversation/demo/demo_conversation.dart';
-import 'package:language_app/features/conversation/demo/demo_vocabulary.dart';
+import 'package:language_app/features/home/conversation/conversation_chat.dart';
+import 'package:language_app/features/home/free/common_conversation.dart';
+import 'package:language_app/features/home/free/common_vocabulary.dart';
 import 'package:language_app/core/providers/avatar_provider.dart';
+import 'package:language_app/features/home/free/free_vocabulary.dart';
 import 'package:provider/provider.dart';
 import 'package:language_app/app/theme/app_style.dart';
 import 'package:language_app/core/utils/mock_data.dart';
 import 'package:language_app/core/widgets/radar_chart.dart';
 import 'package:language_app/core/widgets/weekly_activity_chart.dart';
-import 'package:language_app/features/profile/menu_view.dart';
+import 'package:language_app/features/menu/menu_view.dart';
 
 class HomeView extends StatefulWidget {
   final bool initialHasStartedLearning;
@@ -99,8 +99,8 @@ class _HomeViewState extends State<HomeView> {
                         Navigator.push(
                             context,
                             MaterialPageRoute(
-                              builder: (context) => DemoVocabulary(
-                                  selectedAvatar:
+                              builder: (context) => FreeVocabularyChat(
+                                  selectedAvatarName:
                                       avatarProvider.selectedAvatarName),
                             ));
                       } else {
@@ -344,8 +344,8 @@ class _HomeViewState extends State<HomeView> {
               Navigator.push(
                 context,
                 MaterialPageRoute(
-                  builder: (context) => DemoConversation(
-                    selectedAvatar: avatarProvider.selectedAvatarName,
+                  builder: (context) => CommonConversation(
+                    selectedAvatarName: avatarProvider.selectedAvatarName,
                   ),
                 ),
               );
@@ -383,8 +383,8 @@ class _HomeViewState extends State<HomeView> {
               Navigator.push(
                   context,
                   MaterialPageRoute(
-                    builder: (context) => DemoVocabulary(
-                        selectedAvatar: avatarProvider.selectedAvatarName),
+                    builder: (context) => CommonVocabulary(
+                        selectedAvatarName: avatarProvider.selectedAvatarName),
                   ));
             },
             child: Container(

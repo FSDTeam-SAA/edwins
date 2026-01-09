@@ -1,32 +1,32 @@
 import 'package:flutter/material.dart';
-import 'package:language_app/features/learning/result/lesson_end_result.dart';
-import 'package:language_app/features/conversation/widgets/recording_overlay.dart';
-import 'package:language_app/features/conversation/widgets/suggested_vocab_chip.dart';
-import 'package:language_app/features/conversation/widgets/conversation_header.dart';
-import 'package:language_app/features/conversation/widgets/conversation_input_area.dart';
+import 'package:language_app/features/home/conversation/widgets/chat_message.dart';
+import 'package:language_app/features/home/conversation/widgets/difficulty_rating_popup.dart';
+import 'package:language_app/features/home/conversation/widgets/recording_overlay.dart';
+import 'package:language_app/features/home/conversation/widgets/suggested_vocab_chip.dart';
+import 'package:language_app/features/home/home_view.dart';
+import 'package:language_app/features/home/conversation/widgets/conversation_input_area.dart';
 import 'package:language_app/app/theme/app_style.dart';
 import 'package:language_app/core/utils/mock_data.dart';
-import 'widgets/chat_message.dart';
-import 'widgets/difficulty_rating_popup.dart';
 
 // Avatar logic imports
 import 'package:language_app/features/avatar/avatar_controller.dart';
 import 'package:language_app/features/avatar/avatar_view.dart';
 import 'package:language_app/app/constants/app_constants.dart';
+import 'package:language_app/features/home/learning/result/lesson_end_result.dart';
 
-class ConversationChat extends StatefulWidget {
+class CommonConversation extends StatefulWidget {
   final String selectedAvatarName;
 
-  const ConversationChat({
+  const CommonConversation({
     super.key,
     required this.selectedAvatarName,
   });
 
   @override
-  State<ConversationChat> createState() => _ConversationChatState();
+  State<CommonConversation> createState() => _CommonConversationState();
 }
 
-class _ConversationChatState extends State<ConversationChat> {
+class _CommonConversationState extends State<CommonConversation> {
   final TextEditingController _textController = TextEditingController();
   final ScrollController _scrollController = ScrollController();
   final FocusNode _focusNode = FocusNode();
@@ -39,10 +39,8 @@ class _ConversationChatState extends State<ConversationChat> {
   bool isKeyboardVisible = false;
   bool hasTextInput = false;
   bool isMuted = false;
-  int messageCount = 0;
-  final int maxMessages = 5;
+  bool isAvatarMaximized = true;
 
-  @override
   void _cancelRecording() {
     setState(() {
       isRecording = false;
@@ -96,7 +94,6 @@ class _ConversationChatState extends State<ConversationChat> {
         "audio": isVoice ? "assets/audio/user_voice.mp3" : null,
         "created_at": DateTime.now().toIso8601String(),
       });
-      messageCount++;
     });
 
     _textController.clear();
@@ -106,12 +103,15 @@ class _ConversationChatState extends State<ConversationChat> {
 
   // UPDATED: Now accepts the word and an optional callback
   void _showDifficultyRating(
-      {required String word, Function(String)? onRatingDone}) {
+      {required String word,
+      String? contextWord,
+      Function(String)? onRatingDone}) {
     showDialog(
       context: context,
       barrierDismissible: false,
       builder: (context) => DifficultyRatingPopup(
         word: word, // Pass dynamic word
+        contextWord: contextWord, // Pass context word
         onRatingSelected: (difficulty) {
           Navigator.of(context).pop();
           if (onRatingDone != null) {
@@ -145,20 +145,8 @@ class _ConversationChatState extends State<ConversationChat> {
     });
   }
 
-  void _navigateToResults() {
-    final Map<String, int> newScores = {
-      "Speaking": 85,
-      "Listening": 70,
-      "Grammar": 92,
-      "Vocabulary": 75,
-      "Writing": 60
-    };
-
-    Navigator.push(
-        context,
-        MaterialPageRoute(
-          builder: (context) => LessonEndResultView(skills: newScores),
-        ));
+  void _toggleAvatarSize() {
+    setState(() => isAvatarMaximized = !isAvatarMaximized);
   }
 
   void _scrollToBottom() {
@@ -190,6 +178,14 @@ class _ConversationChatState extends State<ConversationChat> {
     );
   }
 
+  final Map<String, int> newScores = {
+    "Speaking": 85,
+    "Listening": 70,
+    "Grammar": 92,
+    "Vocabulary": 75,
+    "Writing": 60
+  };
+
   @override
   void dispose() {
     _textController.dispose();
@@ -207,11 +203,46 @@ class _ConversationChatState extends State<ConversationChat> {
     return Scaffold(
       backgroundColor: AppColors.conversationBg,
       extendBodyBehindAppBar: true,
-      appBar: ConversationHeader(
-        messageCount: messageCount,
-        maxMessages: maxMessages,
-        onNavigateToResults: _navigateToResults,
-        themeColor: themeColor,
+      appBar: AppBar(
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        automaticallyImplyLeading: false, // 1. Removes the "<" back icon
+        actions: [
+          // 2. "Finish" button moves here (Right side)
+          Center(
+            child: Padding(
+              padding: const EdgeInsets.only(right: 16.0),
+              child: GestureDetector(
+                onTap: () {
+                  // Navigate to HomeView and clear stack
+                  Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => const HomeView(
+                          initialHasStartedLearning: true,
+                        ),
+                      ));
+                },
+                child: Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFFFF3E0), // Light orange background
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  child: const Text(
+                    "Finish",
+                    style: TextStyle(
+                      color: Color(0xFFFF8000),
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ],
       ),
       body: Stack(
         children: [
@@ -220,7 +251,7 @@ class _ConversationChatState extends State<ConversationChat> {
               AnimatedContainer(
                 duration: const Duration(milliseconds: 400),
                 curve: Curves.fastOutSlowIn,
-                height: isKeyboardOpen ? 140 : 340,
+                height: isKeyboardOpen ? 140 : (isAvatarMaximized ? 500 : 340),
                 width: double.infinity,
                 decoration: BoxDecoration(
                   gradient: LinearGradient(
@@ -241,11 +272,34 @@ class _ConversationChatState extends State<ConversationChat> {
                       AvatarView(
                         avatarName: widget.selectedAvatarName,
                         controller: _avatarController,
-                        height: isKeyboardOpen ? 180 : 380,
+                        height: isKeyboardOpen
+                            ? 180
+                            : (isAvatarMaximized ? 540 : 380),
                         backgroundImagePath: AppConstants.backgroundImage,
                         borderRadius: 0,
                       ),
-                      if (!isKeyboardOpen)
+                      Positioned(
+                        top: 10,
+                        right: 16,
+                        child: GestureDetector(
+                          onTap: _toggleAvatarSize,
+                          child: Container(
+                            padding: const EdgeInsets.all(8),
+                            decoration: BoxDecoration(
+                              color: Colors.black.withOpacity(0.2),
+                              shape: BoxShape.circle,
+                            ),
+                            child: Icon(
+                              isAvatarMaximized
+                                  ? Icons.keyboard_arrow_up
+                                  : Icons.keyboard_arrow_down,
+                              color: Colors.white,
+                              size: 20,
+                            ),
+                          ),
+                        ),
+                      ),
+                      if (isAvatarMaximized && !isKeyboardOpen)
                         Positioned(
                           bottom: 20,
                           child: Container(
@@ -313,7 +367,7 @@ class _ConversationChatState extends State<ConversationChat> {
                               child: SuggestedVocabChip(
                                 text: vocab['text'],
                                 onTap: () =>
-                                    _showDifficultyRating(word: vocab['text']),
+                                    _insertSuggestedWord(vocab['text']),
                               ),
                             );
                           }).toList(),
@@ -341,9 +395,10 @@ class _ConversationChatState extends State<ConversationChat> {
                       translation: message['translation']?['de'],
 
                       // --- ADD THIS CALLBACK HERE ---
-                      onHighlightTap: (word) {
+                      onHighlightTap: (word, contextWord) {
                         // When a bold word is tapped, show the rating popup
-                        _showDifficultyRating(word: word);
+                        _showDifficultyRating(
+                            word: word, contextWord: contextWord);
                       },
                     );
                   },

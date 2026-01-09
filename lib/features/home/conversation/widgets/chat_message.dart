@@ -10,7 +10,7 @@ class ChatMessage extends StatefulWidget {
   final bool showPlayButton;
   final String? translation;
   // NEW: Callback for tapping highlighted words
-  final Function(String word)? onHighlightTap;
+  final Function(String word, String contextWord)? onHighlightTap;
 
   const ChatMessage({
     super.key,
@@ -247,17 +247,6 @@ class _ChatMessageState extends State<ChatMessage>
         ? AppTypography.chatBubbleUser
         : AppTypography.chatBubbleAvatar;
 
-    final highlightStyle = baseStyle.copyWith(
-      fontWeight: FontWeight.bold,
-      // Add background color similar to your Markdown config
-      backgroundColor: widget.isUser
-          ? Colors.white.withOpacity(0.2)
-          : Colors.orange.withOpacity(0.15),
-      // Optional: Add underline or color to indicate clickability
-      decoration: TextDecoration.underline,
-      decorationColor: widget.isUser ? Colors.white70 : Colors.orange,
-    );
-
     List<InlineSpan> spans = [];
 
     // 2. Parse text using Regex for **word**
@@ -265,10 +254,15 @@ class _ChatMessageState extends State<ChatMessage>
       RegExp(r'\*\*(.*?)\*\*'), // Matches **text**
       onMatch: (Match match) {
         final String word = match.group(1) ?? "";
+
+        // Extract context word from the part before the match
+        final String textBefore = rawText.substring(0, match.start);
+        final String contextWord = _extractContextWord(textBefore);
+
         final TextStyle underlineStyle = TextStyle(
           fontSize: 16,
           color: Colors.orange[500],
-          decoration: TextDecoration.underline, // This creates the line
+          decoration: TextDecoration.underline,
         );
         spans.add(
           TextSpan(
@@ -278,7 +272,7 @@ class _ChatMessageState extends State<ChatMessage>
               ..onTap = () {
                 // Trigger the callback if it exists
                 if (widget.onHighlightTap != null) {
-                  widget.onHighlightTap!(word);
+                  widget.onHighlightTap!(word, contextWord);
                 }
               },
           ),
@@ -294,5 +288,70 @@ class _ChatMessageState extends State<ChatMessage>
     return RichText(
       text: TextSpan(children: spans),
     );
+  }
+
+  String _extractContextWord(String text) {
+    if (text.isEmpty) return "";
+
+    // Common words to ignore as "context" (prepositions, articles, etc.)
+    const stopWords = {
+      'to',
+      'the',
+      'a',
+      'an',
+      'in',
+      'on',
+      'at',
+      'by',
+      'for',
+      'with',
+      'about',
+      'of',
+      'into',
+      'and',
+      'or',
+      'but',
+      'is',
+      'am',
+      'are',
+      'was',
+      'were',
+      'be',
+      'been',
+      'being',
+      'from',
+      'as'
+    };
+
+    // Remove markdown bold markers if any trailing
+    String cleaned =
+        text.replaceAll(RegExp(r'\*\?'), ' ').trim(); // Replace bold markers
+    if (cleaned.isEmpty) return "";
+
+    // Split by non-word characters and get list of words
+    // Includes German characters
+    final parts = cleaned.split(RegExp(r'[^a-zA-Z0-9\u00C0-\u017F]+'));
+    final filteredParts =
+        parts.where((p) => p.isNotEmpty).toList().reversed.toList();
+
+    if (filteredParts.isEmpty) return "";
+
+    // Find the first word that is not a stop word
+    String? foundWord;
+    for (final word in filteredParts) {
+      if (!stopWords.contains(word.toLowerCase())) {
+        foundWord = word;
+        break;
+      }
+    }
+
+    // Default to the last word if everything else is a stop word
+    foundWord ??= filteredParts.first;
+
+    // Capitalize first letter for better display (e.g. "excited" -> "Excited")
+    if (foundWord.length > 1) {
+      return foundWord[0].toUpperCase() + foundWord.substring(1).toLowerCase();
+    }
+    return foundWord.toUpperCase();
   }
 }

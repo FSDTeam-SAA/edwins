@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:language_app/features/profile/settings/settings.dart';
-import 'package:language_app/features/subscription/subcriptions.dart';
-import 'package:language_app/features/profile/edit_profile/profile_view.dart';
-import 'package:language_app/features/profile/logout/logout_screen.dart';
+import 'package:language_app/features/menu/settings/settings.dart';
+import 'package:language_app/features/menu/subscription/subcriptions.dart';
+import 'package:language_app/features/menu/edit_profile/profile_view.dart';
+import 'package:language_app/features/menu/logout/logout_screen.dart';
 
 class MenuView extends StatelessWidget {
   const MenuView({super.key});

@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:language_app/features/conversation/select_avatar.dart';
-import 'package:language_app/features/profile/settings/change_password/change_password.dart';
-import 'package:language_app/features/profile/settings/delete_account/delete_account.dart';
-import 'package:language_app/features/profile/settings/privacy_policy/privacy_policy.dart';
-import 'package:language_app/features/profile/settings/terms_of_service/terms_of_service.dart';
+import 'package:language_app/features/home/conversation/select_avatar.dart';
+import 'package:language_app/features/menu/settings/change_password/change_password.dart';
+import 'package:language_app/features/menu/settings/delete_account/delete_account.dart';
+import 'package:language_app/features/menu/settings/privacy_policy/privacy_policy.dart';
+import 'package:language_app/features/menu/settings/terms_of_service/terms_of_service.dart';
 
 class SettingsPage extends StatelessWidget {
   const SettingsPage({super.key});

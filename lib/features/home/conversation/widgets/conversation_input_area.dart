@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:language_app/features/conversation/widgets/voice_input_button.dart';
+import 'package:flutter/services.dart';
+import 'package:language_app/features/home/conversation/widgets/voice_input_button.dart';
 import 'package:language_app/app/theme/app_style.dart';
 
 class ConversationInputArea extends StatelessWidget {
@@ -19,6 +20,14 @@ class ConversationInputArea extends StatelessWidget {
     required this.onStartRecording,
     required this.onSendMessage,
   });
+
+  void _sendMessageIfValid() {
+    final text = textController.text.trim();
+    if (text.isNotEmpty) {
+      onSendMessage(text);
+      textController.clear();
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -52,14 +61,27 @@ class ConversationInputArea extends StatelessWidget {
                     width: 1.5,
                   ),
                 ),
-                child: TextField(
-                  controller: textController,
+                child: Focus(
                   focusNode: focusNode,
-                  style: const TextStyle(fontSize: 16),
-                  decoration: const InputDecoration(
-                    hintText: 'Talk to your companion...',
-                    hintStyle: TextStyle(color: Colors.grey),
-                    border: InputBorder.none,
+                  onKeyEvent: (node, event) {
+                    if (event is KeyDownEvent &&
+                        event.logicalKey == LogicalKeyboardKey.enter &&
+                        !HardwareKeyboard.instance.isShiftPressed) {
+                      _sendMessageIfValid();
+                      return KeyEventResult.handled; // block newline
+                    }
+                    return KeyEventResult.ignored;
+                  },
+                  child: TextField(
+                    controller: textController,
+                    maxLines: null,
+                    textInputAction: TextInputAction.newline,
+                    style: const TextStyle(fontSize: 16),
+                    decoration: const InputDecoration(
+                      hintText: 'Talk to your companion...',
+                      hintStyle: TextStyle(color: Colors.grey),
+                      border: InputBorder.none,
+                    ),
                   ),
                 ),
               ),
@@ -72,7 +94,7 @@ class ConversationInputArea extends StatelessWidget {
                       shape: BoxShape.circle,
                     ),
                     child: IconButton(
-                      onPressed: () => onSendMessage(textController.text),
+                      onPressed: _sendMessageIfValid,
                       icon: const Icon(
                         Icons.send_rounded,
                         color: Colors.white,

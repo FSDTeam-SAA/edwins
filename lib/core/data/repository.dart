@@ -23,7 +23,6 @@ class MockLearningRepository implements ILearningRepository {
     if (lessonId == "lesson_2") {
       return _fetchListeningStep();
     }
-    
 
     // Default: Vocabulary 1 (Sentence Completion)
     return LessonStep(
@@ -55,15 +54,16 @@ class MockLearningRepository implements ILearningRepository {
       ],
     );
   }
+
   @override
   Future<ConversationStep> fetchConversation(String id) async {
-      // await Future.delayed(const Duration(milliseconds: 50));
+    // await Future.delayed(const Duration(milliseconds: 50));
 
-      // Now using the mock data for conversation step
-      return ConversationStep(
-        id: MockData.conversationStep['step_id'],
-        prompt: MockData.conversationStep['prompt'],
-        correctAnswer: MockData.conversationStep['correct_answer'],
-      );
-    }
+    // Now using the mock data for conversation step
+    return ConversationStep(
+      id: MockData.conversationThread['thread_id'],
+      prompt: MockData.conversationThread['prompt'],
+      correctAnswer: MockData.conversationThread['correct_answer'],
+    );
+  }
 }

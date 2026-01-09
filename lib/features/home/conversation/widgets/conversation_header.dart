@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:language_app/features/home/home_view.dart';
 
 class ConversationHeader extends StatelessWidget
     implements PreferredSizeWidget {
@@ -21,10 +22,15 @@ class ConversationHeader extends StatelessWidget
 
     return AppBar(
       backgroundColor: Colors.transparent,
-      elevation: 0,
+      elevation: 10,
       leading: IconButton(
         icon: const Icon(Icons.arrow_back_ios, color: Colors.white),
-        onPressed: () => Navigator.pop(context),
+        onPressed: () => Navigator.push(
+            context,
+            MaterialPageRoute(
+                builder: (context) => const HomeView(
+                      initialHasStartedLearning: true,
+                    ))),
       ),
       title: Container(
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
@@ -63,19 +69,19 @@ class ConversationHeader extends StatelessWidget
                 padding:
                     const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                 decoration: BoxDecoration(
-                  color: Colors.white,
+                  color: Colors.white.withOpacity(0.2),
                   borderRadius: BorderRadius.circular(20),
                 ),
-                child: Row(
+                child: const Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Icon(Icons.emoji_events, color: themeColor, size: 20),
-                    const SizedBox(width: 8),
+                    Icon(Icons.emoji_events, color: Colors.white, size: 16),
+                    SizedBox(width: 8),
                     Text(
-                      'See Results',
+                      'Result',
                       style: TextStyle(
-                        color: themeColor,
-                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
+                        fontWeight: FontWeight.w600,
                         fontSize: 14,
                       ),
                     ),

@@ -2,11 +2,13 @@ import 'package:flutter/material.dart';
 
 class DifficultyRatingPopup extends StatefulWidget {
   final String word;
+  final String? contextWord;
   final Function(String difficulty) onRatingSelected;
 
   const DifficultyRatingPopup({
     super.key,
     required this.word,
+    this.contextWord,
     required this.onRatingSelected,
   });
 
@@ -48,6 +50,16 @@ class _DifficultyRatingPopupState extends State<DifficultyRatingPopup> {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               crossAxisAlignment: CrossAxisAlignment.center,
               children: [
+                if (widget.contextWord != null &&
+                    widget.contextWord!.isNotEmpty)
+                  Text(
+                    widget.contextWord!,
+                    style: const TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.black87,
+                    ),
+                  ),
                 if (phoneticSpelling.isNotEmpty)
                   Container(
                     padding:
@@ -68,7 +80,7 @@ class _DifficultyRatingPopupState extends State<DifficultyRatingPopup> {
                 Text(
                   widget.word,
                   style: const TextStyle(
-                    fontSize: 20,
+                    fontSize: 18,
                     fontWeight: FontWeight.bold,
                     color: Colors.black87,
                   ),

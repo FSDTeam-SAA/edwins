@@ -14,23 +14,23 @@ class MockData {
   };
 
   // Listening MC Step Mock
-  static Map<String, dynamic> listeningStep = {
-    "step_id": "st_1",
-    "type": "listening_mc",
-    "audio": "assets/audio/cat.mp3",
-    "choices": [
-      {"choice_id": "c1", "text": "Cat"},
-      {"choice_id": "c2", "text": "Cap"},
-      {"choice_id": "c3", "text": "Car"},
-      {"choice_id": "c4", "text": "Can"}
-    ]
-  };
+  // static Map<String, dynamic> listeningStep = {
+  //   "step_id": "st_1",
+  //   "type": "listening_mc",
+  //   "audio": "assets/audio/cat.mp3",
+  //   "choices": [
+  //     {"choice_id": "c1", "text": "Cat"},
+  //     {"choice_id": "c2", "text": "Cap"},
+  //     {"choice_id": "c3", "text": "Car"},
+  //     {"choice_id": "c4", "text": "Can"}
+  //   ]
+  // };
 
-  static Map<String, dynamic> conversationStep = {
-    "step_id": "conv_1",
-    "prompt": "The cat eats chicken.",
-    "correct_answer": "Die Katze frisst Hühnchen"
-  };
+  // static Map<String, dynamic> conversationStep = {
+  //   "step_id": "conv_1",
+  //   "prompt": "The cat eats chicken.",
+  //   "correct_answer": "Die Katze frisst Hühnchen"
+  // };
 
   // Conversation Thread Mock (matches API structure)
   static Map<String, dynamic> conversationThread = {
