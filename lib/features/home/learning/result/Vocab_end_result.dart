@@ -4,42 +4,24 @@ import 'package:language_app/features/home/conversation/conversation_chat.dart';
 import 'package:language_app/features/home/vocabulary/vocabulary_lessons.dart';
 import 'package:lottie/lottie.dart';
 import 'package:language_app/app/theme/app_style.dart';
-import 'package:language_app/core/widgets/radar_chart.dart';
 import 'package:language_app/features/home/home_view.dart';
 import 'package:provider/provider.dart';
 
-class LessonEndResultView extends StatelessWidget {
-  final Map<String, int> skills;
-  final int scorePercent;
-
-  const LessonEndResultView({
-    super.key,
-    required this.skills,
-    this.scorePercent = 75,
-  });
+class VocabEndResultView extends StatelessWidget {
+  const VocabEndResultView({super.key});
 
   @override
   Widget build(BuildContext context) {
-    // Extracting arguments
-    final Map<String, int>? args =
-        ModalRoute.of(context)?.settings.arguments as Map<String, int>?;
-    final displaySkills = args ?? skills;
     final textTheme = Theme.of(context).textTheme;
     final avatarProvider = Provider.of<AvatarProvider>(context, listen: false);
 
     return Scaffold(
-      // UX Improvement: Subtle background gradient prevents the "flat" look
-      // and helps the chart blend into the bottom of the screen.
       body: Container(
         decoration: BoxDecoration(
           gradient: LinearGradient(
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
-            colors: [
-              Colors.white,
-              const Color(0xFFFFF8E1)
-                  .withOpacity(0.5), // Very subtle warm tint at bottom
-            ],
+            colors: [Colors.white, const Color(0xFFFFF8E1).withOpacity(0.5)],
           ),
         ),
         child: SafeArea(
@@ -52,22 +34,18 @@ class LessonEndResultView extends StatelessWidget {
                   child: Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 24.0),
                     child: Column(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      mainAxisAlignment: MainAxisAlignment.center,
                       children: [
                         Column(
                           children: [
-                            // const SizedBox(height: 5),
-                            // ------------------------------
-                            // 1. TOP: Congratulation & Animation
-                            // ------------------------------
                             SizedBox(
-                              height: 100,
+                              height: 140,
                               child: Lottie.asset(
                                 "assets/animations/Success.json",
                                 repeat: false,
                               ),
                             ),
-                            const SizedBox(height: 5),
+                            const SizedBox(height: 16),
                             Text(
                               "Congratulations! 🎯",
                               style: textTheme.headlineSmall?.copyWith(
@@ -77,7 +55,7 @@ class LessonEndResultView extends StatelessWidget {
                               ),
                               textAlign: TextAlign.center,
                             ),
-                            const SizedBox(height: 5),
+                            const SizedBox(height: 12),
                             Text(
                               "You have completed vocabulary session 1 successfully!",
                               style: textTheme.bodyLarge?.copyWith(
@@ -86,103 +64,27 @@ class LessonEndResultView extends StatelessWidget {
                               ),
                               textAlign: TextAlign.center,
                             ),
-                            const SizedBox(height: 5),
-
-                            // ------------------------------
-                            // 2. MIDDLE: Infinity Blended Chart
-                            // ------------------------------
-                            Column(
-                              children: [
-                                Text(
-                                  "SESSION SCORE",
-                                  style: TextStyle(
-                                    fontSize: 14,
-                                    fontWeight: FontWeight.bold,
-                                    letterSpacing: 1.2,
-                                    color: Colors.grey[400],
-                                  ),
-                                ),
-                                Row(
-                                  mainAxisAlignment: MainAxisAlignment.center,
-                                  crossAxisAlignment:
-                                      CrossAxisAlignment.baseline,
-                                  textBaseline: TextBaseline.alphabetic,
-                                  children: [
-                                    Text(
-                                      "$scorePercent",
-                                      style: const TextStyle(
-                                        fontSize: 56,
-                                        fontWeight: FontWeight.w900,
-                                        color: AppColors.primaryOrange,
-                                        height: 1.0,
-                                      ),
-                                    ),
-                                    const Text(
-                                      "%",
-                                      style: TextStyle(
-                                        fontSize: 28,
-                                        fontWeight: FontWeight.bold,
-                                        color: AppColors.primaryOrange,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ],
-                            ),
-
-                            // The "Infinity" Blended Chart Area
-                            SizedBox(
-                              height: 320,
-                              width: double.infinity,
-                              child: Stack(
-                                alignment: Alignment.center,
-                                children: [
-                                  Container(
-                                    width: 320,
-                                    height: 320,
-                                    decoration: BoxDecoration(
-                                      shape: BoxShape.circle,
-                                      gradient: RadialGradient(
-                                        colors: [
-                                          AppColors.primaryOrange
-                                              .withOpacity(0.15),
-                                          AppColors.primaryOrange
-                                              .withOpacity(0.02),
-                                          Colors.transparent,
-                                        ],
-                                        stops: const [0.0, 0.7, 1.0],
-                                      ),
-                                    ),
-                                  ),
-                                  Padding(
-                                    padding: const EdgeInsets.all(20.0),
-                                    child: ProgressRadarChart(
-                                        skills: displaySkills),
-                                  ),
-                                ],
-                              ),
-                            ),
                           ],
                         ),
-
-                        // ------------------------------
-                        // 3. BOTTOM: Action Buttons
-                        // ------------------------------
+                        const SizedBox(height: 60),
                         Column(
                           children: [
-                            const SizedBox(height: 20),
                             _buildGradientButton(
-                                context, "Continue to the Conversation Lesson",
-                                gradient: AppColors.greenGradient, onTap: () {
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
+                              context,
+                              "Continue to the Conversation Lesson",
+                              gradient: AppColors.greenGradient,
+                              onTap: () {
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
                                     builder: (_) => ConversationChat(
-                                          selectedAvatarName:
-                                              avatarProvider.selectedAvatarName,
-                                        )),
-                              );
-                            }),
+                                      selectedAvatarName:
+                                          avatarProvider.selectedAvatarName,
+                                    ),
+                                  ),
+                                );
+                              },
+                            ),
                             const SizedBox(height: 16),
                             _buildGradientButton(
                               context,
@@ -207,13 +109,13 @@ class LessonEndResultView extends StatelessWidget {
                               onTap: () => Navigator.pushAndRemoveUntil(
                                 context,
                                 MaterialPageRoute(
-                                    builder: (_) => const HomeView(
-                                          initialHasStartedLearning: true,
-                                        )),
+                                  builder: (_) => const HomeView(
+                                    initialHasStartedLearning: true,
+                                  ),
+                                ),
                                 (route) => false,
                               ),
                             ),
-                            const SizedBox(height: 30),
                           ],
                         ),
                       ],
@@ -228,10 +130,11 @@ class LessonEndResultView extends StatelessWidget {
     );
   }
 
-  // --- Helper Widgets ---
-
-  Widget _buildOutlineButton(BuildContext context, String text,
-      {required VoidCallback onTap}) {
+  Widget _buildOutlineButton(
+    BuildContext context,
+    String text, {
+    required VoidCallback onTap,
+  }) {
     return Material(
       color: Colors.transparent,
       child: InkWell(
@@ -243,7 +146,9 @@ class LessonEndResultView extends StatelessWidget {
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(16),
             border: Border.all(
-                color: AppColors.primaryOrange.withOpacity(0.5), width: 1.5),
+              color: AppColors.primaryOrange.withOpacity(0.5),
+              width: 1.5,
+            ),
             color: Colors.white.withOpacity(0.8),
           ),
           child: Center(
@@ -306,8 +211,11 @@ class LessonEndResultView extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(width: 8),
-                const Icon(Icons.arrow_forward_rounded,
-                    color: Colors.white, size: 20)
+                const Icon(
+                  Icons.arrow_forward_rounded,
+                  color: Colors.white,
+                  size: 20,
+                ),
               ],
             ),
           ),

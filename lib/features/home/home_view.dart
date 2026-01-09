@@ -10,6 +10,7 @@ import 'package:language_app/core/utils/mock_data.dart';
 import 'package:language_app/core/widgets/radar_chart.dart';
 import 'package:language_app/core/widgets/weekly_activity_chart.dart';
 import 'package:language_app/features/menu/menu_view.dart';
+import 'package:language_app/features/home/free/common_vocabulary.dart';
 
 class HomeView extends StatefulWidget {
   final bool initialHasStartedLearning;
@@ -57,8 +58,10 @@ class _HomeViewState extends State<HomeView> {
           final days = Map<String, int>.from(data['days']);
           final int overallProgress = data['overall_progress_percent'];
           const int totalWords = 80; // Hardcoded to match UI screenshot example
-          final avatarProvider =
-              Provider.of<AvatarProvider>(context, listen: false);
+          final avatarProvider = Provider.of<AvatarProvider>(
+            context,
+            listen: false,
+          );
 
           return SingleChildScrollView(
             padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 10),
@@ -97,12 +100,14 @@ class _HomeViewState extends State<HomeView> {
                           hasStartedLearning = true;
                         });
                         Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) => FreeVocabularyChat(
-                                  selectedAvatarName:
-                                      avatarProvider.selectedAvatarName),
-                            ));
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => FreeVocabularyChat(
+                              selectedAvatarName:
+                                  avatarProvider.selectedAvatarName,
+                            ),
+                          ),
+                        );
                       } else {
                         // --- CASE 2: CONTINUE LEARNING ---
                         // Go directly to ConversationChat
@@ -185,7 +190,7 @@ class _HomeViewState extends State<HomeView> {
         gradient: const LinearGradient(
           colors: [
             Color.fromRGBO(255, 96, 157, 0.4),
-            Color.fromRGBO(255, 122, 6, 0.4)
+            Color.fromRGBO(255, 122, 6, 0.4),
           ],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
@@ -200,7 +205,7 @@ class _HomeViewState extends State<HomeView> {
           gradient: const LinearGradient(
             colors: [
               Color.fromRGBO(255, 240, 245, 1), // Very light pink
-              Color.fromRGBO(255, 248, 240, 1) // Very light orange
+              Color.fromRGBO(255, 248, 240, 1), // Very light orange
             ],
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
@@ -222,9 +227,10 @@ class _HomeViewState extends State<HomeView> {
                     Text(
                       "Your progress after 5 lessons",
                       style: TextStyle(
-                          fontSize: 13,
-                          color: Colors.grey,
-                          fontWeight: FontWeight.w400),
+                        fontSize: 13,
+                        color: Colors.grey,
+                        fontWeight: FontWeight.w400,
+                      ),
                     ),
                   ],
                 ),
@@ -240,10 +246,7 @@ class _HomeViewState extends State<HomeView> {
             ),
             const SizedBox(height: 30),
             // Radar Chart
-            SizedBox(
-              height: 250,
-              child: ProgressRadarChart(skills: skills),
-            ),
+            SizedBox(height: 250, child: ProgressRadarChart(skills: skills)),
           ],
         ),
       ),
@@ -265,8 +268,9 @@ class _HomeViewState extends State<HomeView> {
         border: Border.all(color: const Color(0xFFEEEEEE), width: 1.5),
         boxShadow: [
           BoxShadow(
-            color:
-                const Color(0xFF009DFF).withOpacity(0.05), // Blue tint shadow
+            color: const Color(
+              0xFF009DFF,
+            ).withOpacity(0.05), // Blue tint shadow
             blurRadius: 15,
             offset: const Offset(0, 5),
           ),
@@ -322,8 +326,11 @@ class _HomeViewState extends State<HomeView> {
                 MaterialPageRoute(builder: (context) => const MenuView()),
               );
             },
-            child: const Icon(Icons.menu,
-                color: AppColors.primaryOrange, size: 32),
+            child: const Icon(
+              Icons.menu,
+              color: AppColors.primaryOrange,
+              size: 32,
+            ),
           ),
         ),
       ],
@@ -338,13 +345,15 @@ class _HomeViewState extends State<HomeView> {
           child: GestureDetector(
             onTap: () {
               // Get the selected avatar from provider
-              final avatarProvider =
-                  Provider.of<AvatarProvider>(context, listen: false);
+              final avatarProvider = Provider.of<AvatarProvider>(
+                context,
+                listen: false,
+              );
 
               Navigator.push(
                 context,
                 MaterialPageRoute(
-                  builder: (context) => CommonConversation(
+                  builder: (context) => CommonConversationChat(
                     selectedAvatarName: avatarProvider.selectedAvatarName,
                   ),
                 ),
@@ -378,14 +387,18 @@ class _HomeViewState extends State<HomeView> {
             onTap: () {
               // This is the current page, so we don't navigate or we just refresh
               //  Navigator.pushNamed(context, '/vocab-loop');
-              final avatarProvider =
-                  Provider.of<AvatarProvider>(context, listen: false);
+              final avatarProvider = Provider.of<AvatarProvider>(
+                context,
+                listen: false,
+              );
               Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => CommonVocabulary(
-                        selectedAvatarName: avatarProvider.selectedAvatarName),
-                  ));
+                context,
+                MaterialPageRoute(
+                  builder: (context) => CommonVocabularyChat(
+                    selectedAvatarName: avatarProvider.selectedAvatarName,
+                  ),
+                ),
+              );
             },
             child: Container(
               height: 50,

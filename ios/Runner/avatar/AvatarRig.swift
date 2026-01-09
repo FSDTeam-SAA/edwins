@@ -384,6 +384,9 @@ final class AvatarRig: MorphWeighter {
     
     let morpher: SCNMorpher
     let node: SCNNode
+    
+    // Head node for constraints
+    private(set) var headNode: SCNNode?
 
     // Indizes
     private(set) var indexByName: [String:Int] = [:]
@@ -433,6 +436,9 @@ final class AvatarRig: MorphWeighter {
         components[.viseme]  = Array(repeating: 0, count: count)
         components[.blink]   = Array(repeating: 0, count: count)
         components[.emotion] = Array(repeating: 0, count: count)
+        
+        // Find head bone
+        self.headNode = AvatarRig.findHeadBone(in: wrapper)
     }
 
     // MARK: Composition
@@ -526,6 +532,24 @@ final class AvatarRig: MorphWeighter {
         
             return wrapper
         }
+    
+    static func findHeadBone(in root: SCNNode) -> SCNNode? {
+        var head: SCNNode?
+        print("🔍 [NATIVE] Searching for head bone in root: \(root.name ?? "unnamed")")
+        root.enumerateChildNodes { node, stop in
+            let nm = (node.name ?? "").lowercased()
+            // Look for common head bone names
+            if nm.contains("head") && !nm.contains("top") && !nm.contains("end") {
+                print("🎯 [NATIVE] Found head candidate: \(node.name ?? "unnamed") type: \(node.geometry == nil ? "Bone/Node" : "Mesh")")
+                head = node
+                stop.pointee = true
+            }
+        }
+        if head == nil {
+            print("❌ [NATIVE] No head bone found!")
+        }
+        return head
+    }
     
 
 

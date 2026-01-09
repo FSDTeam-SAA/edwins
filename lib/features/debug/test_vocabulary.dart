@@ -5,20 +5,20 @@ import 'package:flutter_tts/flutter_tts.dart';
 import 'package:language_app/features/avatar/avatar_controller.dart';
 import 'package:language_app/features/avatar/avatar_view.dart';
 import 'package:language_app/features/debug/test_conversation.dart';
+import 'package:language_app/core/providers/theme_provider.dart';
+import 'package:provider/provider.dart';
 
 class TestVocabularyPage extends StatefulWidget {
   final String selectedAvatar;
-  
-  const TestVocabularyPage({
-    super.key,
-    required this.selectedAvatar,
-  });
+
+  const TestVocabularyPage({super.key, required this.selectedAvatar});
 
   @override
   State<TestVocabularyPage> createState() => _TestVocabularyPageState();
 }
 
-class _TestVocabularyPageState extends State<TestVocabularyPage> with TickerProviderStateMixin {
+class _TestVocabularyPageState extends State<TestVocabularyPage>
+    with TickerProviderStateMixin {
   int currentQuestionIndex = 0;
   String? selectedOption;
   bool showError = false;
@@ -28,48 +28,45 @@ class _TestVocabularyPageState extends State<TestVocabularyPage> with TickerProv
   String translatedText = '';
   bool showTranslation = false;
 
-  
   late FlutterTts flutterTts;
   late AvatarController avatarController;
-  
+
   Map<String, List<VisemeData>> visemeMap = {};
-  
+
   late AnimationController _shakeController;
   late AnimationController _correctController;
   late AnimationController _avatarController;
   late AnimationController _buttonScaleController;
-  
+
   late Animation<double> _shakeAnimation;
   late Animation<double> _correctScaleAnimation;
   late Animation<Color?> _correctColorAnimation;
   late Animation<double> _avatarSizeAnimation;
 
-@override
-void initState() {
-  super.initState();
-  avatarController = AvatarController();
-  _initAnimations();
-  _initTts();
-  _loadVisemeData();
-  
-  // ✅ CHANGED: শুধু fill_blank question এ sentence বলবে
-  WidgetsBinding.instance.addPostFrameCallback((_) {
-    Future.delayed(const Duration(milliseconds: 500), () {
-      if (mounted) {
-        final currentQuestion = questions[currentQuestionIndex];
-        if (currentQuestion['type'] == 'fill_blank') {
-          // "Die Katze frisst" বলবে (blank বাদে)
-          String sentence = currentQuestion['question'];
-          sentence = sentence.replaceAll('_____', ''); // blank remove
-          _speak(sentence.trim());
+  @override
+  void initState() {
+    super.initState();
+    avatarController = AvatarController();
+    _initAnimations();
+    _initTts();
+    _loadVisemeData();
+
+    // ✅ Land logic - speak correctAnswer as hint for multiple_choice
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      Future.delayed(const Duration(milliseconds: 1000), () {
+        if (mounted) {
+          final currentQuestion = questions[currentQuestionIndex];
+          if (currentQuestion['type'] == 'multiple_choice') {
+            _speak(currentQuestion['correctAnswer']);
+          } else if (currentQuestion['type'] == 'fill_blank') {
+            String sentence = currentQuestion['question'];
+            sentence = sentence.replaceAll('_____', '');
+            _speak(sentence.trim());
+          }
         }
-      }
+      });
     });
-  });
-}
-
-
-
+  }
 
   Future<void> _loadVisemeData() async {
     try {
@@ -151,23 +148,35 @@ void initState() {
 
   Future<void> _initTts() async {
     flutterTts = FlutterTts();
-    
+
     await flutterTts.setLanguage("en-US");
-    
+
     if (widget.selectedAvatar.toLowerCase() == 'karl') {
       if (Platform.isAndroid) {
-        await flutterTts.setVoice({"name": "en-us-x-tpd-local", "locale": "en-US"});
+        await flutterTts.setVoice({
+          "name": "en-us-x-tpd-local",
+          "locale": "en-US",
+        });
       } else if (Platform.isIOS) {
-        await flutterTts.setVoice({"name": "com.apple.ttsbundle.Daniel-compact", "locale": "en-US"});
+        await flutterTts.setVoice({
+          "name": "com.apple.ttsbundle.Daniel-compact",
+          "locale": "en-US",
+        });
       }
     } else {
       if (Platform.isAndroid) {
-        await flutterTts.setVoice({"name": "en-us-x-tpf-local", "locale": "en-US"});
+        await flutterTts.setVoice({
+          "name": "en-us-x-tpf-local",
+          "locale": "en-US",
+        });
       } else if (Platform.isIOS) {
-        await flutterTts.setVoice({"name": "com.apple.ttsbundle.Samantha-compact", "locale": "en-US"});
+        await flutterTts.setVoice({
+          "name": "com.apple.ttsbundle.Samantha-compact",
+          "locale": "en-US",
+        });
       }
     }
-    
+
     await flutterTts.setSpeechRate(0.4);
     await flutterTts.setVolume(1.0);
     await flutterTts.setPitch(1.0);
@@ -204,7 +213,7 @@ void initState() {
         setState(() => isAvatarSpeaking = false);
       }
     });
-    
+
     flutterTts.setCancelHandler(() {
       if (mounted) {
         setState(() => isAvatarSpeaking = false);
@@ -216,10 +225,10 @@ void initState() {
     if (!isMuted) {
       await flutterTts.stop();
       await Future.delayed(const Duration(milliseconds: 100));
-      
+
       print('🎤 Speaking: $text');
       _startLipSync(text);
-      
+
       var result = await flutterTts.speak(text);
       if (result == 1) {
         print('✅ TTS started successfully');
@@ -231,50 +240,39 @@ void initState() {
 
   void _startLipSync(String text) {
     final words = text.toLowerCase().split(' ');
-    print('📝 Words to sync: $words');
-    
+    double currentOffset = 0.0;
+
     for (var word in words) {
-      // Remove punctuation but keep accent characters
       word = word.replaceAll(RegExp(r'[^\wäöüß\s]', unicode: true), '').trim();
-      
       if (word.isEmpty) continue;
-      
-      print('🔍 Looking for viseme data: "$word"');
-      
-      // Try to find exact match first
+
       String? lookupWord = word;
-      
-      // If not found, try without accents
       if (!visemeMap.containsKey(lookupWord)) {
-        // Convert ä->a, ö->o, ü->u for fallback
         lookupWord = word
             .replaceAll('ä', 'a')
             .replaceAll('ö', 'o')
             .replaceAll('ü', 'u')
             .replaceAll('ß', 'ss');
-        print('🔄 Trying without accents: "$lookupWord"');
       }
-      
+
       if (visemeMap.containsKey(lookupWord)) {
         final visemes = visemeMap[lookupWord]!;
-        print('✅ Found ${visemes.length} visemes for "$lookupWord"');
-        
+        double wordMaxEnd = 0.0;
+
         for (var viseme in visemes) {
-          final delay = (viseme.startTime * 1000).toInt();
+          final delay = ((currentOffset + viseme.startTime) * 1000).toInt();
           final duration = (viseme.endTime - viseme.startTime);
-          
-          print('⏱️ Scheduling ${viseme.name} at ${delay}ms for ${duration}s');
-          
+          if (viseme.endTime > wordMaxEnd) wordMaxEnd = viseme.endTime;
+
           Future.delayed(Duration(milliseconds: delay), () {
             if (mounted && isAvatarSpeaking) {
-              print('🎭 Playing viseme: ${viseme.name}');
               avatarController.triggerViseme(viseme.name, duration: duration);
             }
           });
         }
+        currentOffset += wordMaxEnd + 0.05; // Gap between words
       } else {
-        print('❌ No viseme data found for "$word" or "$lookupWord"');
-        print('📋 Available words: ${visemeMap.keys.toList()}');
+        currentOffset += 0.4; // Fallback duration for unknown words
       }
     }
   }
@@ -315,26 +313,24 @@ void initState() {
   }
 
   String _translateText(String text) {
-    final translations = {
-      'Die Katze frisst _____': 'The cat eats _____',
-    };
+    final translations = {'Die Katze frisst _____': 'The cat eats _____'};
     return translations[text] ?? 'Translation not available';
   }
 
   // ✅ NEW: Repeat button function - শুধু সঠিক উত্তর বলবে
-void _repeatCorrectAnswer() {
-  final currentQuestion = questions[currentQuestionIndex];
-  if (currentQuestion['type'] == 'fill_blank') {
-    // "Die Katze frisst" repeat করবে
-    String sentence = currentQuestion['question'];
-    sentence = sentence.replaceAll('_____', '');
-    _speak(sentence.trim());
-  } else {
-    // Multiple choice এ correct answer বলবে
-    String correctAnswer = currentQuestion['correctAnswer'];
-    _speak(correctAnswer);
+  void _repeatCorrectAnswer() {
+    final currentQuestion = questions[currentQuestionIndex];
+    if (currentQuestion['type'] == 'fill_blank') {
+      // "Die Katze frisst" repeat করবে
+      String sentence = currentQuestion['question'];
+      sentence = sentence.replaceAll('_____', '');
+      _speak(sentence.trim());
+    } else {
+      // Multiple choice এ correct answer বলবে
+      String correctAnswer = currentQuestion['correctAnswer'];
+      _speak(correctAnswer);
+    }
   }
-}
 
   @override
   void dispose() {
@@ -413,28 +409,36 @@ void _repeatCorrectAnswer() {
     },
   ];
 
+  //✅ CHANGED: Option click এ আর কথা বলবে না
+  void handleOptionTap(String option) {
+    setState(() {
+      selectedOption = option;
+    });
 
-  // ✅ CHANGED: Option click এ আর কথা বলবে না
-void handleOptionTap(String option) {
-  setState(() {
-    selectedOption = option;
-  });
-  
-  // ✅ NEW: fill_blank question এ option click করলে সেই word বলবে
-  final currentQuestion = questions[currentQuestionIndex];
-  if (currentQuestion['type'] == 'fill_blank') {
-    _speak(option); // "Katze", "Frisst", "Hähnchen", "Die" বলবে
+    // ✅ NEW: fill_blank question এ option click করলে সেই word বলবে
+    final currentQuestion = questions[currentQuestionIndex];
+    if (currentQuestion['type'] == 'fill_blank') {
+      _speak(option); // "Katze", "Frisst", "Hähnchen", "Die" বলবে
+    }
   }
-}
+  // void handleOptionTap(String option) {
+  //   setState(() {
+  //     selectedOption = option;
+  //   });
 
-
+  //   // ✅ UPDATED: Both question types এ option click করলে সেই word বলবে
+  //   final currentQuestion = questions[currentQuestionIndex];
+  //   _speak(
+  //     option,
+  //   ); // "Car", "Cap", "Cat", "Can" অথবা "Katze", "Frisst", "Hähnchen", "Die" বলবে
+  // }
 
   void handleContinue() {
     // If no option is selected, do nothing
     if (selectedOption == null) return;
-    
+
     String correctAnswer = questions[currentQuestionIndex]['correctAnswer'];
-    
+
     // ✅ Validation happens ONLY when Continue is clicked
     if (!showError) {
       if (selectedOption != correctAnswer) {
@@ -444,7 +448,7 @@ void handleOptionTap(String option) {
           _vibratePhone();
           _shakeController.forward().then((_) => _shakeController.reverse());
         });
-        
+
         Future.delayed(const Duration(milliseconds: 800), () {
           if (mounted && showError) {
             _speakCorrectAnswer(correctAnswer); // Avatar speaks with lip sync
@@ -456,46 +460,45 @@ void handleOptionTap(String option) {
         _correctController.forward();
         _playCorrectSound();
         _speak("Well done"); // Avatar says "Well done" with lip sync
-        
+
         // Small delay before moving to next question
-Future.delayed(const Duration(milliseconds: 1500), () {
-  if (mounted) {
-    if (currentQuestionIndex < questions.length - 1) {
-      setState(() {
-        currentQuestionIndex++;
-        selectedOption = null;
-        showError = false;
-        showTranslation = false;
-        _correctController.reset();
-      });
-      
-      // ✅ CHANGED: Next question এ গেলে fill_blank হলে sentence বলবে
-      Future.delayed(const Duration(milliseconds: 500), () {
-        if (mounted) {
-          final currentQuestion = questions[currentQuestionIndex];
-          if (currentQuestion['type'] == 'fill_blank') {
-            String sentence = currentQuestion['question'];
-            sentence = sentence.replaceAll('_____', '');
-            _speak(sentence.trim());
-          } else {
-            String correctAnswer = currentQuestion['correctAnswer'];
-            _speak(correctAnswer);
+        Future.delayed(const Duration(milliseconds: 1500), () {
+          if (mounted) {
+            if (currentQuestionIndex < questions.length - 1) {
+              setState(() {
+                currentQuestionIndex++;
+                selectedOption = null;
+                showError = false;
+                showTranslation = false;
+                _correctController.reset();
+              });
+
+              // ✅ CHANGED: Next question এ গেলে fill_blank হলে sentence বলবে
+              Future.delayed(const Duration(milliseconds: 500), () {
+                if (mounted) {
+                  final currentQuestion = questions[currentQuestionIndex];
+                  if (currentQuestion['type'] == 'fill_blank') {
+                    String sentence = currentQuestion['question'];
+                    sentence = sentence.replaceAll('_____', '');
+                    _speak(sentence.trim());
+                  } else {
+                    String correctAnswer = currentQuestion['correctAnswer'];
+                    _speak(correctAnswer);
+                  }
+                }
+              });
+            } else {
+              Navigator.pushReplacement(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => TestConversationPage(
+                    selectedAvatar: widget.selectedAvatar,
+                  ),
+                ),
+              );
+            }
           }
-        }
-      });
-      
-    } else {
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(
-          builder: (context) => TestConversationPage(
-            selectedAvatar: widget.selectedAvatar,
-          ),
-        ),
-      );
-    }
-  }
-});
+        });
       }
     } else {
       // User clicked Continue after seeing error popup
@@ -505,7 +508,6 @@ Future.delayed(const Duration(milliseconds: 1500), () {
       });
     }
   }
-
 
   void _speakCorrectAnswer(String answer) {
     _stop().then((_) {
@@ -517,6 +519,7 @@ Future.delayed(const Duration(milliseconds: 1500), () {
 
   @override
   Widget build(BuildContext context) {
+    final themeProvider = context.watch<ThemeProvider>();
     final currentQuestion = questions[currentQuestionIndex];
     final questionType = currentQuestion['type'];
     final questionText = currentQuestion['question'];
@@ -524,20 +527,23 @@ Future.delayed(const Duration(milliseconds: 1500), () {
     final correctAnswer = currentQuestion['correctAnswer'];
 
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: themeProvider.scaffoldBackgroundColor,
       body: SafeArea(
         child: Stack(
           children: [
             Column(
               children: [
                 Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 8),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 4,
+                    vertical: 8,
+                  ),
                   child: Row(
                     children: [
                       IconButton(
-                        icon: const Icon(
+                        icon: Icon(
                           Icons.arrow_back_ios,
-                          color: Color(0xFFFF8000),
+                          color: themeProvider.primaryColor,
                           size: 18,
                         ),
                         padding: EdgeInsets.zero,
@@ -556,8 +562,8 @@ Future.delayed(const Duration(milliseconds: 1500), () {
                       ),
                       Text(
                         widget.selectedAvatar,
-                        style: const TextStyle(
-                          color: Color(0xFFFF8000),
+                        style: TextStyle(
+                          color: themeProvider.primaryColor,
                           fontSize: 16,
                           fontWeight: FontWeight.w500,
                         ),
@@ -574,12 +580,12 @@ Future.delayed(const Duration(milliseconds: 1500), () {
                     return GestureDetector(
                       onTap: _toggleAvatarSize,
                       child: Container(
-                        margin: const EdgeInsets.symmetric(horizontal: 16),
+                        margin: const EdgeInsets.fromLTRB(16, 12, 16, 8),
                         width: double.infinity,
                         height: _avatarSizeAnimation.value,
                         decoration: BoxDecoration(
                           color: const Color(0xFFFFF3E0),
-                          borderRadius: BorderRadius.circular(12),
+                          borderRadius: BorderRadius.circular(24),
                           boxShadow: [
                             BoxShadow(
                               color: Colors.orange.withOpacity(0.2),
@@ -593,7 +599,7 @@ Future.delayed(const Duration(milliseconds: 1500), () {
                             // ✅ CHANGED: Avatar এখন আর zoom in/out হবে না
                             Center(
                               child: ClipRRect(
-                                borderRadius: BorderRadius.circular(12),
+                                borderRadius: BorderRadius.circular(24),
                                 child: SizedBox(
                                   width: double.infinity,
                                   height: _avatarSizeAnimation.value,
@@ -601,8 +607,9 @@ Future.delayed(const Duration(milliseconds: 1500), () {
                                     avatarName: widget.selectedAvatar,
                                     controller: avatarController,
                                     height: _avatarSizeAnimation.value,
-                                    backgroundImagePath: "assets/images/background.png",
-                                    borderRadius: 12,
+                                    backgroundImagePath:
+                                        "assets/images/background.png",
+                                    borderRadius: 24,
                                   ),
                                 ),
                               ),
@@ -624,7 +631,9 @@ Future.delayed(const Duration(milliseconds: 1500), () {
                                         ),
                                         decoration: BoxDecoration(
                                           color: const Color(0xFFFF8000),
-                                          borderRadius: BorderRadius.circular(20),
+                                          borderRadius: BorderRadius.circular(
+                                            20,
+                                          ),
                                         ),
                                         child: const Row(
                                           mainAxisSize: MainAxisSize.min,
@@ -660,63 +669,28 @@ Future.delayed(const Duration(milliseconds: 1500), () {
                               right: 10,
                               child: Row(
                                 children: [
-                                  // ✅ NEW: Repeat button
-                                  GestureDetector(
-                                    onTap: _repeatCorrectAnswer,
-                                    child: Container(
-                                      padding: const EdgeInsets.all(8),
-                                      decoration: const BoxDecoration(
-                                        gradient: LinearGradient(
-                                          colors: [Color(0xFFFF8000), Color(0xFFFF609D)],
-                                        ),
-                                        shape: BoxShape.circle,
+                                  // ✅ NEW UI: Buttons
+                                  Row(
+                                    children: [
+                                      _buildCircleAction(
+                                        icon: Icons.repeat,
+                                        onTap: _repeatCorrectAnswer,
                                       ),
-                                      child: const Icon(
-                                        Icons.repeat,
-                                        color: Colors.white,
-                                        size: 18,
+                                      const SizedBox(width: 8),
+                                      _buildCircleAction(
+                                        icon: isMuted
+                                            ? Icons.volume_off
+                                            : Icons.volume_up,
+                                        onTap: _toggleMute,
                                       ),
-                                    ),
-                                  ),
-                                  const SizedBox(width: 8),
-                                  GestureDetector(
-                                    onTap: _toggleAvatarSize,
-                                    child: Container(
-                                      padding: const EdgeInsets.all(8),
-                                      decoration: const BoxDecoration(
-                                        gradient: LinearGradient(
-                                          colors: [Color(0xFFFF609D), Color(0xFFFF7A06)],
-                                        ),
-                                        shape: BoxShape.circle,
-                                      ),
-                                      child: Icon(
-                                        isAvatarMaximized 
-                                            ? Icons.fullscreen_exit 
+                                      const SizedBox(width: 8),
+                                      _buildCircleAction(
+                                        icon: isAvatarMaximized
+                                            ? Icons.fullscreen_exit
                                             : Icons.fullscreen,
-                                        color: Colors.white,
-                                        size: 18,
+                                        onTap: _toggleAvatarSize,
                                       ),
-                                    ),
-                                  ),
-                                  const SizedBox(width: 8),
-                                  GestureDetector(
-                                    onTap: _toggleMute,
-                                    child: Container(
-                                      padding: const EdgeInsets.all(8),
-                                      decoration: BoxDecoration(
-                                        gradient: LinearGradient(
-                                          colors: isMuted 
-                                            ? [Colors.grey.shade400, Colors.grey.shade600]
-                                            : [const Color(0xFFFF609D), const Color(0xFFFF7A06)],
-                                        ),
-                                        shape: BoxShape.circle,
-                                      ),
-                                      child: Icon(
-                                        isMuted ? Icons.volume_off : Icons.volume_up,
-                                        color: Colors.white,
-                                        size: 18,
-                                      ),
-                                    ),
+                                    ],
                                   ),
                                 ],
                               ),
@@ -731,9 +705,9 @@ Future.delayed(const Duration(milliseconds: 1500), () {
                 const SizedBox(height: 24),
 
                 Expanded(
-                  child: questionType == 'multiple_choice' 
-                    ? _buildMultipleChoiceLayout(options)
-                    : _buildFillBlankLayout(questionText, options),
+                  child: questionType == 'multiple_choice'
+                      ? _buildMultipleChoiceLayout(options)
+                      : _buildFillBlankLayout(questionText, options),
                 ),
 
                 Padding(
@@ -780,8 +754,13 @@ Future.delayed(const Duration(milliseconds: 1500), () {
                     animation: _shakeAnimation,
                     builder: (context, child) {
                       return Transform.translate(
-                        offset: Offset(_shakeAnimation.value * 
-                          ((_shakeController.value * 4).floor() % 2 == 0 ? 1 : -1), 0),
+                        offset: Offset(
+                          _shakeAnimation.value *
+                              ((_shakeController.value * 4).floor() % 2 == 0
+                                  ? 1
+                                  : -1),
+                          0,
+                        ),
                         child: Container(
                           margin: const EdgeInsets.symmetric(horizontal: 40),
                           decoration: BoxDecoration(
@@ -803,7 +782,12 @@ Future.delayed(const Duration(milliseconds: 1500), () {
                                 ),
                               ),
                               Container(
-                                margin: const EdgeInsets.fromLTRB(12, 0, 12, 12),
+                                margin: const EdgeInsets.fromLTRB(
+                                  12,
+                                  0,
+                                  12,
+                                  12,
+                                ),
                                 padding: const EdgeInsets.all(20),
                                 decoration: BoxDecoration(
                                   color: Colors.white,
@@ -838,9 +822,14 @@ Future.delayed(const Duration(milliseconds: 1500), () {
                                         height: 46,
                                         decoration: BoxDecoration(
                                           gradient: const LinearGradient(
-                                            colors: [Color(0xFFFF609D), Color(0xFFFF7A06)],
+                                            colors: [
+                                              Color(0xFFFF609D),
+                                              Color(0xFFFF7A06),
+                                            ],
                                           ),
-                                          borderRadius: BorderRadius.circular(8),
+                                          borderRadius: BorderRadius.circular(
+                                            8,
+                                          ),
                                         ),
                                         alignment: Alignment.center,
                                         child: const Text(
@@ -896,7 +885,10 @@ Future.delayed(const Duration(milliseconds: 1500), () {
     );
   }
 
-  Widget _buildFillBlankLayout(String? questionText, List<Map<String, dynamic>> options) {
+  Widget _buildFillBlankLayout(
+    String? questionText,
+    List<Map<String, dynamic>> options,
+  ) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16),
       child: Column(
@@ -986,10 +978,15 @@ Future.delayed(const Duration(milliseconds: 1500), () {
     );
   }
 
-  Widget _buildOptionButton(Map<String, dynamic> option, double height, [bool isSmallText = false]) {
+  Widget _buildOptionButton(
+    Map<String, dynamic> option,
+    double height, [
+    bool isSmallText = false,
+  ]) {
     final isSelected = selectedOption == option['text'];
     // ✅ CHANGED: Continue press করার পর green হবে এবং সবসময় green থাকবে
-    final isCorrectAndValidated = selectedOption == option['text'] &&
+    final isCorrectAndValidated =
+        selectedOption == option['text'] &&
         selectedOption == questions[currentQuestionIndex]['correctAnswer'] &&
         _correctController.status == AnimationStatus.forward;
 
@@ -999,25 +996,25 @@ Future.delayed(const Duration(milliseconds: 1500), () {
         duration: const Duration(milliseconds: 300),
         height: height,
         decoration: BoxDecoration(
-          color: isCorrectAndValidated 
-              ? const Color(0xFF4CAF50)  // Green - permanently থাকবে
-              : (isSelected 
-                  ? option['textColor']
-                  : option['bgColor']),
+          color: isCorrectAndValidated
+              ? const Color(0xFF4CAF50) // Green - permanently থাকবে
+              : (isSelected ? option['textColor'] : option['bgColor']),
           borderRadius: BorderRadius.circular(12),
           border: Border.all(
-            color: isCorrectAndValidated 
+            color: isCorrectAndValidated
                 ? const Color(0xFF4CAF50)
                 : option['borderColor'],
             width: 2,
           ),
-          boxShadow: isSelected ? [
-            BoxShadow(
-              color: (option['textColor'] as Color).withOpacity(0.3),
-              blurRadius: 10,
-              offset: const Offset(0, 4),
-            ),
-          ] : null,
+          boxShadow: isSelected
+              ? [
+                  BoxShadow(
+                    color: (option['textColor'] as Color).withOpacity(0.3),
+                    blurRadius: 10,
+                    offset: const Offset(0, 4),
+                  ),
+                ]
+              : null,
         ),
         alignment: Alignment.center,
         child: Padding(
@@ -1036,6 +1033,23 @@ Future.delayed(const Duration(milliseconds: 1500), () {
             overflow: TextOverflow.ellipsis,
           ),
         ),
+      ),
+    );
+  }
+
+  Widget _buildCircleAction({
+    required IconData icon,
+    required VoidCallback onTap,
+  }) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.all(6),
+        decoration: const BoxDecoration(
+          color: Colors.white24,
+          shape: BoxShape.circle,
+        ),
+        child: Icon(icon, color: Colors.white, size: 16),
       ),
     );
   }

@@ -48,35 +48,37 @@ class _SelectAvatarState extends State<SelectAvatar> {
     flutterTts.setVolume(1.0);
 
     flutterTts.setStartHandler(() => setState(() => isAvatarSpeaking = true));
-    flutterTts
-        .setCompletionHandler(() => setState(() => isAvatarSpeaking = false));
-    flutterTts
-        .setErrorHandler((msg) => setState(() => isAvatarSpeaking = false));
+    flutterTts.setCompletionHandler(
+      () => setState(() => isAvatarSpeaking = false),
+    );
+    flutterTts.setErrorHandler(
+      (msg) => setState(() => isAvatarSpeaking = false),
+    );
   }
 
   void _startLipSync(String text, AvatarController controller) {
     final visemeMap = {
       'hi': [
         VisemeData('viseme_kk', 0.0, 0.1),
-        VisemeData('viseme_I', 0.1, 0.25)
+        VisemeData('viseme_I', 0.1, 0.25),
       ],
       'i': [VisemeData('viseme_I', 0.0, 0.2)],
       'am': [
         VisemeData('viseme_aa', 0.0, 0.15),
-        VisemeData('viseme_nn', 0.15, 0.3)
+        VisemeData('viseme_nn', 0.15, 0.3),
       ],
       'karl': [
         VisemeData('viseme_kk', 0.0, 0.12),
         VisemeData('viseme_aa', 0.12, 0.28),
         VisemeData('viseme_RR', 0.28, 0.4),
-        VisemeData('viseme_nn', 0.4, 0.55)
+        VisemeData('viseme_nn', 0.4, 0.55),
       ],
       'clara': [
         VisemeData('viseme_kk', 0.0, 0.1),
         VisemeData('viseme_nn', 0.1, 0.2),
         VisemeData('viseme_aa', 0.2, 0.35),
         VisemeData('viseme_RR', 0.35, 0.45),
-        VisemeData('viseme_E', 0.45, 0.6)
+        VisemeData('viseme_E', 0.45, 0.6),
       ],
     };
 
@@ -102,34 +104,42 @@ class _SelectAvatarState extends State<SelectAvatar> {
   }
 
   Future<void> _playAvatarGreeting(String avatarName) async {
-    final controller =
-        avatarName == "Karl" ? _karlController : _claraController;
-    final greetingText =
-        avatarName == "Karl" ? "Hi, I am Karl" : "Hi, I am Clara";
+    final controller = avatarName == "Karl"
+        ? _karlController
+        : _claraController;
+    final greetingText = avatarName == "Karl"
+        ? "Hi, I am Karl"
+        : "Hi, I am Clara";
 
     await flutterTts.stop();
 
     if (avatarName == "Karl") {
       if (Platform.isAndroid) {
-        await flutterTts
-            .setVoice({"name": "en-us-x-tpd-local", "locale": "en-US"});
+        await flutterTts.setVoice({
+          "name": "en-us-x-tpd-local",
+          "locale": "en-US",
+        });
       } else if (Platform.isIOS) {
-        await flutterTts.setVoice(
-            {"name": "com.apple.ttsbundle.Daniel-compact", "locale": "en-US"});
+        await flutterTts.setVoice({
+          "name": "com.apple.ttsbundle.Daniel-compact",
+          "locale": "en-US",
+        });
       }
     } else {
       if (Platform.isAndroid) {
-        await flutterTts
-            .setVoice({"name": "en-us-x-tpf-local", "locale": "en-US"});
+        await flutterTts.setVoice({
+          "name": "en-us-x-tpf-local",
+          "locale": "en-US",
+        });
       } else if (Platform.isIOS) {
         await flutterTts.setVoice({
           "name": "com.apple.ttsbundle.Samantha-compact",
-          "locale": "en-US"
+          "locale": "en-US",
         });
       }
     }
 
-    await controller.triggerHandWave(duration: 3.5);
+    await controller.triggerHandWave(duration: 1.0);
     await Future.delayed(const Duration(milliseconds: 500));
     _startLipSync(greetingText, controller);
     await flutterTts.speak(greetingText);
@@ -173,7 +183,8 @@ class _SelectAvatarState extends State<SelectAvatar> {
     _pageController.animateToPage(
       index,
       duration: const Duration(
-          milliseconds: 500), // Slightly longer duration helps seeing the curve
+        milliseconds: 500,
+      ), // Slightly longer duration helps seeing the curve
       // The numbers represent control points (x1, y1, x2, y2)
       // This is a steeper/more dramatic ease-in-out than standard
       curve: const Cubic(5.9, 0.0, 0.2, 1.0),
@@ -183,9 +194,7 @@ class _SelectAvatarState extends State<SelectAvatar> {
   void _startConversation() {
     Navigator.push(
       context,
-      MaterialPageRoute(
-        builder: (context) => const HomeView(),
-      ),
+      MaterialPageRoute(builder: (context) => const HomeView()),
     );
   }
 
@@ -196,8 +205,9 @@ class _SelectAvatarState extends State<SelectAvatar> {
 
   @override
   Widget build(BuildContext context) {
-    final selectedAvatarName =
-        context.watch<AvatarProvider>().selectedAvatarName;
+    final selectedAvatarName = context
+        .watch<AvatarProvider>()
+        .selectedAvatarName;
     final accentColor = _getAccentColor();
 
     return Scaffold(
@@ -240,8 +250,11 @@ class _SelectAvatarState extends State<SelectAvatar> {
             Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Icon(Icons.arrow_back_ios,
-                    size: 14, color: Colors.grey.shade300),
+                Icon(
+                  Icons.arrow_back_ios,
+                  size: 14,
+                  color: Colors.grey.shade300,
+                ),
                 const SizedBox(width: 8),
                 Text(
                   "Swipe to choose",
@@ -252,8 +265,11 @@ class _SelectAvatarState extends State<SelectAvatar> {
                   ),
                 ),
                 const SizedBox(width: 8),
-                Icon(Icons.arrow_forward_ios,
-                    size: 14, color: Colors.grey.shade300),
+                Icon(
+                  Icons.arrow_forward_ios,
+                  size: 14,
+                  color: Colors.grey.shade300,
+                ),
               ],
             ),
 
@@ -298,10 +314,7 @@ class _SelectAvatarState extends State<SelectAvatar> {
                   height: 60,
                   decoration: BoxDecoration(
                     gradient: LinearGradient(
-                      colors: [
-                        accentColor,
-                        accentColor.withOpacity(0.8),
-                      ],
+                      colors: [accentColor, accentColor.withOpacity(0.8)],
                     ),
                     borderRadius: BorderRadius.circular(15),
                     boxShadow: [
@@ -370,8 +383,9 @@ class _SelectAvatarState extends State<SelectAvatar> {
               Expanded(
                 child: Container(
                   decoration: BoxDecoration(
-                    borderRadius:
-                        const BorderRadius.vertical(top: Radius.circular(20)),
+                    borderRadius: const BorderRadius.vertical(
+                      top: Radius.circular(20),
+                    ),
                     // Optional shadow for depth
                     boxShadow: isSelected
                         ? [
@@ -379,13 +393,14 @@ class _SelectAvatarState extends State<SelectAvatar> {
                               color: Colors.black.withOpacity(0.05),
                               blurRadius: 20,
                               offset: const Offset(0, 10),
-                            )
+                            ),
                           ]
                         : [],
                   ),
                   child: ClipRRect(
-                    borderRadius:
-                        const BorderRadius.vertical(top: Radius.circular(20)),
+                    borderRadius: const BorderRadius.vertical(
+                      top: Radius.circular(20),
+                    ),
                     child: AvatarView(
                       avatarName: name,
                       controller: controller,
@@ -418,7 +433,8 @@ class _SelectAvatarState extends State<SelectAvatar> {
                   border: isSelected
                       ? Border.all(
                           color: AppColors.primaryOrange.withOpacity(0.3),
-                          width: 1)
+                          width: 1,
+                        )
                       : Border.all(color: Colors.grey.shade200),
                 ),
                 child: Row(

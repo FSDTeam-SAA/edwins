@@ -191,6 +191,22 @@ final class AvatarPlatformView: NSObject, FlutterPlatformView {
             
             self.cameraNode = camNode
             self.isZoomedOut = true  // ✅ Already zoomed out from start
+            
+            // ✅ Make head look at camera
+            if let rig = self.rig, let head = rig.headNode {
+                let constraint = SCNLookAtConstraint(target: camNode)
+                constraint.isGimbalLockEnabled = true
+                
+                // ✅ Standard for RealPlayerMe/USDZ: local +Z is face forward.
+                // SceneKit SCNLookAtConstraint looks at target via negative Z by default.
+                // We set localFront to +Z so the face points at the camera.
+                constraint.localFront = SCNVector3(0, 0, 1)
+                constraint.influenceFactor = 1.0 
+                
+                head.constraints = [constraint]
+                print("👀 [NATIVE] Look-at constraint applied to head with localFront support: \(head.name ?? "unnamed")")
+            }
+            
             print("✅ [NATIVE] Camera setup complete (zoomed out + tilted down)")
 
             applyPendingBackgroundIfAny()

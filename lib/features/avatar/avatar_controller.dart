@@ -31,11 +31,9 @@ class AvatarController {
   // Avatar tracking
   String? _currentAvatarName;
 
-  AvatarController({
-    FileHelper? fileHelper,
-    VisemeHelper? visemeHelper,
-  })  : _fileHelper = fileHelper ?? FileHelper(),
-        _visemeHelper = visemeHelper ?? VisemeHelper();
+  AvatarController({FileHelper? fileHelper, VisemeHelper? visemeHelper})
+    : _fileHelper = fileHelper ?? FileHelper(),
+      _visemeHelper = visemeHelper ?? VisemeHelper();
 
   // ✅ Set current avatar name
   void setAvatarName(String avatarName) {
@@ -86,8 +84,9 @@ class AvatarController {
     } else if (_webViewController != null) {
       // Android Implementation
       final visemesJson = jsonEncode(visemeEvents);
-      _webViewController
-          ?.runJavaScript("window.playAvatarVisemes('$visemesJson');");
+      _webViewController?.runJavaScript(
+        "window.playAvatarVisemes('$visemesJson');",
+      );
     }
   }
 
@@ -105,7 +104,9 @@ class AvatarController {
 
   // ✅ Play viseme for text-based lip sync
   Future<void> playVisemeForText(
-      String text, List<Map<String, dynamic>> visemeEvents) async {
+    String text,
+    List<Map<String, dynamic>> visemeEvents,
+  ) async {
     try {
       if (_channel != null) {
         await _channel?.invokeMethod('playVisemeForText', {
@@ -114,8 +115,9 @@ class AvatarController {
         });
       } else {
         final visemesJson = jsonEncode(visemeEvents);
-        _webViewController
-            ?.runJavaScript("window.playAvatarVisemes('$visemesJson');");
+        _webViewController?.runJavaScript(
+          "window.playAvatarVisemes('$visemesJson');",
+        );
       }
     } catch (e) {
       print('Error playing viseme for text: $e');
@@ -132,7 +134,8 @@ class AvatarController {
         });
       } else {
         _webViewController?.runJavaScript(
-            "window.setMorphTarget('$visemeName', 1.0); setTimeout(() => window.setMorphTarget('$visemeName', 0.0), ${duration * 1000});");
+          "window.setMorphTarget('$visemeName', 1.0); setTimeout(() => window.setMorphTarget('$visemeName', 0.0), ${duration * 1000});",
+        );
       }
     } catch (e) {
       print('Error triggering viseme: $e');
@@ -153,7 +156,7 @@ class AvatarController {
   }
 
   // ✅ UPDATED METHOD: Trigger hand wave animation with proper animation path
-  Future<void> triggerHandWave({double duration = 2.0}) async {
+  Future<void> triggerHandWave({double duration = 0.25}) async {
     try {
       print('👋 Triggering hand wave for ${duration}s');
       if (_channel != null) {
@@ -165,35 +168,38 @@ class AvatarController {
         });
       } else {
         // Android / Web
-        _webViewController
-            ?.runJavaScript("window.playAnimation('Wave', $duration);");
+        _webViewController?.runJavaScript(
+          "window.playAnimation('Wave', $duration);",
+        );
       }
     } catch (e) {
       print('Error triggering hand wave: $e');
     }
   }
 
-// ✅ Play animation with custom path (direct from AppConstants)
-Future<void> triggerHandWaveWithPath(String animationPath, {double duration = 2.0}) async {
-  try {
-    print('👋 Triggering hand wave with path: $animationPath for ${duration}s');
-    if (_channel != null) {
-      await _channel?.invokeMethod('triggerHandWave', {
-        'duration': duration,
-        'animationPath': animationPath,
-      });
-    } else {
-      _webViewController?.runJavaScript("window.playAnimation('Wave', $duration);");
+  // ✅ Play animation with custom path (direct from AppConstants)
+  Future<void> triggerHandWaveWithPath(
+    String animationPath, {
+    double duration = 0.25,
+  }) async {
+    try {
+      print(
+        '👋 Triggering hand wave with path: $animationPath for ${duration}s',
+      );
+      if (_channel != null) {
+        await _channel?.invokeMethod('triggerHandWave', {
+          'duration': duration,
+          'animationPath': animationPath,
+        });
+      } else {
+        _webViewController?.runJavaScript(
+          "window.playAnimation('Wave', $duration);",
+        );
+      }
+    } catch (e) {
+      print('Error triggering hand wave: $e');
     }
-  } catch (e) {
-    print('Error triggering hand wave: $e');
   }
-}
-
-
-
-
-
 
   // ✅ Stop hand wave animation
   Future<void> stopHandWave() async {
@@ -209,7 +215,10 @@ Future<void> triggerHandWaveWithPath(String animationPath, {double duration = 2.
   }
 
   // ✅ NEW METHOD: Play custom animation by name
-  Future<void> playAnimation(String animationName, {double duration = 2.0}) async {
+  Future<void> playAnimation(
+    String animationName, {
+    double duration = 2.0,
+  }) async {
     try {
       print('🎬 Playing animation: $animationName for ${duration}s');
       if (_channel != null) {
@@ -222,8 +231,9 @@ Future<void> triggerHandWaveWithPath(String animationPath, {double duration = 2.
         });
       } else {
         // Android / Web
-        _webViewController
-            ?.runJavaScript("window.playAnimation('$animationName', $duration);");
+        _webViewController?.runJavaScript(
+          "window.playAnimation('$animationName', $duration);",
+        );
       }
     } catch (e) {
       print('Error playing animation: $e');

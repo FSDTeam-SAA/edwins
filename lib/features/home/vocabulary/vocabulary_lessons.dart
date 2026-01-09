@@ -7,15 +7,14 @@ import 'package:language_app/app/theme/app_style.dart';
 import 'package:language_app/features/avatar/avatar_controller.dart';
 import 'package:language_app/features/avatar/avatar_view.dart';
 import 'package:language_app/features/home/home_view.dart';
-import 'package:language_app/features/home/learning/result/lesson_end_result.dart';
+import 'package:language_app/features/home/learning/result/conversation_end_result.dart';
+import 'package:language_app/core/providers/theme_provider.dart';
+import 'package:provider/provider.dart';
 
 class VocabularyLessons extends StatefulWidget {
   final String selectedAvatarName;
 
-  const VocabularyLessons({
-    super.key,
-    required this.selectedAvatarName,
-  });
+  const VocabularyLessons({super.key, required this.selectedAvatarName});
 
   @override
   State<VocabularyLessons> createState() => _VocabularyLessonsState();
@@ -123,20 +122,26 @@ class _VocabularyLessonsState extends State<VocabularyLessons>
 
     if (widget.selectedAvatarName.toLowerCase() == 'karl') {
       if (Platform.isAndroid) {
-        await flutterTts
-            .setVoice({"name": "en-us-x-tpd-local", "locale": "en-US"});
+        await flutterTts.setVoice({
+          "name": "en-us-x-tpd-local",
+          "locale": "en-US",
+        });
       } else if (Platform.isIOS) {
-        await flutterTts.setVoice(
-            {"name": "com.apple.ttsbundle.Daniel-compact", "locale": "en-US"});
+        await flutterTts.setVoice({
+          "name": "com.apple.ttsbundle.Daniel-compact",
+          "locale": "en-US",
+        });
       }
     } else {
       if (Platform.isAndroid) {
-        await flutterTts
-            .setVoice({"name": "en-us-x-tpf-local", "locale": "en-US"});
+        await flutterTts.setVoice({
+          "name": "en-us-x-tpf-local",
+          "locale": "en-US",
+        });
       } else if (Platform.isIOS) {
         await flutterTts.setVoice({
           "name": "com.apple.ttsbundle.Samantha-compact",
-          "locale": "en-US"
+          "locale": "en-US",
         });
       }
     }
@@ -206,7 +211,7 @@ class _VocabularyLessonsState extends State<VocabularyLessons>
     "Listening": 70,
     "Grammar": 92,
     "Vocabulary": 75,
-    "Writing": 60
+    "Writing": 60,
   };
 
   Future<void> _stop() async {
@@ -333,8 +338,9 @@ class _VocabularyLessonsState extends State<VocabularyLessons>
               Navigator.pushReplacement(
                 context,
                 MaterialPageRoute(
-                    builder: (context) =>
-                        LessonEndResultView(skills: newScores)),
+                  builder: (context) =>
+                      ConversationEndResultView(skills: newScores),
+                ),
               );
             }
           }
@@ -360,34 +366,34 @@ class _VocabularyLessonsState extends State<VocabularyLessons>
   }
 
   String _translateText(String text) {
-    final translations = {
-      'Die Katze frisst _____': 'The cat eats _____',
-    };
+    final translations = {'Die Katze frisst _____': 'The cat eats _____'};
     return translations[text] ?? 'Translation not available';
   }
 
   @override
   Widget build(BuildContext context) {
+    final themeProvider = context.watch<ThemeProvider>();
     final currentQuestion = questions[currentQuestionIndex];
     final questionType = currentQuestion['type'];
     final questionText = currentQuestion['question'];
     final options = currentQuestion['options'] as List<Map<String, dynamic>>;
     final correctAnswer = currentQuestion['correctAnswer'];
-    final themeColor = AppColors.getAvatarTheme(widget.selectedAvatarName);
+    final themeColor = themeProvider.getAvatarTheme(widget.selectedAvatarName);
 
     return Scaffold(
-      backgroundColor: AppColors.conversationBg,
-      extendBodyBehindAppBar: true,
+      backgroundColor: themeProvider.scaffoldBackgroundColor,
+      extendBodyBehindAppBar: false,
       appBar: AppBar(
-        backgroundColor: Colors.transparent,
+        backgroundColor: themeProvider.appBarColor,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios, color: Colors.white),
+          icon: Icon(Icons.arrow_back_ios, color: themeProvider.primaryColor),
           onPressed: () => Navigator.pushReplacement(
             context,
             MaterialPageRoute(
-                builder: (context) =>
-                    const HomeView(initialHasStartedLearning: true)),
+              builder: (context) =>
+                  const HomeView(initialHasStartedLearning: true),
+            ),
           ),
         ),
       ),
@@ -398,6 +404,7 @@ class _VocabularyLessonsState extends State<VocabularyLessons>
               AnimatedContainer(
                 duration: const Duration(milliseconds: 400),
                 curve: Curves.fastOutSlowIn,
+                margin: const EdgeInsets.fromLTRB(16, 12, 16, 8),
                 height: isAvatarMaximized ? 500 : 340,
                 width: double.infinity,
                 decoration: BoxDecoration(
@@ -406,10 +413,7 @@ class _VocabularyLessonsState extends State<VocabularyLessons>
                     end: Alignment.bottomCenter,
                     colors: [themeColor, themeColor.withOpacity(0.7)],
                   ),
-                  borderRadius: const BorderRadius.only(
-                    bottomLeft: Radius.circular(32),
-                    bottomRight: Radius.circular(32),
-                  ),
+                  borderRadius: BorderRadius.circular(24),
                 ),
                 child: SafeArea(
                   bottom: false,
@@ -421,7 +425,7 @@ class _VocabularyLessonsState extends State<VocabularyLessons>
                         controller: avatarController,
                         height: isAvatarMaximized ? 540 : 380,
                         backgroundImagePath: AppConstants.backgroundImage,
-                        borderRadius: 0,
+                        borderRadius: 24,
                       ),
                       Positioned(
                         top: 10,
@@ -449,7 +453,9 @@ class _VocabularyLessonsState extends State<VocabularyLessons>
                           bottom: 20,
                           child: Container(
                             padding: const EdgeInsets.symmetric(
-                                horizontal: 16, vertical: 6),
+                              horizontal: 16,
+                              vertical: 6,
+                            ),
                             decoration: BoxDecoration(
                               color: Colors.black.withOpacity(0.2),
                               borderRadius: BorderRadius.circular(20),
@@ -459,9 +465,10 @@ class _VocabularyLessonsState extends State<VocabularyLessons>
                                 Text(
                                   widget.selectedAvatarName,
                                   style: const TextStyle(
-                                      color: Colors.white,
-                                      fontSize: 18,
-                                      fontWeight: FontWeight.bold),
+                                    color: Colors.white,
+                                    fontSize: 18,
+                                    fontWeight: FontWeight.bold,
+                                  ),
                                 ),
                                 const SizedBox(width: 8),
                                 GestureDetector(
@@ -484,7 +491,9 @@ class _VocabularyLessonsState extends State<VocabularyLessons>
                           left: 10,
                           child: Container(
                             padding: const EdgeInsets.symmetric(
-                                horizontal: 12, vertical: 6),
+                              horizontal: 12,
+                              vertical: 6,
+                            ),
                             decoration: BoxDecoration(
                               color: Colors.black.withOpacity(0.3),
                               borderRadius: BorderRadius.circular(20),
@@ -492,15 +501,19 @@ class _VocabularyLessonsState extends State<VocabularyLessons>
                             child: const Row(
                               mainAxisSize: MainAxisSize.min,
                               children: [
-                                Icon(Icons.volume_up,
-                                    color: Colors.white, size: 16),
+                                Icon(
+                                  Icons.volume_up,
+                                  color: Colors.white,
+                                  size: 16,
+                                ),
                                 SizedBox(width: 4),
                                 Text(
                                   'Speaking...',
                                   style: TextStyle(
-                                      color: Colors.white,
-                                      fontSize: 12,
-                                      fontWeight: FontWeight.w500),
+                                    color: Colors.white,
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.w500,
+                                  ),
                                 ),
                               ],
                             ),
@@ -539,7 +552,8 @@ class _VocabularyLessonsState extends State<VocabularyLessons>
                     height: 52,
                     decoration: BoxDecoration(
                       gradient: const LinearGradient(
-                          colors: [Color(0xFFFF609D), Color(0xFFFF7A06)]),
+                        colors: [Color(0xFFFF609D), Color(0xFFFF7A06)],
+                      ),
                       borderRadius: BorderRadius.circular(12),
                       boxShadow: [
                         BoxShadow(
@@ -553,9 +567,10 @@ class _VocabularyLessonsState extends State<VocabularyLessons>
                     child: const Text(
                       'Continue',
                       style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 16,
-                          fontWeight: FontWeight.w600),
+                        color: Colors.white,
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                      ),
                     ),
                   ),
                 ),
@@ -582,16 +597,20 @@ class _VocabularyLessonsState extends State<VocabularyLessons>
                           color: const Color(0xFFFF4B4B).withOpacity(0.1),
                           shape: BoxShape.circle,
                         ),
-                        child: const Icon(Icons.close,
-                            color: Color(0xFFFF4B4B), size: 40),
+                        child: const Icon(
+                          Icons.close,
+                          color: Color(0xFFFF4B4B),
+                          size: 40,
+                        ),
                       ),
                       const SizedBox(height: 16),
                       const Text(
                         'Oops!',
                         style: TextStyle(
-                            fontSize: 24,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.black),
+                          fontSize: 24,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.black,
+                        ),
                       ),
                       const SizedBox(height: 8),
                       Text(
@@ -607,16 +626,18 @@ class _VocabularyLessonsState extends State<VocabularyLessons>
                           height: 52,
                           decoration: BoxDecoration(
                             gradient: const LinearGradient(
-                                colors: [Color(0xFFFF609D), Color(0xFFFF7A06)]),
+                              colors: [Color(0xFFFF609D), Color(0xFFFF7A06)],
+                            ),
                             borderRadius: BorderRadius.circular(12),
                           ),
                           alignment: Alignment.center,
                           child: const Text(
                             'Continue',
                             style: TextStyle(
-                                color: Colors.white,
-                                fontSize: 16,
-                                fontWeight: FontWeight.w600),
+                              color: Colors.white,
+                              fontSize: 16,
+                              fontWeight: FontWeight.w600,
+                            ),
                           ),
                         ),
                       ),
@@ -657,7 +678,9 @@ class _VocabularyLessonsState extends State<VocabularyLessons>
   }
 
   Widget _buildFillBlankLayout(
-      String? questionText, List<Map<String, dynamic>> options) {
+    String? questionText,
+    List<Map<String, dynamic>> options,
+  ) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16),
       child: Column(
@@ -681,9 +704,10 @@ class _VocabularyLessonsState extends State<VocabularyLessons>
                 Text(
                   questionText ?? '',
                   style: const TextStyle(
-                      fontSize: 20,
-                      fontWeight: FontWeight.w600,
-                      color: Colors.black),
+                    fontSize: 20,
+                    fontWeight: FontWeight.w600,
+                    color: Colors.black,
+                  ),
                   textAlign: TextAlign.center,
                 ),
                 if (showTranslation) ...[
@@ -691,9 +715,10 @@ class _VocabularyLessonsState extends State<VocabularyLessons>
                   Text(
                     translatedText,
                     style: TextStyle(
-                        fontSize: 16,
-                        color: Colors.grey[600],
-                        fontStyle: FontStyle.italic),
+                      fontSize: 16,
+                      color: Colors.grey[600],
+                      fontStyle: FontStyle.italic,
+                    ),
                     textAlign: TextAlign.center,
                   ),
                 ],
@@ -716,8 +741,11 @@ class _VocabularyLessonsState extends State<VocabularyLessons>
                           color: const Color(0xFFFF8000).withOpacity(0.1),
                           shape: BoxShape.circle,
                         ),
-                        child: const Icon(Icons.language,
-                            size: 24, color: Color(0xFFFF8000)),
+                        child: const Icon(
+                          Icons.language,
+                          size: 24,
+                          color: Color(0xFFFF8000),
+                        ),
                       ),
                     ),
                     const SizedBox(width: 20),
@@ -731,8 +759,11 @@ class _VocabularyLessonsState extends State<VocabularyLessons>
                           color: const Color(0xFFFF609D).withOpacity(0.1),
                           shape: BoxShape.circle,
                         ),
-                        child: const Icon(Icons.volume_up,
-                            size: 24, color: Color(0xFFFF609D)),
+                        child: const Icon(
+                          Icons.volume_up,
+                          size: 24,
+                          color: Color(0xFFFF609D),
+                        ),
                       ),
                     ),
                   ],
@@ -757,10 +788,14 @@ class _VocabularyLessonsState extends State<VocabularyLessons>
     );
   }
 
-  Widget _buildOptionButton(Map<String, dynamic> option, double height,
-      [bool isSmallText = false]) {
+  Widget _buildOptionButton(
+    Map<String, dynamic> option,
+    double height, [
+    bool isSmallText = false,
+  ]) {
     final isSelected = selectedOption == option['text'];
-    final isCorrect = selectedOption == option['text'] &&
+    final isCorrect =
+        selectedOption == option['text'] &&
         selectedOption == questions[currentQuestionIndex]['correctAnswer'];
 
     return GestureDetector(
@@ -779,17 +814,20 @@ class _VocabularyLessonsState extends State<VocabularyLessons>
                     : (isSelected ? option['textColor'] : option['bgColor']),
                 borderRadius: BorderRadius.circular(12),
                 border: Border.all(
-                    color: isCorrect
-                        ? const Color(0xFFFF8000)
-                        : option['borderColor'],
-                    width: 2),
+                  color: isCorrect
+                      ? const Color(0xFFFF8000)
+                      : option['borderColor'],
+                  width: 2,
+                ),
                 boxShadow: isSelected
                     ? [
                         BoxShadow(
-                            color:
-                                (option['textColor'] as Color).withOpacity(0.3),
-                            blurRadius: 10,
-                            offset: const Offset(0, 4))
+                          color: (option['textColor'] as Color).withOpacity(
+                            0.3,
+                          ),
+                          blurRadius: 10,
+                          offset: const Offset(0, 4),
+                        ),
                       ]
                     : null,
               ),

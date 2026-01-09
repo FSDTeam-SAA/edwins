@@ -7,26 +7,25 @@ import 'package:language_app/features/home/home_view.dart';
 import 'package:language_app/features/home/conversation/widgets/conversation_input_area.dart';
 import 'package:language_app/app/theme/app_style.dart';
 import 'package:language_app/core/utils/mock_data.dart';
+import 'package:language_app/core/providers/theme_provider.dart';
+import 'package:provider/provider.dart';
 
 // Avatar logic imports
 import 'package:language_app/features/avatar/avatar_controller.dart';
 import 'package:language_app/features/avatar/avatar_view.dart';
 import 'package:language_app/app/constants/app_constants.dart';
-import 'package:language_app/features/home/learning/result/lesson_end_result.dart';
+// import 'package:language_app/features/home/learning/result/lesson_end_result.dart';
 
-class CommonConversation extends StatefulWidget {
+class CommonConversationChat extends StatefulWidget {
   final String selectedAvatarName;
 
-  const CommonConversation({
-    super.key,
-    required this.selectedAvatarName,
-  });
+  const CommonConversationChat({super.key, required this.selectedAvatarName});
 
   @override
-  State<CommonConversation> createState() => _CommonConversationState();
+  State<CommonConversationChat> createState() => _CommonConversationChatState();
 }
 
-class _CommonConversationState extends State<CommonConversation> {
+class _CommonConversationChatState extends State<CommonConversationChat> {
   final TextEditingController _textController = TextEditingController();
   final ScrollController _scrollController = ScrollController();
   final FocusNode _focusNode = FocusNode();
@@ -73,7 +72,8 @@ class _CommonConversationState extends State<CommonConversation> {
 
     setState(() {
       suggestedVocab = List<Map<String, dynamic>>.from(
-          MockData.conversationThread['suggested_vocab']);
+        MockData.conversationThread['suggested_vocab'],
+      );
       messages = List<Map<String, dynamic>>.from(messageData['messages']);
     });
   }
@@ -102,10 +102,11 @@ class _CommonConversationState extends State<CommonConversation> {
   }
 
   // UPDATED: Now accepts the word and an optional callback
-  void _showDifficultyRating(
-      {required String word,
-      String? contextWord,
-      Function(String)? onRatingDone}) {
+  void _showDifficultyRating({
+    required String word,
+    String? contextWord,
+    Function(String)? onRatingDone,
+  }) {
     showDialog(
       context: context,
       barrierDismissible: false,
@@ -129,8 +130,9 @@ class _CommonConversationState extends State<CommonConversation> {
   void _getAvatarResponse() {
     // Simulate "thinking" delay for realism
     Future.delayed(const Duration(milliseconds: 1000), () {
-      int currentAvatarCount =
-          messages.where((m) => m['role'] == 'avatar').length;
+      int currentAvatarCount = messages
+          .where((m) => m['role'] == 'avatar')
+          .length;
       final response = MockData.getNextConversationStep(currentAvatarCount);
       if (response != null) {
         setState(() {
@@ -147,6 +149,28 @@ class _CommonConversationState extends State<CommonConversation> {
 
   void _toggleAvatarSize() {
     setState(() => isAvatarMaximized = !isAvatarMaximized);
+  }
+
+  void _toggleMute() {
+    setState(() => isMuted = !isMuted);
+    if (isMuted) {
+      _avatarController.stopAudioViseme();
+    }
+  }
+
+  Future<void> _repeatDemoAudio() async {
+    if (isMuted) return;
+    try {
+      final visemes = await _avatarController.loadVisemesFromAsset(
+        'test/data/viseme.txt',
+      );
+      await _avatarController.playAudioViseme(
+        'test/test_assets/russian_sample.wav',
+        visemes,
+      );
+    } catch (e) {
+      debugPrint("Error playing demo audio: $e");
+    }
   }
 
   void _scrollToBottom() {
@@ -183,7 +207,7 @@ class _CommonConversationState extends State<CommonConversation> {
     "Listening": 70,
     "Grammar": 92,
     "Vocabulary": 75,
-    "Writing": 60
+    "Writing": 60,
   };
 
   @override
@@ -197,14 +221,15 @@ class _CommonConversationState extends State<CommonConversation> {
 
   @override
   Widget build(BuildContext context) {
-    final themeColor = _getThemeColor();
+    final themeProvider = context.watch<ThemeProvider>();
+    final themeColor = themeProvider.getAvatarTheme(widget.selectedAvatarName);
     final bool isKeyboardOpen = MediaQuery.of(context).viewInsets.bottom > 0;
 
     return Scaffold(
-      backgroundColor: AppColors.conversationBg,
-      extendBodyBehindAppBar: true,
+      backgroundColor: themeProvider.scaffoldBackgroundColor,
+      extendBodyBehindAppBar: false,
       appBar: AppBar(
-        backgroundColor: Colors.transparent,
+        backgroundColor: themeProvider.appBarColor,
         elevation: 0,
         automaticallyImplyLeading: false, // 1. Removes the "<" back icon
         actions: [
@@ -216,16 +241,18 @@ class _CommonConversationState extends State<CommonConversation> {
                 onTap: () {
                   // Navigate to HomeView and clear stack
                   Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => const HomeView(
-                          initialHasStartedLearning: true,
-                        ),
-                      ));
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) =>
+                          HomeView(initialHasStartedLearning: true),
+                    ),
+                  );
                 },
                 child: Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 8,
+                  ),
                   decoration: BoxDecoration(
                     color: const Color(0xFFFFF3E0), // Light orange background
                     borderRadius: BorderRadius.circular(20),
@@ -251,6 +278,7 @@ class _CommonConversationState extends State<CommonConversation> {
               AnimatedContainer(
                 duration: const Duration(milliseconds: 400),
                 curve: Curves.fastOutSlowIn,
+                margin: const EdgeInsets.fromLTRB(16, 12, 16, 8),
                 height: isKeyboardOpen ? 140 : (isAvatarMaximized ? 500 : 340),
                 width: double.infinity,
                 decoration: BoxDecoration(
@@ -259,10 +287,7 @@ class _CommonConversationState extends State<CommonConversation> {
                     end: Alignment.bottomCenter,
                     colors: [themeColor, themeColor.withOpacity(0.7)],
                   ),
-                  borderRadius: const BorderRadius.only(
-                    bottomLeft: Radius.circular(32),
-                    bottomRight: Radius.circular(32),
-                  ),
+                  borderRadius: BorderRadius.circular(24),
                 ),
                 child: SafeArea(
                   bottom: false,
@@ -276,30 +301,30 @@ class _CommonConversationState extends State<CommonConversation> {
                             ? 180
                             : (isAvatarMaximized ? 540 : 380),
                         backgroundImagePath: AppConstants.backgroundImage,
-                        borderRadius: 0,
+                        borderRadius: 24,
                       ),
-                      Positioned(
-                        top: 10,
-                        right: 16,
-                        child: GestureDetector(
-                          onTap: _toggleAvatarSize,
-                          child: Container(
-                            padding: const EdgeInsets.all(8),
-                            decoration: BoxDecoration(
-                              color: Colors.black.withOpacity(0.2),
-                              shape: BoxShape.circle,
-                            ),
-                            child: Icon(
-                              isAvatarMaximized
-                                  ? Icons.keyboard_arrow_up
-                                  : Icons.keyboard_arrow_down,
-                              color: Colors.white,
-                              size: 20,
-                            ),
-                          ),
-                        ),
-                      ),
-                      if (isAvatarMaximized && !isKeyboardOpen)
+                      // Positioned(
+                      //   top: 10,
+                      //   right: 16,
+                      //   child: GestureDetector(
+                      //     onTap: _toggleAvatarSize,
+                      //     child: Container(
+                      //       padding: const EdgeInsets.all(8),
+                      //       decoration: BoxDecoration(
+                      //         color: Colors.black.withOpacity(0.2),
+                      //         shape: BoxShape.circle,
+                      //       ),
+                      //       child: Icon(
+                      //         isAvatarMaximized
+                      //             ? Icons.keyboard_arrow_up
+                      //             : Icons.keyboard_arrow_down,
+                      //         color: Colors.white,
+                      //         size: 20,
+                      //       ),
+                      //     ),
+                      //   ),
+                      // ),
+                      if (!isKeyboardOpen)
                         Positioned(
                           bottom: 20,
                           child: Container(
@@ -322,10 +347,27 @@ class _CommonConversationState extends State<CommonConversation> {
                                   ),
                                 ),
                                 const SizedBox(width: 8),
-                                Icon(
-                                  isMuted ? Icons.volume_off : Icons.volume_up,
-                                  color: Colors.white.withOpacity(0.7),
-                                  size: 16,
+                                Row(
+                                  children: [
+                                    _buildCircleAction(
+                                      icon: Icons.repeat,
+                                      onTap: _repeatDemoAudio,
+                                    ),
+                                    const SizedBox(width: 8),
+                                    _buildCircleAction(
+                                      icon: isMuted
+                                          ? Icons.volume_off
+                                          : Icons.volume_up,
+                                      onTap: _toggleMute,
+                                    ),
+                                    const SizedBox(width: 8),
+                                    _buildCircleAction(
+                                      icon: isAvatarMaximized
+                                          ? Icons.fullscreen_exit
+                                          : Icons.fullscreen,
+                                      onTap: _toggleAvatarSize,
+                                    ),
+                                  ],
                                 ),
                               ],
                             ),
@@ -344,7 +386,10 @@ class _CommonConversationState extends State<CommonConversation> {
                       // 1. New Helper Text
                       Padding(
                         padding: const EdgeInsets.only(
-                            left: 16, bottom: 8, right: 16),
+                          left: 16,
+                          bottom: 8,
+                          right: 16,
+                        ),
                         child: Text(
                           textAlign: TextAlign.center,
                           "Try to use these words in your responses",
@@ -384,7 +429,8 @@ class _CommonConversationState extends State<CommonConversation> {
                   itemCount: messages.length,
                   itemBuilder: (context, index) {
                     final message = messages[index];
-                    final bool isVoiceMessage = message['role'] == 'avatar' ||
+                    final bool isVoiceMessage =
+                        message['role'] == 'avatar' ||
                         (message['is_voice'] ?? false);
 
                     return ChatMessage(
@@ -398,7 +444,9 @@ class _CommonConversationState extends State<CommonConversation> {
                       onHighlightTap: (word, contextWord) {
                         // When a bold word is tapped, show the rating popup
                         _showDifficultyRating(
-                            word: word, contextWord: contextWord);
+                          word: word,
+                          contextWord: contextWord,
+                        );
                       },
                     );
                   },
@@ -420,6 +468,23 @@ class _CommonConversationState extends State<CommonConversation> {
               onRecordingCancelled: _cancelRecording, // <--- Add this
             ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildCircleAction({
+    required IconData icon,
+    required VoidCallback onTap,
+  }) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.all(6),
+        decoration: const BoxDecoration(
+          color: Colors.white24,
+          shape: BoxShape.circle,
+        ),
+        child: Icon(icon, color: Colors.white, size: 16),
       ),
     );
   }

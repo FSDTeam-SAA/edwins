@@ -1,56 +1,55 @@
 import 'package:flutter/material.dart';
+import 'package:language_app/core/providers/theme_provider.dart';
 import 'package:language_app/features/home/home_view.dart';
+import 'package:provider/provider.dart';
 
 class ConversationHeader extends StatelessWidget
     implements PreferredSizeWidget {
   final int messageCount;
   final int maxMessages;
   final VoidCallback onNavigateToResults;
-  final Color themeColor;
 
   const ConversationHeader({
     super.key,
     required this.messageCount,
     required this.maxMessages,
     required this.onNavigateToResults,
-    required this.themeColor,
   });
 
   @override
   Widget build(BuildContext context) {
+    final themeProvider = context.watch<ThemeProvider>();
+    final themeColor = themeProvider.primaryColor;
     final bool showFinishButton = messageCount >= maxMessages;
 
     return AppBar(
-      backgroundColor: Colors.transparent,
-      elevation: 10,
+      backgroundColor: themeProvider.appBarColor,
+      elevation: 0,
       leading: IconButton(
-        icon: const Icon(Icons.arrow_back_ios, color: Colors.white),
+        icon: Icon(Icons.arrow_back_ios, color: themeColor),
         onPressed: () => Navigator.push(
-            context,
-            MaterialPageRoute(
-                builder: (context) => const HomeView(
-                      initialHasStartedLearning: true,
-                    ))),
+          context,
+          MaterialPageRoute(
+            builder: (context) =>
+                const HomeView(initialHasStartedLearning: true),
+          ),
+        ),
       ),
       title: Container(
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
         decoration: BoxDecoration(
-          color: Colors.white.withOpacity(0.2),
+          color: themeColor.withOpacity(0.1),
           borderRadius: BorderRadius.circular(16),
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Icon(
-              Icons.chat_bubble_outline,
-              color: Colors.white,
-              size: 14,
-            ),
+            Icon(Icons.chat_bubble_outline, color: themeColor, size: 14),
             const SizedBox(width: 6),
             Text(
               '$messageCount/$maxMessages messages',
-              style: const TextStyle(
-                color: Colors.white,
+              style: TextStyle(
+                color: themeColor,
                 fontSize: 12,
                 fontWeight: FontWeight.w600,
               ),
@@ -66,21 +65,23 @@ class ConversationHeader extends StatelessWidget
             child: GestureDetector(
               onTap: onNavigateToResults,
               child: Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 8,
+                ),
                 decoration: BoxDecoration(
-                  color: Colors.white.withOpacity(0.2),
+                  color: themeColor.withOpacity(0.1),
                   borderRadius: BorderRadius.circular(20),
                 ),
-                child: const Row(
+                child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Icon(Icons.emoji_events, color: Colors.white, size: 16),
-                    SizedBox(width: 8),
+                    Icon(Icons.emoji_events, color: themeColor, size: 16),
+                    const SizedBox(width: 8),
                     Text(
                       'Result',
                       style: TextStyle(
-                        color: Colors.white,
+                        color: themeColor,
                         fontWeight: FontWeight.w600,
                         fontSize: 14,
                       ),

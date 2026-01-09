@@ -41,20 +41,20 @@ class _OnboardingScreenState extends State<OnboardingScreen>
   late AnimationController _buttonScaleController;
   late Animation<double> _buttonScaleAnimation;
 
-@override
-void initState() {
-  super.initState();
-  _buttonScaleController = AnimationController(
-    duration: const Duration(milliseconds: 150),
-    vsync: this,
-  );
-  _buttonScaleAnimation = Tween<double>(begin: 1.0, end: 0.95).animate(
-    CurvedAnimation(parent: _buttonScaleController, curve: Curves.easeInOut),
-  );
-  
-  _initTts();
-  _loadVisemeData();
-}
+  @override
+  void initState() {
+    super.initState();
+    _buttonScaleController = AnimationController(
+      duration: const Duration(milliseconds: 150),
+      vsync: this,
+    );
+    _buttonScaleAnimation = Tween<double>(begin: 1.0, end: 0.95).animate(
+      CurvedAnimation(parent: _buttonScaleController, curve: Curves.easeInOut),
+    );
+
+    _initTts();
+    _loadVisemeData();
+  }
 
   @override
   void dispose() {
@@ -78,12 +78,14 @@ void initState() {
       transitionsBuilder: (context, animation, secondaryAnimation, child) {
         const curve = Curves.easeInOutCubic;
 
-        var scaleTween = Tween<double>(begin: 0.85, end: 1.0).chain(
-          CurveTween(curve: curve),
-        );
-        var fadeTween = Tween<double>(begin: 0.0, end: 1.0).chain(
-          CurveTween(curve: curve),
-        );
+        var scaleTween = Tween<double>(
+          begin: 0.85,
+          end: 1.0,
+        ).chain(CurveTween(curve: curve));
+        var fadeTween = Tween<double>(
+          begin: 0.0,
+          end: 1.0,
+        ).chain(CurveTween(curve: curve));
 
         return ScaleTransition(
           scale: animation.drive(scaleTween),
@@ -106,12 +108,14 @@ void initState() {
         const end = Offset.zero;
         const curve = Curves.easeOutCubic;
 
-        var slideTween = Tween(begin: begin, end: end).chain(
-          CurveTween(curve: curve),
-        );
-        var fadeTween = Tween<double>(begin: 0.0, end: 1.0).chain(
-          CurveTween(curve: curve),
-        );
+        var slideTween = Tween(
+          begin: begin,
+          end: end,
+        ).chain(CurveTween(curve: curve));
+        var fadeTween = Tween<double>(
+          begin: 0.0,
+          end: 1.0,
+        ).chain(CurveTween(curve: curve));
 
         return SlideTransition(
           position: animation.drive(slideTween),
@@ -172,8 +176,11 @@ void initState() {
                 children: [
                   _AnimatedPageWrapper(
                     key: const ValueKey(0),
-                    child: _buildLanguageStep("What is your target language?",
-                        ["German", "English", "Spanish"], false),
+                    child: _buildLanguageStep("What is your target language?", [
+                      "German",
+                      "English",
+                      "Spanish",
+                    ], false),
                   ),
                   _AnimatedPageWrapper(
                     key: const ValueKey(1),
@@ -181,8 +188,11 @@ void initState() {
                   ),
                   _AnimatedPageWrapper(
                     key: const ValueKey(2),
-                    child: _buildLanguageStep("What is your native language?",
-                        ["English", "French", "Arabic"], true),
+                    child: _buildLanguageStep("What is your native language?", [
+                      "English",
+                      "French",
+                      "Arabic",
+                    ], true),
                   ),
                   _AnimatedPageWrapper(
                     key: const ValueKey(3),
@@ -304,55 +314,58 @@ void initState() {
     await flutterTts.setPitch(1.0);
   }
 
-Future<void> _playAvatarGreeting(String avatarName) async {
-  String greetingText =
-      avatarName == "Karl" ? "Hi, I am Karl" : "Hi, I am Clara";
+  Future<void> _playAvatarGreeting(String avatarName) async {
+    String greetingText = avatarName == "Karl"
+        ? "Hi, I am Karl"
+        : "Hi, I am Clara";
 
-  print('👋 Playing greeting: $greetingText');
+    print('👋 Playing greeting: $greetingText');
 
-  // Set voice based on avatar
-  if (avatarName == "Karl") {
-    if (Platform.isAndroid) {
-      await flutterTts
-          .setVoice({"name": "en-us-x-tpd-local", "locale": "en-US"});
-    } else if (Platform.isIOS) {
-      await flutterTts.setVoice(
-          {"name": "com.apple.ttsbundle.Daniel-compact", "locale": "en-US"});
+    // Set voice based on avatar
+    if (avatarName == "Karl") {
+      if (Platform.isAndroid) {
+        await flutterTts.setVoice({
+          "name": "en-us-x-tpd-local",
+          "locale": "en-US",
+        });
+      } else if (Platform.isIOS) {
+        await flutterTts.setVoice({
+          "name": "com.apple.ttsbundle.Daniel-compact",
+          "locale": "en-US",
+        });
+      }
+    } else {
+      if (Platform.isAndroid) {
+        await flutterTts.setVoice({
+          "name": "en-us-x-tpf-local",
+          "locale": "en-US",
+        });
+      } else if (Platform.isIOS) {
+        await flutterTts.setVoice({
+          "name": "com.apple.ttsbundle.Samantha-compact",
+          "locale": "en-US",
+        });
+      }
     }
-  } else {
-    if (Platform.isAndroid) {
-      await flutterTts
-          .setVoice({"name": "en-us-x-tpf-local", "locale": "en-US"});
-    } else if (Platform.isIOS) {
-      await flutterTts.setVoice({
-        "name": "com.apple.ttsbundle.Samantha-compact",
-        "locale": "en-US"
-      });
-    }
+
+    // ✅ Get animation path from AppConstants
+    final controller = avatarName == "Clara" ? claraController : karlController;
+    final animationPath = avatarName == "Clara"
+        ? AppConstants.claraAnimationPath
+        : AppConstants.karlAnimationPath;
+
+    print('🎬 Using animation path: $animationPath');
+
+    // ✅ Trigger 8 second hand wave
+    await controller.triggerHandWaveWithPath(animationPath, duration: 1.0);
+
+    await Future.delayed(const Duration(milliseconds: 500));
+
+    // Start lip sync BEFORE speaking
+    _startLipSync(greetingText);
+
+    await flutterTts.speak(greetingText);
   }
-
-  // ✅ Get animation path from AppConstants
-  final controller = avatarName == "Clara" ? claraController : karlController;
-  final animationPath = avatarName == "Clara" 
-      ? AppConstants.claraAnimationPath 
-      : AppConstants.karlAnimationPath;
-  
-  print('🎬 Using animation path: $animationPath');
-
-  // ✅ Trigger 8 second hand wave
-  await controller.triggerHandWaveWithPath(animationPath, duration: 5.0);
-
-  await Future.delayed(const Duration(milliseconds: 500));
-
-  // Start lip sync BEFORE speaking
-  _startLipSync(greetingText);
-
-  await flutterTts.speak(greetingText);
-}
-
-
-
-
 
   Widget _buildLanguageStep(String title, List<String> options, bool isNative) {
     return Padding(
@@ -426,8 +439,9 @@ Future<void> _playAvatarGreeting(String avatarName) async {
                   "${goal['title']} ${goal['icon']}",
                   style: TextStyle(
                     fontSize: 16,
-                    fontWeight:
-                        isSelected ? FontWeight.w600 : FontWeight.normal,
+                    fontWeight: isSelected
+                        ? FontWeight.w600
+                        : FontWeight.normal,
                   ),
                 ),
               );
@@ -494,8 +508,11 @@ Future<void> _playAvatarGreeting(String avatarName) async {
                 ),
               ),
               const SizedBox(width: 8),
-              Icon(Icons.arrow_forward_ios,
-                  size: 16, color: Colors.grey.shade400),
+              Icon(
+                Icons.arrow_forward_ios,
+                size: 16,
+                color: Colors.grey.shade400,
+              ),
             ],
           ),
           const SizedBox(height: 20),
@@ -527,7 +544,8 @@ Future<void> _playAvatarGreeting(String avatarName) async {
                         Expanded(
                           child: ClipRRect(
                             borderRadius: const BorderRadius.vertical(
-                                top: Radius.circular(20)),
+                              top: Radius.circular(20),
+                            ),
                             child: AvatarView(
                               avatarName: "Clara",
                               controller: claraController,
@@ -535,7 +553,6 @@ Future<void> _playAvatarGreeting(String avatarName) async {
                               backgroundImagePath:
                                   "assets/images/background.png",
                               borderRadius: 0,
-                              
                             ),
                           ),
                         ),
@@ -592,7 +609,8 @@ Future<void> _playAvatarGreeting(String avatarName) async {
                         Expanded(
                           child: ClipRRect(
                             borderRadius: const BorderRadius.vertical(
-                                top: Radius.circular(20)),
+                              top: Radius.circular(20),
+                            ),
                             child: AvatarView(
                               avatarName: "Karl",
                               controller: karlController,
@@ -663,7 +681,7 @@ Future<void> _playAvatarGreeting(String avatarName) async {
       "Fitness",
       "Finance",
       "Health",
-      "Food/Cooking"
+      "Food/Cooking",
     ];
 
     return Padding(
@@ -720,8 +738,9 @@ Future<void> _playAvatarGreeting(String avatarName) async {
                       child: Text(
                         hobby,
                         style: TextStyle(
-                          fontWeight:
-                              isSelected ? FontWeight.w600 : FontWeight.normal,
+                          fontWeight: isSelected
+                              ? FontWeight.w600
+                              : FontWeight.normal,
                         ),
                       ),
                     ),
@@ -939,9 +958,10 @@ class _AnimatedBackButtonState extends State<_AnimatedBackButton>
       duration: const Duration(milliseconds: 150),
       vsync: this,
     );
-    _scaleAnimation = Tween<double>(begin: 1.0, end: 0.85).animate(
-      CurvedAnimation(parent: _controller, curve: Curves.easeInOut),
-    );
+    _scaleAnimation = Tween<double>(
+      begin: 1.0,
+      end: 0.85,
+    ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeInOut));
   }
 
   @override
@@ -995,9 +1015,10 @@ class _AnimatedDropdownState extends State<_AnimatedDropdown>
       duration: const Duration(milliseconds: 150),
       vsync: this,
     );
-    _scaleAnimation = Tween<double>(begin: 1.0, end: 0.98).animate(
-      CurvedAnimation(parent: _controller, curve: Curves.easeInOut),
-    );
+    _scaleAnimation = Tween<double>(
+      begin: 1.0,
+      end: 0.98,
+    ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeInOut));
   }
 
   @override
@@ -1198,12 +1219,10 @@ class _AnimatedAvatarCardState extends State<_AnimatedAvatarCard>
       vsync: this,
     );
 
-    _scaleAnimation = Tween<double>(begin: 0.8, end: 1.0).animate(
-      CurvedAnimation(
-        parent: _controller,
-        curve: Curves.easeOutBack,
-      ),
-    );
+    _scaleAnimation = Tween<double>(
+      begin: 0.8,
+      end: 1.0,
+    ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeOutBack));
 
     _fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
       CurvedAnimation(
@@ -1303,12 +1322,10 @@ class _AnimatedLevelCardState extends State<_AnimatedLevelCard>
       vsync: this,
     );
 
-    _slideAnimation = Tween<double>(begin: 30.0, end: 0.0).animate(
-      CurvedAnimation(
-        parent: _controller,
-        curve: Curves.easeOutCubic,
-      ),
-    );
+    _slideAnimation = Tween<double>(
+      begin: 30.0,
+      end: 0.0,
+    ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeOutCubic));
 
     _fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
       CurvedAnimation(
@@ -1384,10 +1401,7 @@ class _AnimatedGradientButton extends StatefulWidget {
   final VoidCallback onPressed;
   final String text;
 
-  const _AnimatedGradientButton({
-    required this.onPressed,
-    required this.text,
-  });
+  const _AnimatedGradientButton({required this.onPressed, required this.text});
 
   @override
   State<_AnimatedGradientButton> createState() =>
@@ -1407,9 +1421,10 @@ class _AnimatedGradientButtonState extends State<_AnimatedGradientButton>
       duration: const Duration(milliseconds: 150),
       vsync: this,
     );
-    _scaleAnimation = Tween<double>(begin: 1.0, end: 0.95).animate(
-      CurvedAnimation(parent: _controller, curve: Curves.easeInOut),
-    );
+    _scaleAnimation = Tween<double>(
+      begin: 1.0,
+      end: 0.95,
+    ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeInOut));
   }
 
   @override
@@ -1433,8 +1448,9 @@ class _AnimatedGradientButtonState extends State<_AnimatedGradientButton>
           borderRadius: BorderRadius.circular(15),
           boxShadow: [
             BoxShadow(
-              color:
-                  const Color(0xFFFF5F6D).withOpacity(_isPressed ? 0.2 : 0.3),
+              color: const Color(
+                0xFFFF5F6D,
+              ).withOpacity(_isPressed ? 0.2 : 0.3),
               blurRadius: _isPressed ? 8 : 12,
               offset: Offset(0, _isPressed ? 3 : 6),
             ),
@@ -1493,9 +1509,10 @@ class _AnimatedTestButtonState extends State<_AnimatedTestButton>
       duration: const Duration(milliseconds: 150),
       vsync: this,
     );
-    _scaleAnimation = Tween<double>(begin: 1.0, end: 0.95).animate(
-      CurvedAnimation(parent: _controller, curve: Curves.easeInOut),
-    );
+    _scaleAnimation = Tween<double>(
+      begin: 1.0,
+      end: 0.95,
+    ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeInOut));
   }
 
   @override
@@ -1516,8 +1533,9 @@ class _AnimatedTestButtonState extends State<_AnimatedTestButton>
           borderRadius: BorderRadius.circular(12),
           boxShadow: [
             BoxShadow(
-              color:
-                  const Color(0xFF2ECC71).withOpacity(_isPressed ? 0.2 : 0.3),
+              color: const Color(
+                0xFF2ECC71,
+              ).withOpacity(_isPressed ? 0.2 : 0.3),
               blurRadius: _isPressed ? 8 : 12,
               offset: Offset(0, _isPressed ? 3 : 6),
             ),
@@ -1556,10 +1574,7 @@ class _AnimatedTestButtonState extends State<_AnimatedTestButton>
 class _AnimatedPageWrapper extends StatefulWidget {
   final Widget child;
 
-  const _AnimatedPageWrapper({
-    Key? key,
-    required this.child,
-  }) : super(key: key);
+  const _AnimatedPageWrapper({Key? key, required this.child}) : super(key: key);
 
   @override
   State<_AnimatedPageWrapper> createState() => _AnimatedPageWrapperState();
@@ -1580,20 +1595,20 @@ class _AnimatedPageWrapperState extends State<_AnimatedPageWrapper>
       vsync: this,
     );
 
-    _fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
-      CurvedAnimation(parent: _controller, curve: Curves.easeOut),
-    );
+    _fadeAnimation = Tween<double>(
+      begin: 0.0,
+      end: 1.0,
+    ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeOut));
 
-    _scaleAnimation = Tween<double>(begin: 0.95, end: 1.0).animate(
-      CurvedAnimation(parent: _controller, curve: Curves.easeOut),
-    );
+    _scaleAnimation = Tween<double>(
+      begin: 0.95,
+      end: 1.0,
+    ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeOut));
 
     _slideAnimation = Tween<Offset>(
       begin: const Offset(0.0, 0.1),
       end: Offset.zero,
-    ).animate(
-      CurvedAnimation(parent: _controller, curve: Curves.easeOut),
-    );
+    ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeOut));
 
     _controller.forward();
   }
@@ -1610,10 +1625,7 @@ class _AnimatedPageWrapperState extends State<_AnimatedPageWrapper>
       opacity: _fadeAnimation,
       child: SlideTransition(
         position: _slideAnimation,
-        child: ScaleTransition(
-          scale: _scaleAnimation,
-          child: widget.child,
-        ),
+        child: ScaleTransition(scale: _scaleAnimation, child: widget.child),
       ),
     );
   }

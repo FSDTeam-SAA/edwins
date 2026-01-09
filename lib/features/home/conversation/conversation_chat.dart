@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:language_app/features/home/learning/result/lesson_end_result.dart';
+import 'package:language_app/features/home/learning/result/conversation_end_result.dart';
 import 'package:language_app/features/home/conversation/widgets/recording_overlay.dart';
 import 'package:language_app/features/home/conversation/widgets/suggested_vocab_chip.dart';
 import 'package:language_app/features/home/conversation/widgets/conversation_header.dart';
@@ -8,6 +8,8 @@ import 'package:language_app/app/theme/app_style.dart';
 import 'package:language_app/core/utils/mock_data.dart';
 import 'widgets/chat_message.dart';
 import 'widgets/difficulty_rating_popup.dart';
+import 'package:language_app/core/providers/theme_provider.dart';
+import 'package:provider/provider.dart';
 
 // Avatar logic imports
 import 'package:language_app/features/avatar/avatar_controller.dart';
@@ -17,10 +19,7 @@ import 'package:language_app/app/constants/app_constants.dart';
 class ConversationChat extends StatefulWidget {
   final String selectedAvatarName;
 
-  const ConversationChat({
-    super.key,
-    required this.selectedAvatarName,
-  });
+  const ConversationChat({super.key, required this.selectedAvatarName});
 
   @override
   State<ConversationChat> createState() => _ConversationChatState();
@@ -39,6 +38,7 @@ class _ConversationChatState extends State<ConversationChat> {
   bool isKeyboardVisible = false;
   bool hasTextInput = false;
   bool isMuted = false;
+  bool isAvatarMaximized = true;
   int messageCount = 0;
   final int maxMessages = 5;
 
@@ -75,7 +75,8 @@ class _ConversationChatState extends State<ConversationChat> {
 
     setState(() {
       suggestedVocab = List<Map<String, dynamic>>.from(
-          MockData.conversationThread['suggested_vocab']);
+        MockData.conversationThread['suggested_vocab'],
+      );
       messages = List<Map<String, dynamic>>.from(messageData['messages']);
     });
   }
@@ -105,10 +106,11 @@ class _ConversationChatState extends State<ConversationChat> {
   }
 
   // UPDATED: Now accepts the word and an optional callback
-  void _showDifficultyRating(
-      {required String word,
-      String? contextWord,
-      Function(String)? onRatingDone}) {
+  void _showDifficultyRating({
+    required String word,
+    String? contextWord,
+    Function(String)? onRatingDone,
+  }) {
     showDialog(
       context: context,
       barrierDismissible: false,
@@ -132,8 +134,9 @@ class _ConversationChatState extends State<ConversationChat> {
   void _getAvatarResponse() {
     // Simulate "thinking" delay for realism
     Future.delayed(const Duration(milliseconds: 1000), () {
-      int currentAvatarCount =
-          messages.where((m) => m['role'] == 'avatar').length;
+      int currentAvatarCount = messages
+          .where((m) => m['role'] == 'avatar')
+          .length;
       final response = MockData.getNextConversationStep(currentAvatarCount);
       if (response != null) {
         setState(() {
@@ -148,20 +151,47 @@ class _ConversationChatState extends State<ConversationChat> {
     });
   }
 
+  void _toggleAvatarSize() {
+    setState(() => isAvatarMaximized = !isAvatarMaximized);
+  }
+
+  void _toggleMute() {
+    setState(() => isMuted = !isMuted);
+    if (isMuted) {
+      _avatarController.stopAudioViseme();
+    }
+  }
+
+  Future<void> _repeatDemoAudio() async {
+    if (isMuted) return;
+    try {
+      final visemes = await _avatarController.loadVisemesFromAsset(
+        'test/data/viseme.txt',
+      );
+      await _avatarController.playAudioViseme(
+        'test/test_assets/russian_sample.wav',
+        visemes,
+      );
+    } catch (e) {
+      debugPrint("Error playing demo audio: $e");
+    }
+  }
+
   void _navigateToResults() {
     final Map<String, int> newScores = {
       "Speaking": 85,
       "Listening": 70,
       "Grammar": 92,
       "Vocabulary": 75,
-      "Writing": 60
+      "Writing": 60,
     };
 
     Navigator.push(
-        context,
-        MaterialPageRoute(
-          builder: (context) => LessonEndResultView(skills: newScores),
-        ));
+      context,
+      MaterialPageRoute(
+        builder: (context) => ConversationEndResultView(skills: newScores),
+      ),
+    );
   }
 
   void _scrollToBottom() {
@@ -204,17 +234,17 @@ class _ConversationChatState extends State<ConversationChat> {
 
   @override
   Widget build(BuildContext context) {
-    final themeColor = _getThemeColor();
+    final themeProvider = context.watch<ThemeProvider>();
+    final themeColor = themeProvider.getAvatarTheme(widget.selectedAvatarName);
     final bool isKeyboardOpen = MediaQuery.of(context).viewInsets.bottom > 0;
 
     return Scaffold(
-      backgroundColor: AppColors.conversationBg,
-      extendBodyBehindAppBar: true,
+      backgroundColor: themeProvider.scaffoldBackgroundColor,
+      extendBodyBehindAppBar: false,
       appBar: ConversationHeader(
         messageCount: messageCount,
         maxMessages: maxMessages,
         onNavigateToResults: _navigateToResults,
-        themeColor: themeColor,
       ),
       body: Stack(
         children: [
@@ -223,7 +253,8 @@ class _ConversationChatState extends State<ConversationChat> {
               AnimatedContainer(
                 duration: const Duration(milliseconds: 400),
                 curve: Curves.fastOutSlowIn,
-                height: isKeyboardOpen ? 140 : 340,
+                margin: const EdgeInsets.fromLTRB(16, 12, 16, 8),
+                height: isKeyboardOpen ? 140 : (isAvatarMaximized ? 500 : 340),
                 width: double.infinity,
                 decoration: BoxDecoration(
                   gradient: LinearGradient(
@@ -231,10 +262,7 @@ class _ConversationChatState extends State<ConversationChat> {
                     end: Alignment.bottomCenter,
                     colors: [themeColor, themeColor.withOpacity(0.7)],
                   ),
-                  borderRadius: const BorderRadius.only(
-                    bottomLeft: Radius.circular(32),
-                    bottomRight: Radius.circular(32),
-                  ),
+                  borderRadius: BorderRadius.circular(24),
                 ),
                 child: SafeArea(
                   bottom: false,
@@ -244,9 +272,11 @@ class _ConversationChatState extends State<ConversationChat> {
                       AvatarView(
                         avatarName: widget.selectedAvatarName,
                         controller: _avatarController,
-                        height: isKeyboardOpen ? 180 : 380,
+                        height: isKeyboardOpen
+                            ? 180
+                            : (isAvatarMaximized ? 540 : 380),
                         backgroundImagePath: AppConstants.backgroundImage,
-                        borderRadius: 0,
+                        borderRadius: 24,
                       ),
                       if (!isKeyboardOpen)
                         Positioned(
@@ -271,10 +301,27 @@ class _ConversationChatState extends State<ConversationChat> {
                                   ),
                                 ),
                                 const SizedBox(width: 8),
-                                Icon(
-                                  isMuted ? Icons.volume_off : Icons.volume_up,
-                                  color: Colors.white.withOpacity(0.7),
-                                  size: 16,
+                                Row(
+                                  children: [
+                                    _buildCircleAction(
+                                      icon: Icons.repeat,
+                                      onTap: _repeatDemoAudio,
+                                    ),
+                                    const SizedBox(width: 8),
+                                    _buildCircleAction(
+                                      icon: isMuted
+                                          ? Icons.volume_off
+                                          : Icons.volume_up,
+                                      onTap: _toggleMute,
+                                    ),
+                                    const SizedBox(width: 8),
+                                    _buildCircleAction(
+                                      icon: isAvatarMaximized
+                                          ? Icons.fullscreen_exit
+                                          : Icons.fullscreen,
+                                      onTap: _toggleAvatarSize,
+                                    ),
+                                  ],
                                 ),
                               ],
                             ),
@@ -293,7 +340,10 @@ class _ConversationChatState extends State<ConversationChat> {
                       // 1. New Helper Text
                       Padding(
                         padding: const EdgeInsets.only(
-                            left: 16, bottom: 8, right: 16),
+                          left: 16,
+                          bottom: 8,
+                          right: 16,
+                        ),
                         child: Text(
                           textAlign: TextAlign.center,
                           "Try to use these words in your responses",
@@ -333,7 +383,8 @@ class _ConversationChatState extends State<ConversationChat> {
                   itemCount: messages.length,
                   itemBuilder: (context, index) {
                     final message = messages[index];
-                    final bool isVoiceMessage = message['role'] == 'avatar' ||
+                    final bool isVoiceMessage =
+                        message['role'] == 'avatar' ||
                         (message['is_voice'] ?? false);
 
                     return ChatMessage(
@@ -347,7 +398,9 @@ class _ConversationChatState extends State<ConversationChat> {
                       onHighlightTap: (word, contextWord) {
                         // When a bold word is tapped, show the rating popup
                         _showDifficultyRating(
-                            word: word, contextWord: contextWord);
+                          word: word,
+                          contextWord: contextWord,
+                        );
                       },
                     );
                   },
@@ -369,6 +422,23 @@ class _ConversationChatState extends State<ConversationChat> {
               onRecordingCancelled: _cancelRecording, // <--- Add this
             ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildCircleAction({
+    required IconData icon,
+    required VoidCallback onTap,
+  }) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.all(6),
+        decoration: const BoxDecoration(
+          color: Colors.white24,
+          shape: BoxShape.circle,
+        ),
+        child: Icon(icon, color: Colors.white, size: 16),
       ),
     );
   }

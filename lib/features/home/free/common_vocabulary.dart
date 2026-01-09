@@ -10,20 +10,18 @@ import 'package:language_app/features/avatar/avatar_view.dart';
 import 'package:language_app/features/home/free/free_conversation.dart';
 import 'package:language_app/features/home/home_view.dart';
 import 'package:provider/provider.dart';
+import 'package:language_app/core/providers/theme_provider.dart';
 
-class CommonVocabulary extends StatefulWidget {
+class CommonVocabularyChat extends StatefulWidget {
   final String selectedAvatarName;
 
-  const CommonVocabulary({
-    super.key,
-    required this.selectedAvatarName,
-  });
+  const CommonVocabularyChat({super.key, required this.selectedAvatarName});
 
   @override
-  State<CommonVocabulary> createState() => _CommonVocabularyState();
+  State<CommonVocabularyChat> createState() => _CommonVocabularyChatState();
 }
 
-class _CommonVocabularyState extends State<CommonVocabulary>
+class _CommonVocabularyChatState extends State<CommonVocabularyChat>
     with TickerProviderStateMixin {
   int currentQuestionIndex = 0;
   String? selectedOption;
@@ -56,6 +54,22 @@ class _CommonVocabularyState extends State<CommonVocabulary>
     _initAnimations();
     _initTts();
     _loadVisemeData();
+
+    // ✅ NEW: Land logic - speak correctAnswer as hint for multiple_choice
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      Future.delayed(const Duration(milliseconds: 1000), () {
+        if (mounted) {
+          final currentQuestion = questions[currentQuestionIndex];
+          if (currentQuestion['type'] == 'multiple_choice') {
+            _speak(currentQuestion['correctAnswer']);
+          } else if (currentQuestion['type'] == 'fill_blank') {
+            String sentence = currentQuestion['question'];
+            sentence = sentence.replaceAll('_____', '');
+            _speak(sentence.trim());
+          }
+        }
+      });
+    });
   }
 
   Future<void> _loadVisemeData() async {
@@ -128,20 +142,26 @@ class _CommonVocabularyState extends State<CommonVocabulary>
 
     if (widget.selectedAvatarName.toLowerCase() == 'karl') {
       if (Platform.isAndroid) {
-        await flutterTts
-            .setVoice({"name": "en-us-x-tpd-local", "locale": "en-US"});
+        await flutterTts.setVoice({
+          "name": "en-us-x-tpd-local",
+          "locale": "en-US",
+        });
       } else if (Platform.isIOS) {
-        await flutterTts.setVoice(
-            {"name": "com.apple.ttsbundle.Daniel-compact", "locale": "en-US"});
+        await flutterTts.setVoice({
+          "name": "com.apple.ttsbundle.Daniel-compact",
+          "locale": "en-US",
+        });
       }
     } else {
       if (Platform.isAndroid) {
-        await flutterTts
-            .setVoice({"name": "en-us-x-tpf-local", "locale": "en-US"});
+        await flutterTts.setVoice({
+          "name": "en-us-x-tpf-local",
+          "locale": "en-US",
+        });
       } else if (Platform.isIOS) {
         await flutterTts.setVoice({
           "name": "com.apple.ttsbundle.Samantha-compact",
-          "locale": "en-US"
+          "locale": "en-US",
         });
       }
     }
@@ -178,6 +198,8 @@ class _CommonVocabularyState extends State<CommonVocabulary>
 
   void _startLipSync(String text) {
     final words = text.toLowerCase().split(' ');
+    double currentOffset = 0.0;
+
     for (var word in words) {
       word = word.replaceAll(RegExp(r'[^\wäöüß\s]', unicode: true), '').trim();
       if (word.isEmpty) continue;
@@ -193,15 +215,22 @@ class _CommonVocabularyState extends State<CommonVocabulary>
 
       if (visemeMap.containsKey(lookupWord)) {
         final visemes = visemeMap[lookupWord]!;
+        double wordMaxEnd = 0.0;
+
         for (var viseme in visemes) {
-          final delay = (viseme.startTime * 1000).toInt();
+          final delay = ((currentOffset + viseme.startTime) * 1000).toInt();
           final duration = (viseme.endTime - viseme.startTime);
+          if (viseme.endTime > wordMaxEnd) wordMaxEnd = viseme.endTime;
+
           Future.delayed(Duration(milliseconds: delay), () {
             if (mounted && isAvatarSpeaking) {
               avatarController.triggerViseme(viseme.name, duration: duration);
             }
           });
         }
+        currentOffset += wordMaxEnd + 0.05; // Gap between words
+      } else {
+        currentOffset += 0.4; // Fallback duration for unknown words
       }
     }
   }
@@ -219,6 +248,19 @@ class _CommonVocabularyState extends State<CommonVocabulary>
 
   void _toggleAvatarSize() {
     setState(() => isAvatarMaximized = !isAvatarMaximized);
+  }
+
+  // ✅ NEW: Repeat button function
+  void _repeatCorrectAnswer() {
+    final currentQuestion = questions[currentQuestionIndex];
+    if (currentQuestion['type'] == 'fill_blank') {
+      String sentence = currentQuestion['question'];
+      sentence = sentence.replaceAll('_____', '');
+      _speak(sentence.trim());
+    } else {
+      String correctAnswer = currentQuestion['correctAnswer'];
+      _speak(correctAnswer);
+    }
   }
 
   final List<Map<String, dynamic>> questions = [
@@ -285,18 +327,34 @@ class _CommonVocabularyState extends State<CommonVocabulary>
       ],
     },
   ];
+  //  ✅ CHANGED: Option click এ আর কথা বলবে না
+  // void handleOptionTap(String option) {
+  //   setState(() {
+  //     selectedOption = option;
+  //   });
 
+  //   // ✅ NEW: Both types এ option click করলে সেই word বলবে
+  //   final currentQuestion = questions[currentQuestionIndex];
+  //   _speak(option);
+  // }
+
+  //✅ CHANGED: Option click এ আর কথা বলবে না
   void handleOptionTap(String option) {
-    if (selectedOption == option) return;
     setState(() {
       selectedOption = option;
-      _speak(option);
     });
+
+    // ✅ NEW: fill_blank question এ option click করলে সেই word বলবে
+    final currentQuestion = questions[currentQuestionIndex];
+    if (currentQuestion['type'] == 'fill_blank') {
+      _speak(option); // "Katze", "Frisst", "Hähnchen", "Die" বলবে
+    }
   }
 
   void handleContinue() {
     if (selectedOption == null) return;
     String correctAnswer = questions[currentQuestionIndex]['correctAnswer'];
+    final currentQuestion = questions[currentQuestionIndex];
 
     if (!showError) {
       if (selectedOption != correctAnswer) {
@@ -326,14 +384,27 @@ class _CommonVocabularyState extends State<CommonVocabulary>
                 showTranslation = false;
                 _correctController.reset();
               });
+
+              // ✅ NEW: Next question logic
+              Future.delayed(const Duration(milliseconds: 500), () {
+                if (mounted) {
+                  final nextQuestion = questions[currentQuestionIndex];
+                  if (nextQuestion['type'] == 'multiple_choice') {
+                    _speak(nextQuestion['correctAnswer']);
+                  } else if (nextQuestion['type'] == 'fill_blank') {
+                    String sentence = nextQuestion['question'];
+                    sentence = sentence.replaceAll('_____', '');
+                    _speak(sentence.trim());
+                  }
+                }
+              });
             } else {
               Navigator.pushReplacement(
                 context,
                 MaterialPageRoute(
-                    builder: (context) =>
-                        // const HomeView(initialHasStartedLearning: true)),
-                        FreeConversationChat(
-                            selectedAvatarName: selectedAvatarName)),
+                  builder: (context) =>
+                      const HomeView(initialHasStartedLearning: true),
+                ),
               );
             }
           }
@@ -359,64 +430,36 @@ class _CommonVocabularyState extends State<CommonVocabulary>
   }
 
   String _translateText(String text) {
-    final translations = {
-      'Die Katze frisst _____': 'The cat eats _____',
-    };
+    final translations = {'Die Katze frisst _____': 'The cat eats _____'};
     return translations[text] ?? 'Translation not available';
   }
 
   @override
   Widget build(BuildContext context) {
+    final themeProvider = context.watch<ThemeProvider>();
     final currentQuestion = questions[currentQuestionIndex];
     final questionType = currentQuestion['type'];
     final questionText = currentQuestion['question'];
     final options = currentQuestion['options'] as List<Map<String, dynamic>>;
     final correctAnswer = currentQuestion['correctAnswer'];
-    final themeColor = AppColors.getAvatarTheme(widget.selectedAvatarName);
+    final themeColor = themeProvider.getAvatarTheme(widget.selectedAvatarName);
 
     return Scaffold(
-      backgroundColor: AppColors.conversationBg,
-      extendBodyBehindAppBar: true,
+      backgroundColor: themeProvider.scaffoldBackgroundColor,
+      extendBodyBehindAppBar: false,
       appBar: AppBar(
-        backgroundColor: Colors.transparent,
+        backgroundColor: themeProvider.appBarColor,
         elevation: 0,
-        automaticallyImplyLeading: false, // 1. Removes the "<" back icon
-        actions: [
-          // 2. "Finish" button moves here (Right side)
-          Center(
-            child: Padding(
-              padding: const EdgeInsets.only(right: 16.0),
-              child: GestureDetector(
-                onTap: () {
-                  // Navigate to HomeView and clear stack
-                  Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => const HomeView(
-                          initialHasStartedLearning: true,
-                        ),
-                      ));
-                },
-                child: Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFFFF3E0), // Light orange background
-                    borderRadius: BorderRadius.circular(20),
-                  ),
-                  child: const Text(
-                    "Finish",
-                    style: TextStyle(
-                      color: Color(0xFFFF8000),
-                      fontSize: 14,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                ),
-              ),
+        leading: IconButton(
+          icon: Icon(Icons.arrow_back_ios, color: themeProvider.primaryColor),
+          onPressed: () => Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(
+              builder: (context) =>
+                  const HomeView(initialHasStartedLearning: true),
             ),
           ),
-        ],
+        ),
       ),
       body: Stack(
         children: [
@@ -425,7 +468,8 @@ class _CommonVocabularyState extends State<CommonVocabulary>
               AnimatedContainer(
                 duration: const Duration(milliseconds: 400),
                 curve: Curves.fastOutSlowIn,
-                height: isAvatarMaximized ? 500 : 340,
+                margin: const EdgeInsets.fromLTRB(16, 12, 16, 8),
+                height: isAvatarMaximized ? 400 : 300,
                 width: double.infinity,
                 decoration: BoxDecoration(
                   gradient: LinearGradient(
@@ -433,10 +477,7 @@ class _CommonVocabularyState extends State<CommonVocabulary>
                     end: Alignment.bottomCenter,
                     colors: [themeColor, themeColor.withOpacity(0.7)],
                   ),
-                  borderRadius: const BorderRadius.only(
-                    bottomLeft: Radius.circular(32),
-                    bottomRight: Radius.circular(32),
-                  ),
+                  borderRadius: BorderRadius.circular(24),
                 ),
                 child: SafeArea(
                   bottom: false,
@@ -448,70 +489,66 @@ class _CommonVocabularyState extends State<CommonVocabulary>
                         controller: avatarController,
                         height: isAvatarMaximized ? 540 : 380,
                         backgroundImagePath: AppConstants.backgroundImage,
-                        borderRadius: 0,
+                        borderRadius: 24,
                       ),
                       Positioned(
-                        top: 10,
-                        right: 16,
-                        child: GestureDetector(
-                          onTap: _toggleAvatarSize,
-                          child: Container(
-                            padding: const EdgeInsets.all(8),
-                            decoration: BoxDecoration(
-                              color: Colors.black.withOpacity(0.2),
-                              shape: BoxShape.circle,
-                            ),
-                            child: Icon(
-                              isAvatarMaximized
-                                  ? Icons.keyboard_arrow_up
-                                  : Icons.keyboard_arrow_down,
-                              color: Colors.white,
-                              size: 20,
-                            ),
+                        bottom: 20,
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 16,
+                            vertical: 6,
+                          ),
+                          decoration: BoxDecoration(
+                            color: Colors.black.withOpacity(0.2),
+                            borderRadius: BorderRadius.circular(20),
+                          ),
+                          child: Row(
+                            children: [
+                              Text(
+                                widget.selectedAvatarName,
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                              const SizedBox(width: 12),
+                              // ✅ NEW UI: Buttons
+                              Row(
+                                children: [
+                                  _buildCircleAction(
+                                    icon: Icons.repeat,
+                                    onTap: _repeatCorrectAnswer,
+                                  ),
+                                  const SizedBox(width: 8),
+                                  _buildCircleAction(
+                                    icon: isMuted
+                                        ? Icons.volume_off
+                                        : Icons.volume_up,
+                                    onTap: _toggleMute,
+                                  ),
+                                  const SizedBox(width: 8),
+                                  _buildCircleAction(
+                                    icon: isAvatarMaximized
+                                        ? Icons.fullscreen_exit
+                                        : Icons.fullscreen,
+                                    onTap: _toggleAvatarSize,
+                                  ),
+                                ],
+                              ),
+                            ],
                           ),
                         ),
                       ),
-                      if (isAvatarMaximized)
-                        Positioned(
-                          bottom: 20,
-                          child: Container(
-                            padding: const EdgeInsets.symmetric(
-                                horizontal: 16, vertical: 6),
-                            decoration: BoxDecoration(
-                              color: Colors.black.withOpacity(0.2),
-                              borderRadius: BorderRadius.circular(20),
-                            ),
-                            child: Row(
-                              children: [
-                                Text(
-                                  widget.selectedAvatarName,
-                                  style: const TextStyle(
-                                      color: Colors.white,
-                                      fontSize: 18,
-                                      fontWeight: FontWeight.bold),
-                                ),
-                                const SizedBox(width: 8),
-                                GestureDetector(
-                                  onTap: _toggleMute,
-                                  child: Icon(
-                                    isMuted
-                                        ? Icons.volume_off
-                                        : Icons.volume_up,
-                                    color: Colors.white.withOpacity(0.7),
-                                    size: 16,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
                       if (isAvatarMaximized && isAvatarSpeaking)
                         Positioned(
                           top: 10,
                           left: 10,
                           child: Container(
                             padding: const EdgeInsets.symmetric(
-                                horizontal: 12, vertical: 6),
+                              horizontal: 12,
+                              vertical: 6,
+                            ),
                             decoration: BoxDecoration(
                               color: Colors.black.withOpacity(0.3),
                               borderRadius: BorderRadius.circular(20),
@@ -519,15 +556,19 @@ class _CommonVocabularyState extends State<CommonVocabulary>
                             child: const Row(
                               mainAxisSize: MainAxisSize.min,
                               children: [
-                                Icon(Icons.volume_up,
-                                    color: Colors.white, size: 16),
+                                Icon(
+                                  Icons.volume_up,
+                                  color: Colors.white,
+                                  size: 16,
+                                ),
                                 SizedBox(width: 4),
                                 Text(
                                   'Speaking...',
                                   style: TextStyle(
-                                      color: Colors.white,
-                                      fontSize: 12,
-                                      fontWeight: FontWeight.w500),
+                                    color: Colors.white,
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.w500,
+                                  ),
                                 ),
                               ],
                             ),
@@ -566,7 +607,8 @@ class _CommonVocabularyState extends State<CommonVocabulary>
                     height: 52,
                     decoration: BoxDecoration(
                       gradient: const LinearGradient(
-                          colors: [Color(0xFFFF609D), Color(0xFFFF7A06)]),
+                        colors: [Color(0xFFFF609D), Color(0xFFFF7A06)],
+                      ),
                       borderRadius: BorderRadius.circular(12),
                       boxShadow: [
                         BoxShadow(
@@ -580,9 +622,10 @@ class _CommonVocabularyState extends State<CommonVocabulary>
                     child: const Text(
                       'Continue',
                       style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 16,
-                          fontWeight: FontWeight.w600),
+                        color: Colors.white,
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                      ),
                     ),
                   ),
                 ),
@@ -609,16 +652,20 @@ class _CommonVocabularyState extends State<CommonVocabulary>
                           color: const Color(0xFFFF4B4B).withOpacity(0.1),
                           shape: BoxShape.circle,
                         ),
-                        child: const Icon(Icons.close,
-                            color: Color(0xFFFF4B4B), size: 40),
+                        child: const Icon(
+                          Icons.close,
+                          color: Color(0xFFFF4B4B),
+                          size: 40,
+                        ),
                       ),
                       const SizedBox(height: 16),
                       const Text(
                         'Oops!',
                         style: TextStyle(
-                            fontSize: 24,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.black),
+                          fontSize: 24,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.black,
+                        ),
                       ),
                       const SizedBox(height: 8),
                       Text(
@@ -634,16 +681,18 @@ class _CommonVocabularyState extends State<CommonVocabulary>
                           height: 52,
                           decoration: BoxDecoration(
                             gradient: const LinearGradient(
-                                colors: [Color(0xFFFF609D), Color(0xFFFF7A06)]),
+                              colors: [Color(0xFFFF609D), Color(0xFFFF7A06)],
+                            ),
                             borderRadius: BorderRadius.circular(12),
                           ),
                           alignment: Alignment.center,
                           child: const Text(
                             'Continue',
                             style: TextStyle(
-                                color: Colors.white,
-                                fontSize: 16,
-                                fontWeight: FontWeight.w600),
+                              color: Colors.white,
+                              fontSize: 16,
+                              fontWeight: FontWeight.w600,
+                            ),
                           ),
                         ),
                       ),
@@ -684,7 +733,9 @@ class _CommonVocabularyState extends State<CommonVocabulary>
   }
 
   Widget _buildFillBlankLayout(
-      String? questionText, List<Map<String, dynamic>> options) {
+    String? questionText,
+    List<Map<String, dynamic>> options,
+  ) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16),
       child: Column(
@@ -708,9 +759,10 @@ class _CommonVocabularyState extends State<CommonVocabulary>
                 Text(
                   questionText ?? '',
                   style: const TextStyle(
-                      fontSize: 20,
-                      fontWeight: FontWeight.w600,
-                      color: Colors.black),
+                    fontSize: 20,
+                    fontWeight: FontWeight.w600,
+                    color: Colors.black,
+                  ),
                   textAlign: TextAlign.center,
                 ),
                 if (showTranslation) ...[
@@ -718,9 +770,10 @@ class _CommonVocabularyState extends State<CommonVocabulary>
                   Text(
                     translatedText,
                     style: TextStyle(
-                        fontSize: 16,
-                        color: Colors.grey[600],
-                        fontStyle: FontStyle.italic),
+                      fontSize: 16,
+                      color: Colors.grey[600],
+                      fontStyle: FontStyle.italic,
+                    ),
                     textAlign: TextAlign.center,
                   ),
                 ],
@@ -743,8 +796,11 @@ class _CommonVocabularyState extends State<CommonVocabulary>
                           color: const Color(0xFFFF8000).withOpacity(0.1),
                           shape: BoxShape.circle,
                         ),
-                        child: const Icon(Icons.language,
-                            size: 24, color: Color(0xFFFF8000)),
+                        child: const Icon(
+                          Icons.language,
+                          size: 24,
+                          color: Color(0xFFFF8000),
+                        ),
                       ),
                     ),
                     const SizedBox(width: 20),
@@ -758,8 +814,11 @@ class _CommonVocabularyState extends State<CommonVocabulary>
                           color: const Color(0xFFFF609D).withOpacity(0.1),
                           shape: BoxShape.circle,
                         ),
-                        child: const Icon(Icons.volume_up,
-                            size: 24, color: Color(0xFFFF609D)),
+                        child: const Icon(
+                          Icons.volume_up,
+                          size: 24,
+                          color: Color(0xFFFF609D),
+                        ),
                       ),
                     ),
                   ],
@@ -784,10 +843,14 @@ class _CommonVocabularyState extends State<CommonVocabulary>
     );
   }
 
-  Widget _buildOptionButton(Map<String, dynamic> option, double height,
-      [bool isSmallText = false]) {
+  Widget _buildOptionButton(
+    Map<String, dynamic> option,
+    double height, [
+    bool isSmallText = false,
+  ]) {
     final isSelected = selectedOption == option['text'];
-    final isCorrect = selectedOption == option['text'] &&
+    final isCorrect =
+        selectedOption == option['text'] &&
         selectedOption == questions[currentQuestionIndex]['correctAnswer'];
 
     return GestureDetector(
@@ -806,17 +869,20 @@ class _CommonVocabularyState extends State<CommonVocabulary>
                     : (isSelected ? option['textColor'] : option['bgColor']),
                 borderRadius: BorderRadius.circular(12),
                 border: Border.all(
-                    color: isCorrect
-                        ? const Color(0xFFFF8000)
-                        : option['borderColor'],
-                    width: 2),
+                  color: isCorrect
+                      ? const Color(0xFFFF8000)
+                      : option['borderColor'],
+                  width: 2,
+                ),
                 boxShadow: isSelected
                     ? [
                         BoxShadow(
-                            color:
-                                (option['textColor'] as Color).withOpacity(0.3),
-                            blurRadius: 10,
-                            offset: const Offset(0, 4))
+                          color: (option['textColor'] as Color).withOpacity(
+                            0.3,
+                          ),
+                          blurRadius: 10,
+                          offset: const Offset(0, 4),
+                        ),
                       ]
                     : null,
               ),
@@ -840,6 +906,23 @@ class _CommonVocabularyState extends State<CommonVocabulary>
             ),
           );
         },
+      ),
+    );
+  }
+
+  Widget _buildCircleAction({
+    required IconData icon,
+    required VoidCallback onTap,
+  }) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.all(6),
+        decoration: const BoxDecoration(
+          color: Colors.white24,
+          shape: BoxShape.circle,
+        ),
+        child: Icon(icon, color: Colors.white, size: 16),
       ),
     );
   }
