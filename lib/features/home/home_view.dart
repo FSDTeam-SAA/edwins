@@ -1,16 +1,11 @@
 import 'package:flutter/material.dart';
-import 'package:language_app/features/home/conversation/conversation_chat.dart';
-import 'package:language_app/features/home/free/common_conversation.dart';
-import 'package:language_app/features/home/free/common_vocabulary.dart';
 import 'package:language_app/core/providers/avatar_provider.dart';
-import 'package:language_app/features/home/free/free_vocabulary.dart';
 import 'package:provider/provider.dart';
 import 'package:language_app/app/theme/app_style.dart';
 import 'package:language_app/core/utils/mock_data.dart';
 import 'package:language_app/core/widgets/radar_chart.dart';
 import 'package:language_app/core/widgets/weekly_activity_chart.dart';
-import 'package:language_app/features/menu/menu_view.dart';
-import 'package:language_app/features/home/free/common_vocabulary.dart';
+import 'package:language_app/app/router/app_router.dart';
 
 class HomeView extends StatefulWidget {
   final bool initialHasStartedLearning;
@@ -95,30 +90,28 @@ class _HomeViewState extends State<HomeView> {
                     onPressed: () {
                       if (!hasStartedLearning) {
                         // --- CASE 1: START LEARNING ---
-                        // Update state and go to Dummy Page
                         setState(() {
                           hasStartedLearning = true;
                         });
-                        Navigator.push(
+                        // Modern slide transition for starting lesson
+                        NavigationHelper.navigateTo(
                           context,
-                          MaterialPageRoute(
-                            builder: (context) => FreeVocabularyChat(
-                              selectedAvatarName:
-                                  avatarProvider.selectedAvatarName,
-                            ),
-                          ),
+                          AppRoutes.freeVocabulary,
+                          arguments: {
+                            'selectedAvatarName':
+                                avatarProvider.selectedAvatarName,
+                          },
                         );
                       } else {
                         // --- CASE 2: CONTINUE LEARNING ---
-                        // Go directly to ConversationChat
-                        Navigator.push(
+                        // Smooth slide transition for continuing
+                        NavigationHelper.navigateTo(
                           context,
-                          MaterialPageRoute(
-                            builder: (context) => ConversationChat(
-                              selectedAvatarName:
-                                  avatarProvider.selectedAvatarName,
-                            ),
-                          ),
+                          AppRoutes.conversation,
+                          arguments: {
+                            'selectedAvatarName':
+                                avatarProvider.selectedAvatarName,
+                          },
                         );
                       }
                     },
@@ -321,9 +314,10 @@ class _HomeViewState extends State<HomeView> {
           padding: const EdgeInsets.only(right: 24.0),
           child: GestureDetector(
             onTap: () {
-              Navigator.push(
+              // Slide from right for menu
+              NavigationHelper.navigateTo(
                 context,
-                MaterialPageRoute(builder: (context) => const MenuView()),
+                AppRoutes.menu,
               );
             },
             child: const Icon(
@@ -350,13 +344,13 @@ class _HomeViewState extends State<HomeView> {
                 listen: false,
               );
 
-              Navigator.push(
+              // Smooth slide transition for conversation
+              NavigationHelper.navigateTo(
                 context,
-                MaterialPageRoute(
-                  builder: (context) => CommonConversationChat(
-                    selectedAvatarName: avatarProvider.selectedAvatarName,
-                  ),
-                ),
+                AppRoutes.commonConversation,
+                arguments: {
+                  'selectedAvatarName': avatarProvider.selectedAvatarName,
+                },
               );
             },
             child: Container(
@@ -385,19 +379,18 @@ class _HomeViewState extends State<HomeView> {
         Expanded(
           child: GestureDetector(
             onTap: () {
-              // This is the current page, so we don't navigate or we just refresh
-              //  Navigator.pushNamed(context, '/vocab-loop');
               final avatarProvider = Provider.of<AvatarProvider>(
                 context,
                 listen: false,
               );
-              Navigator.push(
+
+              // Smooth slide transition for vocabulary
+              NavigationHelper.navigateTo(
                 context,
-                MaterialPageRoute(
-                  builder: (context) => CommonVocabularyChat(
-                    selectedAvatarName: avatarProvider.selectedAvatarName,
-                  ),
-                ),
+                AppRoutes.commonVocabulary,
+                arguments: {
+                  'selectedAvatarName': avatarProvider.selectedAvatarName,
+                },
               );
             },
             child: Container(

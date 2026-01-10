@@ -3,8 +3,8 @@ import 'package:flutter/material.dart';
 class ThemeProvider extends ChangeNotifier {
   // Base App Colors
   Color _primaryColor = const Color(0xFFFF8000); // Default Orange
-  Color _backgroundColor = Colors.white;
-  Color _scaffoldBackgroundColor = Colors.white;
+  final Color _backgroundColor = Colors.white;
+  final Color _scaffoldBackgroundColor = Colors.white;
 
   // Getters
   Color get primaryColor => _primaryColor;
@@ -19,10 +19,10 @@ class ThemeProvider extends ChangeNotifier {
         69,
         130,
         71,
-      ).withOpacity(0.5); // Clara's green
+      ).withValues(alpha: 0.5); // Clara's green
     }
     // Default / Karl's theme
-    return const Color(0xFFFF8000).withOpacity(0.5);
+    return const Color(0xFFFF8000).withValues(alpha: 0.5);
   }
 
   // Header / AppBar Theme

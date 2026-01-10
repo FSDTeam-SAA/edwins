@@ -2293,7 +2293,7 @@ class RadarChartPainter extends CustomPainter {
     final center = Offset(size.width / 2, size.height / 2);
     final radius = math.min(size.width, size.height) / 2 - 60;
     const sides = 5;
-    final angle = (2 * math.pi) / sides;
+    const angle = (2 * math.pi) / sides;
 
     final bgPaint = Paint()
       ..color = const Color(0xFFFFF9C4).withOpacity(0.3)

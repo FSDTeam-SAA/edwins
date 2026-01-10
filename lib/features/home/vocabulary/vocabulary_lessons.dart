@@ -3,13 +3,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_tts/flutter_tts.dart';
 import 'package:language_app/app/constants/app_constants.dart';
-import 'package:language_app/app/theme/app_style.dart';
+import 'package:language_app/core/providers/avatar_provider.dart';
 import 'package:language_app/features/avatar/avatar_controller.dart';
 import 'package:language_app/features/avatar/avatar_view.dart';
 import 'package:language_app/features/home/home_view.dart';
 import 'package:language_app/features/home/learning/result/conversation_end_result.dart';
-import 'package:language_app/core/providers/theme_provider.dart';
 import 'package:provider/provider.dart';
+import 'package:language_app/core/providers/theme_provider.dart';
 
 class VocabularyLessons extends StatefulWidget {
   final String selectedAvatarName;
@@ -36,6 +36,9 @@ class _VocabularyLessonsState extends State<VocabularyLessons>
 
   Map<String, List<VisemeData>> visemeMap = {};
 
+  String get selectedAvatarName =>
+      Provider.of<AvatarProvider>(context, listen: false).selectedAvatarName;
+
   late AnimationController _shakeController;
   late AnimationController _correctController;
   late AnimationController _buttonScaleController;
@@ -50,6 +53,22 @@ class _VocabularyLessonsState extends State<VocabularyLessons>
     _initAnimations();
     _initTts();
     _loadVisemeData();
+
+    // ✅ NEW: Land logic - speak correctAnswer as hint for multiple_choice
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      Future.delayed(const Duration(milliseconds: 1000), () {
+        if (mounted) {
+          final currentQuestion = questions[currentQuestionIndex];
+          if (currentQuestion['type'] == 'multiple_choice') {
+            _speak(currentQuestion['correctAnswer']);
+          } else if (currentQuestion['type'] == 'fill_blank') {
+            String sentence = currentQuestion['question'];
+            sentence = sentence.replaceAll('_____', '');
+            _speak(sentence.trim());
+          }
+        }
+      });
+    });
   }
 
   Future<void> _loadVisemeData() async {
@@ -178,6 +197,8 @@ class _VocabularyLessonsState extends State<VocabularyLessons>
 
   void _startLipSync(String text) {
     final words = text.toLowerCase().split(' ');
+    double currentOffset = 0.0;
+
     for (var word in words) {
       word = word.replaceAll(RegExp(r'[^\wäöüß\s]', unicode: true), '').trim();
       if (word.isEmpty) continue;
@@ -193,26 +214,25 @@ class _VocabularyLessonsState extends State<VocabularyLessons>
 
       if (visemeMap.containsKey(lookupWord)) {
         final visemes = visemeMap[lookupWord]!;
+        double wordMaxEnd = 0.0;
+
         for (var viseme in visemes) {
-          final delay = (viseme.startTime * 1000).toInt();
+          final delay = ((currentOffset + viseme.startTime) * 1000).toInt();
           final duration = (viseme.endTime - viseme.startTime);
+          if (viseme.endTime > wordMaxEnd) wordMaxEnd = viseme.endTime;
+
           Future.delayed(Duration(milliseconds: delay), () {
             if (mounted && isAvatarSpeaking) {
               avatarController.triggerViseme(viseme.name, duration: duration);
             }
           });
         }
+        currentOffset += wordMaxEnd + 0.05; // Gap between words
+      } else {
+        currentOffset += 0.4; // Fallback duration for unknown words
       }
     }
   }
-
-  final Map<String, int> newScores = {
-    "Speaking": 85,
-    "Listening": 70,
-    "Grammar": 92,
-    "Vocabulary": 75,
-    "Writing": 60,
-  };
 
   Future<void> _stop() async {
     await flutterTts.stop();
@@ -227,6 +247,19 @@ class _VocabularyLessonsState extends State<VocabularyLessons>
 
   void _toggleAvatarSize() {
     setState(() => isAvatarMaximized = !isAvatarMaximized);
+  }
+
+  // ✅ NEW: Repeat button function
+  void _repeatCorrectAnswer() {
+    final currentQuestion = questions[currentQuestionIndex];
+    if (currentQuestion['type'] == 'fill_blank') {
+      String sentence = currentQuestion['question'];
+      sentence = sentence.replaceAll('_____', '');
+      _speak(sentence.trim());
+    } else {
+      String correctAnswer = currentQuestion['correctAnswer'];
+      _speak(correctAnswer);
+    }
   }
 
   final List<Map<String, dynamic>> questions = [
@@ -293,18 +326,42 @@ class _VocabularyLessonsState extends State<VocabularyLessons>
       ],
     },
   ];
+  //  ✅ CHANGED: Option click এ আর কথা বলবে না
+  // void handleOptionTap(String option) {
+  //   setState(() {
+  //     selectedOption = option;
+  //   });
 
+  //   // ✅ NEW: Both types এ option click করলে সেই word বলবে
+  //   final currentQuestion = questions[currentQuestionIndex];
+  //   _speak(option);
+  // }
+
+  //✅ CHANGED: Option click এ আর কথা বলবে না
   void handleOptionTap(String option) {
-    if (selectedOption == option) return;
     setState(() {
       selectedOption = option;
-      _speak(option);
     });
+
+    // ✅ NEW: fill_blank question এ option click করলে সেই word বলবে
+    final currentQuestion = questions[currentQuestionIndex];
+    if (currentQuestion['type'] == 'fill_blank') {
+      _speak(option); // "Katze", "Frisst", "Hähnchen", "Die" বলবে
+    }
   }
+
+  final Map<String, int> newScores = {
+    "Speaking": 85,
+    "Listening": 70,
+    "Grammar": 92,
+    "Vocabulary": 75,
+    "Writing": 60,
+  };
 
   void handleContinue() {
     if (selectedOption == null) return;
     String correctAnswer = questions[currentQuestionIndex]['correctAnswer'];
+    final currentQuestion = questions[currentQuestionIndex];
 
     if (!showError) {
       if (selectedOption != correctAnswer) {
@@ -333,6 +390,20 @@ class _VocabularyLessonsState extends State<VocabularyLessons>
                 showError = false;
                 showTranslation = false;
                 _correctController.reset();
+              });
+
+              // ✅ NEW: Next question logic
+              Future.delayed(const Duration(milliseconds: 500), () {
+                if (mounted) {
+                  final nextQuestion = questions[currentQuestionIndex];
+                  if (nextQuestion['type'] == 'multiple_choice') {
+                    _speak(nextQuestion['correctAnswer']);
+                  } else if (nextQuestion['type'] == 'fill_blank') {
+                    String sentence = nextQuestion['question'];
+                    sentence = sentence.replaceAll('_____', '');
+                    _speak(sentence.trim());
+                  }
+                }
               });
             } else {
               Navigator.pushReplacement(
@@ -405,7 +476,7 @@ class _VocabularyLessonsState extends State<VocabularyLessons>
                 duration: const Duration(milliseconds: 400),
                 curve: Curves.fastOutSlowIn,
                 margin: const EdgeInsets.fromLTRB(16, 12, 16, 8),
-                height: isAvatarMaximized ? 500 : 340,
+                height: isAvatarMaximized ? 400 : 300,
                 width: double.infinity,
                 decoration: BoxDecoration(
                   gradient: LinearGradient(
@@ -428,63 +499,54 @@ class _VocabularyLessonsState extends State<VocabularyLessons>
                         borderRadius: 24,
                       ),
                       Positioned(
-                        top: 10,
-                        right: 16,
-                        child: GestureDetector(
-                          onTap: _toggleAvatarSize,
-                          child: Container(
-                            padding: const EdgeInsets.all(8),
-                            decoration: BoxDecoration(
-                              color: Colors.black.withOpacity(0.2),
-                              shape: BoxShape.circle,
-                            ),
-                            child: Icon(
-                              isAvatarMaximized
-                                  ? Icons.keyboard_arrow_up
-                                  : Icons.keyboard_arrow_down,
-                              color: Colors.white,
-                              size: 20,
-                            ),
+                        bottom: 20,
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 16,
+                            vertical: 6,
+                          ),
+                          decoration: BoxDecoration(
+                            color: Colors.black.withOpacity(0.2),
+                            borderRadius: BorderRadius.circular(20),
+                          ),
+                          child: Row(
+                            children: [
+                              Text(
+                                widget.selectedAvatarName,
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                              const SizedBox(width: 12),
+                              // ✅ NEW UI: Buttons
+                              Row(
+                                children: [
+                                  _buildCircleAction(
+                                    icon: Icons.repeat,
+                                    onTap: _repeatCorrectAnswer,
+                                  ),
+                                  const SizedBox(width: 8),
+                                  _buildCircleAction(
+                                    icon: isMuted
+                                        ? Icons.volume_off
+                                        : Icons.volume_up,
+                                    onTap: _toggleMute,
+                                  ),
+                                  const SizedBox(width: 8),
+                                  _buildCircleAction(
+                                    icon: isAvatarMaximized
+                                        ? Icons.fullscreen_exit
+                                        : Icons.fullscreen,
+                                    onTap: _toggleAvatarSize,
+                                  ),
+                                ],
+                              ),
+                            ],
                           ),
                         ),
                       ),
-                      if (isAvatarMaximized)
-                        Positioned(
-                          bottom: 20,
-                          child: Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 16,
-                              vertical: 6,
-                            ),
-                            decoration: BoxDecoration(
-                              color: Colors.black.withOpacity(0.2),
-                              borderRadius: BorderRadius.circular(20),
-                            ),
-                            child: Row(
-                              children: [
-                                Text(
-                                  widget.selectedAvatarName,
-                                  style: const TextStyle(
-                                    color: Colors.white,
-                                    fontSize: 18,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
-                                const SizedBox(width: 8),
-                                GestureDetector(
-                                  onTap: _toggleMute,
-                                  child: Icon(
-                                    isMuted
-                                        ? Icons.volume_off
-                                        : Icons.volume_up,
-                                    color: Colors.white.withOpacity(0.7),
-                                    size: 16,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
                       if (isAvatarMaximized && isAvatarSpeaking)
                         Positioned(
                           top: 10,
@@ -794,8 +856,7 @@ class _VocabularyLessonsState extends State<VocabularyLessons>
     bool isSmallText = false,
   ]) {
     final isSelected = selectedOption == option['text'];
-    final isCorrect =
-        selectedOption == option['text'] &&
+    final isCorrect = selectedOption == option['text'] &&
         selectedOption == questions[currentQuestionIndex]['correctAnswer'];
 
     return GestureDetector(
@@ -851,6 +912,23 @@ class _VocabularyLessonsState extends State<VocabularyLessons>
             ),
           );
         },
+      ),
+    );
+  }
+
+  Widget _buildCircleAction({
+    required IconData icon,
+    required VoidCallback onTap,
+  }) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.all(6),
+        decoration: const BoxDecoration(
+          color: Colors.white24,
+          shape: BoxShape.circle,
+        ),
+        child: Icon(icon, color: Colors.white, size: 16),
       ),
     );
   }
