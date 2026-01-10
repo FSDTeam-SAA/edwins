@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:language_app/features/home/free/free_conversation.dart';
 import 'package:language_app/features/home/home_view.dart';
 import 'package:language_app/features/home/conversation/conversation_chat.dart';
 import 'package:language_app/features/home/conversation/conversation_chat_refactored.dart';
-import 'package:language_app/features/home/conversation/select_avatar.dart';
+import 'package:language_app/features/menu/settings/change_avatar/select_avatar.dart';
 import 'package:language_app/features/home/free/free_vocabulary.dart';
 import 'package:language_app/features/home/free/common_conversation.dart';
 import 'package:language_app/features/home/free/common_vocabulary.dart';
@@ -23,7 +24,7 @@ class AppRoutes {
   static const String signUp = '/signup';
 
   // Splash & Onboarding
-  static const String splash = '/';
+  static const String splash = '/splash';
   static const String onboarding = '/onboarding';
 
   // Main app routes
@@ -238,7 +239,7 @@ class AppRouter {
         // TODO: Create FreeConversationChat or use existing
         final avatarName = args?['selectedAvatarName'] as String? ?? 'Clara';
         return CustomPageRoute(
-          page: CommonConversationChat(selectedAvatarName: avatarName),
+          page: FreeConversationChat(selectedAvatarName: avatarName),
           transitionType: PageTransitionType.slide,
         );
 

@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:language_app/features/home/conversation/select_avatar.dart';
+import 'package:language_app/features/menu/settings/change_avatar/select_avatar.dart';
 import 'package:language_app/features/menu/settings/change_password/change_password.dart';
 import 'package:language_app/features/menu/settings/delete_account/delete_account.dart';
 import 'package:language_app/features/menu/settings/privacy_policy/privacy_policy.dart';

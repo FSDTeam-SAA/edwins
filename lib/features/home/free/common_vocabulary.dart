@@ -3,11 +3,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_tts/flutter_tts.dart';
 import 'package:language_app/app/constants/app_constants.dart';
-import 'package:language_app/app/theme/app_style.dart';
 import 'package:language_app/core/providers/avatar_provider.dart';
 import 'package:language_app/features/avatar/avatar_controller.dart';
 import 'package:language_app/features/avatar/avatar_view.dart';
-import 'package:language_app/features/home/free/free_conversation.dart';
 import 'package:language_app/features/home/home_view.dart';
 import 'package:provider/provider.dart';
 import 'package:language_app/core/providers/theme_provider.dart';
@@ -452,15 +450,51 @@ class _CommonVocabularyChatState extends State<CommonVocabularyChat>
         elevation: 0,
         leading: IconButton(
           icon: Icon(Icons.arrow_back_ios, color: themeProvider.primaryColor),
-          onPressed: () => Navigator.pushReplacement(
-            context,
-            MaterialPageRoute(
-              builder: (context) =>
-                  const HomeView(initialHasStartedLearning: true),
-            ),
-          ),
+          onPressed: () => Navigator.pop(context),
         ),
       ),
+      // appBar: AppBar(
+      //   backgroundColor: themeProvider.appBarColor,
+      //   elevation: 0,
+      //   automaticallyImplyLeading: false, // 1. Removes the "<" back icon
+      //   actions: [
+      //     // 2. "Finish" button moves here (Right side)
+      //     Center(
+      //       child: Padding(
+      //         padding: const EdgeInsets.only(right: 16.0),
+      //         child: GestureDetector(
+      //           onTap: () {
+      //             // Navigate to HomeView and clear stack
+      //             Navigator.push(
+      //               context,
+      //               MaterialPageRoute(
+      //                 builder: (context) => const HomeView(),
+      //               ),
+      //             );
+      //           },
+      //           child: Container(
+      //             padding: const EdgeInsets.symmetric(
+      //               horizontal: 16,
+      //               vertical: 8,
+      //             ),
+      //             decoration: BoxDecoration(
+      //               color: const Color(0xFFFFF3E0), // Light orange background
+      //               borderRadius: BorderRadius.circular(20),
+      //             ),
+      //             child: const Text(
+      //               "Finish",
+      //               style: TextStyle(
+      //                 color: Color(0xFFFF8000),
+      //                 fontSize: 14,
+      //                 fontWeight: FontWeight.w600,
+      //               ),
+      //             ),
+      //           ),
+      //         ),
+      //       ),
+      //     ),
+      //   ],
+      // ),
       body: Stack(
         children: [
           Column(
@@ -636,68 +670,106 @@ class _CommonVocabularyChatState extends State<CommonVocabularyChat>
             Container(
               color: Colors.black.withOpacity(0.6),
               child: Center(
-                child: Container(
-                  margin: const EdgeInsets.symmetric(horizontal: 24),
-                  padding: const EdgeInsets.all(24),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(24),
-                  ),
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.all(16),
+                child: AnimatedBuilder(
+                  animation: _shakeAnimation,
+                  builder: (context, child) {
+                    return Transform.translate(
+                      offset: Offset(
+                        _shakeAnimation.value *
+                            ((_shakeController.value * 4).floor() % 2 == 0
+                                ? 1
+                                : -1),
+                        0,
+                      ),
+                      child: Container(
+                        margin: const EdgeInsets.symmetric(horizontal: 40),
                         decoration: BoxDecoration(
-                          color: const Color(0xFFFF4B4B).withOpacity(0.1),
-                          shape: BoxShape.circle,
+                          color: const Color(0xFFFF6666),
+                          borderRadius: BorderRadius.circular(12),
                         ),
-                        child: const Icon(
-                          Icons.close,
-                          color: Color(0xFFFF4B4B),
-                          size: 40,
-                        ),
-                      ),
-                      const SizedBox(height: 16),
-                      const Text(
-                        'Oops!',
-                        style: TextStyle(
-                          fontSize: 24,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.black,
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      Text(
-                        'The correct answer is: $correctAnswer',
-                        textAlign: TextAlign.center,
-                        style: TextStyle(fontSize: 16, color: Colors.grey[600]),
-                      ),
-                      const SizedBox(height: 24),
-                      GestureDetector(
-                        onTap: handleContinue,
-                        child: Container(
-                          width: double.infinity,
-                          height: 52,
-                          decoration: BoxDecoration(
-                            gradient: const LinearGradient(
-                              colors: [Color(0xFFFF609D), Color(0xFFFF7A06)],
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            const Padding(
+                              padding: EdgeInsets.symmetric(vertical: 20),
+                              child: Text(
+                                "It's incorrect.",
+                                style: TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 20,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
                             ),
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          alignment: Alignment.center,
-                          child: const Text(
-                            'Continue',
-                            style: TextStyle(
-                              color: Colors.white,
-                              fontSize: 16,
-                              fontWeight: FontWeight.w600,
+                            Container(
+                              margin: const EdgeInsets.fromLTRB(
+                                12,
+                                0,
+                                12,
+                                12,
+                              ),
+                              padding: const EdgeInsets.all(20),
+                              decoration: BoxDecoration(
+                                color: Colors.white,
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              child: Column(
+                                children: [
+                                  const Text(
+                                    'The right answer is',
+                                    style: TextStyle(
+                                      color: Color(0xFF757575),
+                                      fontSize: 15,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 8),
+                                  Text(
+                                    correctAnswer,
+                                    style: const TextStyle(
+                                      color: Color(0xFFFF6666),
+                                      fontSize: 26,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 18),
+                                  GestureDetector(
+                                    onTap: () {
+                                      _stop();
+                                      setState(() => showError = false);
+                                    },
+                                    child: Container(
+                                      width: double.infinity,
+                                      height: 46,
+                                      decoration: BoxDecoration(
+                                        gradient: const LinearGradient(
+                                          colors: [
+                                            Color(0xFFFF609D),
+                                            Color(0xFFFF7A06),
+                                          ],
+                                        ),
+                                        borderRadius: BorderRadius.circular(
+                                          8,
+                                        ),
+                                      ),
+                                      alignment: Alignment.center,
+                                      child: const Text(
+                                        'Continue',
+                                        style: TextStyle(
+                                          color: Colors.white,
+                                          fontSize: 16,
+                                          fontWeight: FontWeight.w600,
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
                             ),
-                          ),
+                          ],
                         ),
                       ),
-                    ],
-                  ),
+                    );
+                  },
                 ),
               ),
             ),
@@ -803,24 +875,24 @@ class _CommonVocabularyChatState extends State<CommonVocabularyChat>
                         ),
                       ),
                     ),
-                    const SizedBox(width: 20),
-                    GestureDetector(
-                      onTap: () {
-                        if (questionText != null) _speak(questionText);
-                      },
-                      child: Container(
-                        padding: const EdgeInsets.all(12),
-                        decoration: BoxDecoration(
-                          color: const Color(0xFFFF609D).withOpacity(0.1),
-                          shape: BoxShape.circle,
-                        ),
-                        child: const Icon(
-                          Icons.volume_up,
-                          size: 24,
-                          color: Color(0xFFFF609D),
-                        ),
-                      ),
-                    ),
+                    // const SizedBox(width: 20),
+                    // GestureDetector(
+                    //   onTap: () {
+                    //     if (questionText != null) _speak(questionText);
+                    //   },
+                    //   child: Container(
+                    //     padding: const EdgeInsets.all(12),
+                    //     decoration: BoxDecoration(
+                    //       color: const Color(0xFFFF609D).withOpacity(0.1),
+                    //       shape: BoxShape.circle,
+                    //     ),
+                    //     child: const Icon(
+                    //       Icons.volume_up,
+                    //       size: 24,
+                    //       color: Color(0xFFFF609D),
+                    //     ),
+                    //   ),
+                    // ),
                   ],
                 ),
               ],
@@ -849,8 +921,7 @@ class _CommonVocabularyChatState extends State<CommonVocabularyChat>
     bool isSmallText = false,
   ]) {
     final isSelected = selectedOption == option['text'];
-    final isCorrect =
-        selectedOption == option['text'] &&
+    final isCorrect = selectedOption == option['text'] &&
         selectedOption == questions[currentQuestionIndex]['correctAnswer'];
 
     return GestureDetector(

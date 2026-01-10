@@ -130,9 +130,8 @@ class _CommonConversationChatState extends State<CommonConversationChat> {
   void _getAvatarResponse() {
     // Simulate "thinking" delay for realism
     Future.delayed(const Duration(milliseconds: 1000), () {
-      int currentAvatarCount = messages
-          .where((m) => m['role'] == 'avatar')
-          .length;
+      int currentAvatarCount =
+          messages.where((m) => m['role'] == 'avatar').length;
       final response = MockData.getNextConversationStep(currentAvatarCount);
       if (response != null) {
         setState(() {
@@ -231,46 +230,53 @@ class _CommonConversationChatState extends State<CommonConversationChat> {
       appBar: AppBar(
         backgroundColor: themeProvider.appBarColor,
         elevation: 0,
-        automaticallyImplyLeading: false, // 1. Removes the "<" back icon
-        actions: [
-          // 2. "Finish" button moves here (Right side)
-          Center(
-            child: Padding(
-              padding: const EdgeInsets.only(right: 16.0),
-              child: GestureDetector(
-                onTap: () {
-                  // Navigate to HomeView and clear stack
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) =>
-                          HomeView(initialHasStartedLearning: true),
-                    ),
-                  );
-                },
-                child: Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 16,
-                    vertical: 8,
-                  ),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFFFF3E0), // Light orange background
-                    borderRadius: BorderRadius.circular(20),
-                  ),
-                  child: const Text(
-                    "Finish",
-                    style: TextStyle(
-                      color: Color(0xFFFF8000),
-                      fontSize: 14,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                ),
-              ),
-            ),
-          ),
-        ],
+        leading: IconButton(
+          icon: Icon(Icons.arrow_back_ios, color: themeProvider.primaryColor),
+          onPressed: () => Navigator.pop(context),
+        ),
       ),
+      // appBar: AppBar(
+      //   backgroundColor: themeProvider.appBarColor,
+      //   elevation: 0,
+      //   automaticallyImplyLeading: false, // 1. Removes the "<" back icon
+      //   actions: [
+      //     // 2. "Finish" button moves here (Right side)
+      //     Center(
+      //       child: Padding(
+      //         padding: const EdgeInsets.only(right: 16.0),
+      //         child: GestureDetector(
+      //           onTap: () {
+      //             // Navigate to HomeView and clear stack
+      //             Navigator.push(
+      //               context,
+      //               MaterialPageRoute(
+      //                 builder: (context) => const HomeView(),
+      //               ),
+      //             );
+      //           },
+      //           child: Container(
+      //             padding: const EdgeInsets.symmetric(
+      //               horizontal: 16,
+      //               vertical: 8,
+      //             ),
+      //             decoration: BoxDecoration(
+      //               color: const Color(0xFFFFF3E0), // Light orange background
+      //               borderRadius: BorderRadius.circular(20),
+      //             ),
+      //             child: const Text(
+      //               "Finish",
+      //               style: TextStyle(
+      //                 color: Color(0xFFFF8000),
+      //                 fontSize: 14,
+      //                 fontWeight: FontWeight.w600,
+      //               ),
+      //             ),
+      //           ),
+      //         ),
+      //       ),
+      //     ),
+      //   ],
+      // ),
       body: Stack(
         children: [
           Column(
@@ -429,8 +435,7 @@ class _CommonConversationChatState extends State<CommonConversationChat> {
                   itemCount: messages.length,
                   itemBuilder: (context, index) {
                     final message = messages[index];
-                    final bool isVoiceMessage =
-                        message['role'] == 'avatar' ||
+                    final bool isVoiceMessage = message['role'] == 'avatar' ||
                         (message['is_voice'] ?? false);
 
                     return ChatMessage(

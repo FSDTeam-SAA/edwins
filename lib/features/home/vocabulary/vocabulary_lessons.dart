@@ -7,6 +7,7 @@ import 'package:language_app/core/providers/avatar_provider.dart';
 import 'package:language_app/features/avatar/avatar_controller.dart';
 import 'package:language_app/features/avatar/avatar_view.dart';
 import 'package:language_app/features/home/home_view.dart';
+import 'package:language_app/features/home/learning/result/Vocab_end_result.dart';
 import 'package:language_app/features/home/learning/result/conversation_end_result.dart';
 import 'package:provider/provider.dart';
 import 'package:language_app/core/providers/theme_provider.dart';
@@ -409,8 +410,7 @@ class _VocabularyLessonsState extends State<VocabularyLessons>
               Navigator.pushReplacement(
                 context,
                 MaterialPageRoute(
-                  builder: (context) =>
-                      ConversationEndResultView(skills: newScores),
+                  builder: (context) => const VocabEndResultView(),
                 ),
               );
             }
@@ -643,68 +643,106 @@ class _VocabularyLessonsState extends State<VocabularyLessons>
             Container(
               color: Colors.black.withOpacity(0.6),
               child: Center(
-                child: Container(
-                  margin: const EdgeInsets.symmetric(horizontal: 24),
-                  padding: const EdgeInsets.all(24),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(24),
-                  ),
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.all(16),
+                child: AnimatedBuilder(
+                  animation: _shakeAnimation,
+                  builder: (context, child) {
+                    return Transform.translate(
+                      offset: Offset(
+                        _shakeAnimation.value *
+                            ((_shakeController.value * 4).floor() % 2 == 0
+                                ? 1
+                                : -1),
+                        0,
+                      ),
+                      child: Container(
+                        margin: const EdgeInsets.symmetric(horizontal: 40),
                         decoration: BoxDecoration(
-                          color: const Color(0xFFFF4B4B).withOpacity(0.1),
-                          shape: BoxShape.circle,
+                          color: const Color(0xFFFF6666),
+                          borderRadius: BorderRadius.circular(12),
                         ),
-                        child: const Icon(
-                          Icons.close,
-                          color: Color(0xFFFF4B4B),
-                          size: 40,
-                        ),
-                      ),
-                      const SizedBox(height: 16),
-                      const Text(
-                        'Oops!',
-                        style: TextStyle(
-                          fontSize: 24,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.black,
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      Text(
-                        'The correct answer is: $correctAnswer',
-                        textAlign: TextAlign.center,
-                        style: TextStyle(fontSize: 16, color: Colors.grey[600]),
-                      ),
-                      const SizedBox(height: 24),
-                      GestureDetector(
-                        onTap: handleContinue,
-                        child: Container(
-                          width: double.infinity,
-                          height: 52,
-                          decoration: BoxDecoration(
-                            gradient: const LinearGradient(
-                              colors: [Color(0xFFFF609D), Color(0xFFFF7A06)],
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            const Padding(
+                              padding: EdgeInsets.symmetric(vertical: 20),
+                              child: Text(
+                                "It's incorrect.",
+                                style: TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 20,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
                             ),
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          alignment: Alignment.center,
-                          child: const Text(
-                            'Continue',
-                            style: TextStyle(
-                              color: Colors.white,
-                              fontSize: 16,
-                              fontWeight: FontWeight.w600,
+                            Container(
+                              margin: const EdgeInsets.fromLTRB(
+                                12,
+                                0,
+                                12,
+                                12,
+                              ),
+                              padding: const EdgeInsets.all(20),
+                              decoration: BoxDecoration(
+                                color: Colors.white,
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              child: Column(
+                                children: [
+                                  const Text(
+                                    'The right answer is',
+                                    style: TextStyle(
+                                      color: Color(0xFF757575),
+                                      fontSize: 15,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 8),
+                                  Text(
+                                    correctAnswer,
+                                    style: const TextStyle(
+                                      color: Color(0xFFFF6666),
+                                      fontSize: 26,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 18),
+                                  GestureDetector(
+                                    onTap: () {
+                                      _stop();
+                                      setState(() => showError = false);
+                                    },
+                                    child: Container(
+                                      width: double.infinity,
+                                      height: 46,
+                                      decoration: BoxDecoration(
+                                        gradient: const LinearGradient(
+                                          colors: [
+                                            Color(0xFFFF609D),
+                                            Color(0xFFFF7A06),
+                                          ],
+                                        ),
+                                        borderRadius: BorderRadius.circular(
+                                          8,
+                                        ),
+                                      ),
+                                      alignment: Alignment.center,
+                                      child: const Text(
+                                        'Continue',
+                                        style: TextStyle(
+                                          color: Colors.white,
+                                          fontSize: 16,
+                                          fontWeight: FontWeight.w600,
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
                             ),
-                          ),
+                          ],
                         ),
                       ),
-                    ],
-                  ),
+                    );
+                  },
                 ),
               ),
             ),
@@ -811,23 +849,23 @@ class _VocabularyLessonsState extends State<VocabularyLessons>
                       ),
                     ),
                     const SizedBox(width: 20),
-                    GestureDetector(
-                      onTap: () {
-                        if (questionText != null) _speak(questionText);
-                      },
-                      child: Container(
-                        padding: const EdgeInsets.all(12),
-                        decoration: BoxDecoration(
-                          color: const Color(0xFFFF609D).withOpacity(0.1),
-                          shape: BoxShape.circle,
-                        ),
-                        child: const Icon(
-                          Icons.volume_up,
-                          size: 24,
-                          color: Color(0xFFFF609D),
-                        ),
-                      ),
-                    ),
+                    // GestureDetector(
+                    //   onTap: () {
+                    //     if (questionText != null) _speak(questionText);
+                    //   },
+                    //   child: Container(
+                    //     padding: const EdgeInsets.all(12),
+                    //     decoration: BoxDecoration(
+                    //       color: const Color(0xFFFF609D).withOpacity(0.1),
+                    //       shape: BoxShape.circle,
+                    //     ),
+                    //     child: const Icon(
+                    //       Icons.volume_up,
+                    //       size: 24,
+                    //       color: Color(0xFFFF609D),
+                    //     ),
+                    //   ),
+                    // ),
                   ],
                 ),
               ],

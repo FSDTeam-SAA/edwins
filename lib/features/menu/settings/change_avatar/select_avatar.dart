@@ -2,7 +2,8 @@ import 'dart:io';
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_tts/flutter_tts.dart';
-import 'package:language_app/features/home/home_view.dart';
+// import 'package:language_app/features/home/home_view.dart';
+// import 'package:language_app/features/menu/settings/settings.dart';
 import 'package:provider/provider.dart';
 import 'package:language_app/core/providers/avatar_provider.dart';
 import 'package:language_app/app/theme/app_style.dart';
@@ -104,12 +105,10 @@ class _SelectAvatarState extends State<SelectAvatar> {
   }
 
   Future<void> _playAvatarGreeting(String avatarName) async {
-    final controller = avatarName == "Karl"
-        ? _karlController
-        : _claraController;
-    final greetingText = avatarName == "Karl"
-        ? "Hi, I am Karl"
-        : "Hi, I am Clara";
+    final controller =
+        avatarName == "Karl" ? _karlController : _claraController;
+    final greetingText =
+        avatarName == "Karl" ? "Hi, I am Karl" : "Hi, I am Clara";
 
     await flutterTts.stop();
 
@@ -192,10 +191,9 @@ class _SelectAvatarState extends State<SelectAvatar> {
   }
 
   void _startConversation() {
-    Navigator.push(
-      context,
-      MaterialPageRoute(builder: (context) => const HomeView()),
-    );
+    // Pop back to the previous screen (MenuView)
+    // The avatar selection is already saved in AvatarProvider
+    Navigator.pop(context);
   }
 
   // Helper to get accent color based on name (Optional visual flair)
@@ -205,9 +203,8 @@ class _SelectAvatarState extends State<SelectAvatar> {
 
   @override
   Widget build(BuildContext context) {
-    final selectedAvatarName = context
-        .watch<AvatarProvider>()
-        .selectedAvatarName;
+    final selectedAvatarName =
+        context.watch<AvatarProvider>().selectedAvatarName;
     final accentColor = _getAccentColor();
 
     return Scaffold(

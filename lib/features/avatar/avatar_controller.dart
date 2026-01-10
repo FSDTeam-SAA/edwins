@@ -32,8 +32,8 @@ class AvatarController {
   String? _currentAvatarName;
 
   AvatarController({FileHelper? fileHelper, VisemeHelper? visemeHelper})
-    : _fileHelper = fileHelper ?? FileHelper(),
-      _visemeHelper = visemeHelper ?? VisemeHelper();
+      : _fileHelper = fileHelper ?? FileHelper(),
+        _visemeHelper = visemeHelper ?? VisemeHelper();
 
   // ✅ Set current avatar name
   void setAvatarName(String avatarName) {
@@ -125,20 +125,43 @@ class AvatarController {
   }
 
   // ✅ Trigger single viseme
-  Future<void> triggerViseme(String visemeName, {double duration = 0.1}) async {
+  // ✅ Trigger single viseme
+  Future<void> triggerViseme(String visemeName,
+      {double duration = 0.1, double weight = 1.0}) async {
     try {
       if (_channel != null) {
         await _channel?.invokeMethod('triggerViseme', {
           'visemeName': visemeName,
           'duration': duration,
+          'weight': weight, // Pass intensity
         });
       } else {
         _webViewController?.runJavaScript(
-          "window.setMorphTarget('$visemeName', 1.0); setTimeout(() => window.setMorphTarget('$visemeName', 0.0), ${duration * 1000});",
+          "window.setMorphTarget('$visemeName', $weight); setTimeout(() => window.setMorphTarget('$visemeName', 0.0), ${duration * 1000});",
         );
       }
     } catch (e) {
       print('Error triggering viseme: $e');
+    }
+  }
+
+  // ✅ NEW METHOD: Update morph target weight continuously
+  Future<void> updateMorphTarget(String visemeName, double weight) async {
+    try {
+      if (_channel != null) {
+        // iOS implementation to update weight
+        await _channel?.invokeMethod('updateMorphTarget', {
+          'visemeName': visemeName,
+          'weight': weight,
+        });
+      } else {
+        // Web implementation
+        _webViewController?.runJavaScript(
+          "window.setMorphTarget('$visemeName', $weight);",
+        );
+      }
+    } catch (e) {
+      // Fail silently to avoid spamming logs during animation loops
     }
   }
 

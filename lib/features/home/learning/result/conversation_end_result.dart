@@ -87,7 +87,7 @@ class ConversationEndResultView extends StatelessWidget {
                               ),
                               textAlign: TextAlign.center,
                             ),
-                            const SizedBox(height: 5),
+                            const SizedBox(height: 36),
 
                             // ------------------------------
                             // 2. MIDDLE: Infinity Blended Chart
@@ -133,14 +133,14 @@ class ConversationEndResultView extends StatelessWidget {
 
                             // The "Infinity" Blended Chart Area
                             SizedBox(
-                              height: 320,
+                              height: 350,
                               width: double.infinity,
                               child: Stack(
                                 alignment: Alignment.center,
                                 children: [
                                   Container(
-                                    width: 320,
-                                    height: 320,
+                                    width: 350,
+                                    height: 350,
                                     decoration: BoxDecoration(
                                       shape: BoxShape.circle,
                                       gradient: RadialGradient(
@@ -174,28 +174,11 @@ class ConversationEndResultView extends StatelessWidget {
                         // ------------------------------
                         Column(
                           children: [
-                            const SizedBox(height: 20),
+                            // const SizedBox(height: 16),
                             _buildGradientButton(
                               context,
-                              "Continue to the Conversation Lesson",
+                              "Continue to the Vocabulary Lesson",
                               gradient: AppColors.greenGradient,
-                              onTap: () {
-                                Navigator.push(
-                                  context,
-                                  MaterialPageRoute(
-                                    builder: (_) => ConversationChat(
-                                      selectedAvatarName:
-                                          avatarProvider.selectedAvatarName,
-                                    ),
-                                  ),
-                                );
-                              },
-                            ),
-                            const SizedBox(height: 16),
-                            _buildGradientButton(
-                              context,
-                              "Repeat Vocabulary",
-                              gradient: AppColors.primaryGradient,
                               onTap: () {
                                 Navigator.push(
                                   context,
@@ -222,7 +205,7 @@ class ConversationEndResultView extends StatelessWidget {
                                 (route) => false,
                               ),
                             ),
-                            const SizedBox(height: 30),
+                            const SizedBox(height: 40),
                           ],
                         ),
                       ],

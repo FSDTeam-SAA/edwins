@@ -90,9 +90,10 @@ class _HomeViewState extends State<HomeView> {
                     onPressed: () {
                       if (!hasStartedLearning) {
                         // --- CASE 1: START LEARNING ---
-                        setState(() {
-                          hasStartedLearning = true;
-                        });
+                        // --- CASE 1: START LEARNING ---
+                        // Don't update state here. State should only update when lesson is completed
+                        // via navigation back from the result screen (which replaces HomeView).
+
                         // Modern slide transition for starting lesson
                         NavigationHelper.navigateTo(
                           context,

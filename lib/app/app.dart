@@ -20,6 +20,7 @@ class MyApp extends StatelessWidget {
 
       // Initial route - Splash Screen
       initialRoute: AppRoutes.splash,
+      // initialRoute: AppRoutes.home,
 
       // Route generator with custom transitions
       onGenerateRoute: AppRouter.generateRoute,
