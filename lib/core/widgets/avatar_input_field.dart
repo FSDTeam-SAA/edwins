@@ -227,7 +227,7 @@ class _AvatarInputFieldState extends State<AvatarInputField> {
     });
   }
 
-  bool get _isRecording =>
+  bool get isRecording =>
       _recordState == _RecordState.holding ||
       _recordState == _RecordState.locked;
 

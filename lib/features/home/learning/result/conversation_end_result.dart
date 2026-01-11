@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:language_app/core/providers/avatar_provider.dart';
-import 'package:language_app/features/home/conversation/conversation_chat.dart';
 import 'package:language_app/features/home/vocabulary/vocabulary_lessons.dart';
 import 'package:lottie/lottie.dart';
 import 'package:language_app/app/theme/app_style.dart';

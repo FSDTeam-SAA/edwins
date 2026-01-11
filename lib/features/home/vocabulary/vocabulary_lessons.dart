@@ -8,7 +8,6 @@ import 'package:language_app/features/avatar/avatar_controller.dart';
 import 'package:language_app/features/avatar/avatar_view.dart';
 import 'package:language_app/features/home/home_view.dart';
 import 'package:language_app/features/home/learning/result/Vocab_end_result.dart';
-import 'package:language_app/features/home/learning/result/conversation_end_result.dart';
 import 'package:provider/provider.dart';
 import 'package:language_app/core/providers/theme_provider.dart';
 

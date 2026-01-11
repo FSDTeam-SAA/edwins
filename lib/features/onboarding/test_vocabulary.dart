@@ -4,7 +4,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_tts/flutter_tts.dart';
 import 'package:language_app/features/avatar/avatar_controller.dart';
 import 'package:language_app/features/avatar/avatar_view.dart';
-import 'package:language_app/features/debug/test_conversation.dart';
+import 'package:language_app/features/onboarding/test_conversation.dart';
 import 'package:language_app/core/providers/theme_provider.dart';
 import 'package:provider/provider.dart';
 
@@ -571,9 +571,7 @@ class _TestVocabularyPageState extends State<TestVocabularyPage>
                     ],
                   ),
                 ),
-
                 const SizedBox(height: 4),
-
                 AnimatedBuilder(
                   animation: _avatarSizeAnimation,
                   builder: (context, child) {
@@ -701,15 +699,12 @@ class _TestVocabularyPageState extends State<TestVocabularyPage>
                     );
                   },
                 ),
-
                 const SizedBox(height: 24),
-
                 Expanded(
                   child: questionType == 'multiple_choice'
                       ? _buildMultipleChoiceLayout(options)
                       : _buildFillBlankLayout(questionText, options),
                 ),
-
                 Padding(
                   padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
                   child: GestureDetector(
@@ -745,7 +740,6 @@ class _TestVocabularyPageState extends State<TestVocabularyPage>
                 ),
               ],
             ),
-
             if (showError)
               Container(
                 color: Colors.black.withOpacity(0.6),
@@ -985,8 +979,7 @@ class _TestVocabularyPageState extends State<TestVocabularyPage>
   ]) {
     final isSelected = selectedOption == option['text'];
     // ✅ CHANGED: Continue press করার পর green হবে এবং সবসময় green থাকবে
-    final isCorrectAndValidated =
-        selectedOption == option['text'] &&
+    final isCorrectAndValidated = selectedOption == option['text'] &&
         selectedOption == questions[currentQuestionIndex]['correctAnswer'] &&
         _correctController.status == AnimationStatus.forward;
 

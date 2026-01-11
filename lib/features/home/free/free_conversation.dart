@@ -7,7 +7,7 @@ import 'package:language_app/app/constants/app_constants.dart';
 import 'package:language_app/core/providers/theme_provider.dart';
 import 'package:language_app/features/avatar/avatar_controller.dart';
 import 'package:language_app/features/avatar/avatar_view.dart';
-import 'package:language_app/features/home/conversation/widgets/recording_overlay.dart';
+import 'package:language_app/features/home/widgets/recording_overlay.dart';
 import 'package:language_app/features/home/learning/result/Vocab_end_result.dart';
 import 'package:language_app/core/utils/viseme_helper.dart';
 import 'package:provider/provider.dart';

@@ -35,7 +35,7 @@ class _AvatarViewState extends State<AvatarView> {
   void initState() {
     super.initState();
     _controller = widget.controller ?? AvatarController();
-    
+
     // ✅ Set avatar name in controller
     if (widget.avatarName != null) {
       _controller.setAvatarName(widget.avatarName!);
@@ -160,14 +160,15 @@ class _AvatarViewState extends State<AvatarView> {
 
   void _onPlatformViewCreated(int id) {
     _controller.attach(id);
-    
+
     // ✅ Pass avatar name and animation path to native iOS
     if (widget.avatarName != null) {
       final animationPath = widget.avatarName?.toLowerCase() == 'clara'
           ? AppConstants.claraAnimationPath
           : AppConstants.karlAnimationPath;
-      
-      debugPrint('[FLUTTER] AvatarView attached $id with avatar: ${widget.avatarName}');
+
+      debugPrint(
+          '[FLUTTER] AvatarView attached $id with avatar: ${widget.avatarName}');
       debugPrint('[FLUTTER] Animation path: $animationPath');
     }
   }

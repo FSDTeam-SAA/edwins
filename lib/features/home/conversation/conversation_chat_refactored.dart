@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:language_app/features/home/learning/result/conversation_end_result.dart';
-import 'package:language_app/features/home/conversation/widgets/recording_overlay.dart';
-import 'package:language_app/features/home/conversation/widgets/suggested_vocab_chip.dart';
-import 'package:language_app/features/home/conversation/widgets/conversation_header.dart';
-import 'package:language_app/features/home/conversation/widgets/conversation_input_area.dart';
-import 'widgets/chat_message.dart';
-import 'widgets/difficulty_rating_popup.dart';
+import 'package:language_app/features/home/widgets/recording_overlay.dart';
+import 'package:language_app/features/home/widgets/suggested_vocab_chip.dart';
+import 'package:language_app/features/home/widgets/conversation_header.dart';
+import 'package:language_app/features/home/widgets/conversation_input_area.dart';
+import '../widgets/chat_message.dart';
+import '../widgets/difficulty_rating_popup.dart';
 import 'package:language_app/core/providers/theme_provider.dart';
 import 'package:language_app/core/providers/conversation_provider.dart';
 import 'package:language_app/core/providers/audio_provider.dart';

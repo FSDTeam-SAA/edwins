@@ -7,7 +7,6 @@ import 'package:language_app/core/providers/avatar_provider.dart';
 import 'package:language_app/features/avatar/avatar_controller.dart';
 import 'package:language_app/features/avatar/avatar_view.dart';
 import 'package:language_app/features/home/free/free_conversation.dart';
-import 'package:language_app/features/home/home_view.dart';
 import 'package:provider/provider.dart';
 
 import 'package:language_app/core/providers/theme_provider.dart';

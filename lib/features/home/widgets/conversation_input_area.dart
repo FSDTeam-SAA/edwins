@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:language_app/features/home/conversation/widgets/voice_input_button.dart';
+import 'package:language_app/features/home/widgets/voice_input_button.dart';
 import 'package:language_app/app/theme/app_style.dart';
 
 class ConversationInputArea extends StatelessWidget {

@@ -5,7 +5,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_tts/flutter_tts.dart';
 import 'package:language_app/app/constants/app_constants.dart';
 import 'package:language_app/features/auth/login.dart';
-import 'package:language_app/features/debug/test_vocabulary.dart';
+import 'package:language_app/features/onboarding/test_vocabulary.dart';
 import 'package:language_app/features/avatar/avatar_controller.dart';
 import 'package:language_app/features/avatar/avatar_view.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -176,11 +176,14 @@ class _OnboardingScreenState extends State<OnboardingScreen>
                 children: [
                   _AnimatedPageWrapper(
                     key: const ValueKey(0),
-                    child: _buildLanguageStep("What is your target language?", [
-                      "German",
-                      "English",
-                      "Spanish",
-                    ], false),
+                    child: _buildLanguageStep(
+                        "What is your target language?",
+                        [
+                          "German",
+                          "English",
+                          "Spanish",
+                        ],
+                        false),
                   ),
                   _AnimatedPageWrapper(
                     key: const ValueKey(1),
@@ -188,11 +191,14 @@ class _OnboardingScreenState extends State<OnboardingScreen>
                   ),
                   _AnimatedPageWrapper(
                     key: const ValueKey(2),
-                    child: _buildLanguageStep("What is your native language?", [
-                      "English",
-                      "French",
-                      "Arabic",
-                    ], true),
+                    child: _buildLanguageStep(
+                        "What is your native language?",
+                        [
+                          "English",
+                          "French",
+                          "Arabic",
+                        ],
+                        true),
                   ),
                   _AnimatedPageWrapper(
                     key: const ValueKey(3),
@@ -315,9 +321,8 @@ class _OnboardingScreenState extends State<OnboardingScreen>
   }
 
   Future<void> _playAvatarGreeting(String avatarName) async {
-    String greetingText = avatarName == "Karl"
-        ? "Hi, I am Karl"
-        : "Hi, I am Clara";
+    String greetingText =
+        avatarName == "Karl" ? "Hi, I am Karl" : "Hi, I am Clara";
 
     print('👋 Playing greeting: $greetingText');
 
@@ -439,9 +444,8 @@ class _OnboardingScreenState extends State<OnboardingScreen>
                   "${goal['title']} ${goal['icon']}",
                   style: TextStyle(
                     fontSize: 16,
-                    fontWeight: isSelected
-                        ? FontWeight.w600
-                        : FontWeight.normal,
+                    fontWeight:
+                        isSelected ? FontWeight.w600 : FontWeight.normal,
                   ),
                 ),
               );
@@ -738,9 +742,8 @@ class _OnboardingScreenState extends State<OnboardingScreen>
                       child: Text(
                         hobby,
                         style: TextStyle(
-                          fontWeight: isSelected
-                              ? FontWeight.w600
-                              : FontWeight.normal,
+                          fontWeight:
+                              isSelected ? FontWeight.w600 : FontWeight.normal,
                         ),
                       ),
                     ),

@@ -1,13 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:language_app/features/home/learning/result/conversation_end_result.dart';
-import 'package:language_app/features/home/conversation/widgets/recording_overlay.dart';
-import 'package:language_app/features/home/conversation/widgets/suggested_vocab_chip.dart';
-import 'package:language_app/features/home/conversation/widgets/conversation_header.dart';
-import 'package:language_app/features/home/conversation/widgets/conversation_input_area.dart';
+import 'package:language_app/features/home/widgets/recording_overlay.dart';
+import 'package:language_app/features/home/widgets/suggested_vocab_chip.dart';
+import 'package:language_app/features/home/widgets/conversation_header.dart';
+import 'package:language_app/features/home/widgets/conversation_input_area.dart';
 import 'package:language_app/app/theme/app_style.dart';
 import 'package:language_app/core/utils/mock_data.dart';
-import 'widgets/chat_message.dart';
-import 'widgets/difficulty_rating_popup.dart';
+import '../widgets/chat_message.dart';
+import '../widgets/difficulty_rating_popup.dart';
 import 'package:language_app/core/providers/theme_provider.dart';
 import 'package:provider/provider.dart';
 
@@ -134,9 +134,8 @@ class _ConversationChatState extends State<ConversationChat> {
   void _getAvatarResponse() {
     // Simulate "thinking" delay for realism
     Future.delayed(const Duration(milliseconds: 1000), () {
-      int currentAvatarCount = messages
-          .where((m) => m['role'] == 'avatar')
-          .length;
+      int currentAvatarCount =
+          messages.where((m) => m['role'] == 'avatar').length;
       final response = MockData.getNextConversationStep(currentAvatarCount);
       if (response != null) {
         setState(() {
@@ -383,8 +382,7 @@ class _ConversationChatState extends State<ConversationChat> {
                   itemCount: messages.length,
                   itemBuilder: (context, index) {
                     final message = messages[index];
-                    final bool isVoiceMessage =
-                        message['role'] == 'avatar' ||
+                    final bool isVoiceMessage = message['role'] == 'avatar' ||
                         (message['is_voice'] ?? false);
 
                     return ChatMessage(

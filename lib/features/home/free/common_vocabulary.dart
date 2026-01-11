@@ -6,7 +6,6 @@ import 'package:language_app/app/constants/app_constants.dart';
 import 'package:language_app/core/providers/avatar_provider.dart';
 import 'package:language_app/features/avatar/avatar_controller.dart';
 import 'package:language_app/features/avatar/avatar_view.dart';
-import 'package:language_app/features/home/home_view.dart';
 import 'package:provider/provider.dart';
 import 'package:language_app/core/providers/theme_provider.dart';
 
@@ -397,13 +396,7 @@ class _CommonVocabularyChatState extends State<CommonVocabularyChat>
                 }
               });
             } else {
-              Navigator.pushReplacement(
-                context,
-                MaterialPageRoute(
-                  builder: (context) =>
-                      const HomeView(initialHasStartedLearning: true),
-                ),
-              );
+              Navigator.pop(context);
             }
           }
         });
