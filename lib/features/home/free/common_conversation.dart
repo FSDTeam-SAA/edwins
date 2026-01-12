@@ -235,48 +235,6 @@ class _CommonConversationChatState extends State<CommonConversationChat> {
           onPressed: () => Navigator.pop(context),
         ),
       ),
-      // appBar: AppBar(
-      //   backgroundColor: themeProvider.appBarColor,
-      //   elevation: 0,
-      //   automaticallyImplyLeading: false, // 1. Removes the "<" back icon
-      //   actions: [
-      //     // 2. "Finish" button moves here (Right side)
-      //     Center(
-      //       child: Padding(
-      //         padding: const EdgeInsets.only(right: 16.0),
-      //         child: GestureDetector(
-      //           onTap: () {
-      //             // Navigate to HomeView and clear stack
-      //             Navigator.push(
-      //               context,
-      //               MaterialPageRoute(
-      //                 builder: (context) => const HomeView(),
-      //               ),
-      //             );
-      //           },
-      //           child: Container(
-      //             padding: const EdgeInsets.symmetric(
-      //               horizontal: 16,
-      //               vertical: 8,
-      //             ),
-      //             decoration: BoxDecoration(
-      //               color: const Color(0xFFFFF3E0), // Light orange background
-      //               borderRadius: BorderRadius.circular(20),
-      //             ),
-      //             child: const Text(
-      //               "Finish",
-      //               style: TextStyle(
-      //                 color: Color(0xFFFF8000),
-      //                 fontSize: 14,
-      //                 fontWeight: FontWeight.w600,
-      //               ),
-      //             ),
-      //           ),
-      //         ),
-      //       ),
-      //     ),
-      //   ],
-      // ),
       body: Stack(
         children: [
           Column(

@@ -42,7 +42,7 @@ class _VocabularyLessonsState extends State<VocabularyLessons>
   late AnimationController _shakeController;
   late AnimationController _correctController;
   late AnimationController _buttonScaleController;
-
+  late Animation<Color?> _correctColorAnimation;
   late Animation<double> _shakeAnimation;
   late Animation<double> _correctScaleAnimation;
 
@@ -112,6 +112,28 @@ class _VocabularyLessonsState extends State<VocabularyLessons>
     }
   }
 
+  // void _initAnimations() {
+  //   _shakeController = AnimationController(
+  //     duration: const Duration(milliseconds: 500),
+  //     vsync: this,
+  //   );
+  //   _shakeAnimation = Tween<double>(begin: 0, end: 10).animate(
+  //     CurvedAnimation(parent: _shakeController, curve: Curves.elasticIn),
+  //   );
+
+  //   _correctController = AnimationController(
+  //     duration: const Duration(milliseconds: 600),
+  //     vsync: this,
+  //   );
+  //   _correctScaleAnimation = Tween<double>(begin: 1.0, end: 1.1).animate(
+  //     CurvedAnimation(parent: _correctController, curve: Curves.easeOut),
+  //   );
+
+  //   _buttonScaleController = AnimationController(
+  //     duration: const Duration(milliseconds: 100),
+  //     vsync: this,
+  //   );
+  // }
   void _initAnimations() {
     _shakeController = AnimationController(
       duration: const Duration(milliseconds: 500),
@@ -128,6 +150,10 @@ class _VocabularyLessonsState extends State<VocabularyLessons>
     _correctScaleAnimation = Tween<double>(begin: 1.0, end: 1.1).animate(
       CurvedAnimation(parent: _correctController, curve: Curves.easeOut),
     );
+    _correctColorAnimation = ColorTween(
+      begin: Colors.white,
+      end: const Color(0xFF4CAF50),
+    ).animate(_correctController);
 
     _buttonScaleController = AnimationController(
       duration: const Duration(milliseconds: 100),
@@ -892,37 +918,57 @@ class _VocabularyLessonsState extends State<VocabularyLessons>
     double height, [
     bool isSmallText = false,
   ]) {
-    final isSelected = selectedOption == option['text'];
-    final isCorrect = selectedOption == option['text'] &&
-        selectedOption == questions[currentQuestionIndex]['correctAnswer'];
+    // Wrapped in AnimatedBuilder to listen for controller changes
+    return AnimatedBuilder(
+      animation: _correctController,
+      builder: (context, child) {
+        final isSelected = selectedOption == option['text'];
 
-    return GestureDetector(
-      onTap: () => handleOptionTap(option['text']),
-      child: AnimatedBuilder(
-        animation: isCorrect ? _correctScaleAnimation : _shakeAnimation,
-        builder: (context, child) {
-          return Transform.scale(
-            scale: isCorrect ? _correctScaleAnimation.value : 1.0,
+        // Logic updated to ensure it stays green if animation completes (status == completed)
+        final isCorrectAndValidated = selectedOption == option['text'] &&
+            selectedOption ==
+                questions[currentQuestionIndex]['correctAnswer'] &&
+            (_correctController.status == AnimationStatus.forward ||
+                _correctController.status == AnimationStatus.completed);
+
+        // Determine explicit colors based on animation state
+        // If validated, use the animation value (White -> Green)
+        // If not, use standard selection logic
+        final Color effectiveBgColor = isCorrectAndValidated
+            ? (_correctColorAnimation.value ?? const Color(0xFF4CAF50))
+            : (isSelected ? option['textColor'] : option['bgColor']);
+
+        final Color effectiveBorderColor = isCorrectAndValidated
+            ? (_correctColorAnimation.value ?? const Color(0xFF4CAF50))
+            : (isSelected
+                ? option['textColor'].withOpacity(0.5)
+                : option['borderColor']);
+
+        return GestureDetector(
+          onTap: () => handleOptionTap(option['text']),
+          child: Transform.scale(
+            // Apply the scale animation here
+            scale: isCorrectAndValidated ? _correctScaleAnimation.value : 1.0,
             child: AnimatedContainer(
-              duration: const Duration(milliseconds: 300),
+              // If we are animating the blink, set duration to zero so it follows the controller exactly.
+              // Otherwise, use 300ms for smooth selection transitions.
+              duration: isCorrectAndValidated
+                  ? Duration.zero
+                  : const Duration(milliseconds: 300),
               height: height,
+              margin: const EdgeInsets.symmetric(vertical: 8),
               decoration: BoxDecoration(
-                color: isCorrect
-                    ? const Color(0xFFFF8000)
-                    : (isSelected ? option['textColor'] : option['bgColor']),
+                color: effectiveBgColor,
                 borderRadius: BorderRadius.circular(12),
                 border: Border.all(
-                  color: isCorrect
-                      ? const Color(0xFFFF8000)
-                      : option['borderColor'],
+                  color: effectiveBorderColor,
                   width: 2,
                 ),
                 boxShadow: isSelected
                     ? [
                         BoxShadow(
-                          color: (option['textColor'] as Color).withOpacity(
-                            0.3,
-                          ),
+                          color:
+                              (option['textColor'] as Color).withOpacity(0.3),
                           blurRadius: 10,
                           offset: const Offset(0, 4),
                         ),
@@ -935,10 +981,10 @@ class _VocabularyLessonsState extends State<VocabularyLessons>
                 child: Text(
                   option['text'],
                   style: TextStyle(
-                    color: isSelected || isCorrect
+                    color: isSelected || isCorrectAndValidated
                         ? Colors.white
                         : option['textColor'],
-                    fontSize: isSmallText ? 14 : 18,
+                    fontSize: isSmallText ? 12 : 14,
                     fontWeight: FontWeight.w600,
                   ),
                   textAlign: TextAlign.center,
@@ -947,11 +993,77 @@ class _VocabularyLessonsState extends State<VocabularyLessons>
                 ),
               ),
             ),
-          );
-        },
-      ),
+          ),
+        );
+      },
     );
   }
+
+  // Widget _buildOptionButton(
+  //   Map<String, dynamic> option,
+  //   double height, [
+  //   bool isSmallText = false,
+  // ]) {
+  //   final isSelected = selectedOption == option['text'];
+  //   final isCorrect = selectedOption == option['text'] &&
+  //       selectedOption == questions[currentQuestionIndex]['correctAnswer'];
+
+  //   return GestureDetector(
+  //     onTap: () => handleOptionTap(option['text']),
+  //     child: AnimatedBuilder(
+  //       animation: isCorrect ? _correctScaleAnimation : _shakeAnimation,
+  //       builder: (context, child) {
+  //         return Transform.scale(
+  //           scale: isCorrect ? _correctScaleAnimation.value : 1.0,
+  //           child: AnimatedContainer(
+  //             duration: const Duration(milliseconds: 300),
+  //             height: height,
+  //             decoration: BoxDecoration(
+  //               color: isCorrect
+  //                   ? const Color(0xFFFF8000)
+  //                   : (isSelected ? option['textColor'] : option['bgColor']),
+  //               borderRadius: BorderRadius.circular(12),
+  //               border: Border.all(
+  //                 color: isCorrect
+  //                     ? const Color(0xFFFF8000)
+  //                     : option['borderColor'],
+  //                 width: 2,
+  //               ),
+  //               boxShadow: isSelected
+  //                   ? [
+  //                       BoxShadow(
+  //                         color: (option['textColor'] as Color).withOpacity(
+  //                           0.3,
+  //                         ),
+  //                         blurRadius: 10,
+  //                         offset: const Offset(0, 4),
+  //                       ),
+  //                     ]
+  //                   : null,
+  //             ),
+  //             alignment: Alignment.center,
+  //             child: Padding(
+  //               padding: const EdgeInsets.symmetric(horizontal: 4),
+  //               child: Text(
+  //                 option['text'],
+  //                 style: TextStyle(
+  //                   color: isSelected || isCorrect
+  //                       ? Colors.white
+  //                       : option['textColor'],
+  //                   fontSize: isSmallText ? 14 : 18,
+  //                   fontWeight: FontWeight.w600,
+  //                 ),
+  //                 textAlign: TextAlign.center,
+  //                 maxLines: 2,
+  //                 overflow: TextOverflow.ellipsis,
+  //               ),
+  //             ),
+  //           ),
+  //         );
+  //       },
+  //     ),
+  //   );
+  // }
 
   Widget _buildCircleAction({
     required IconData icon,
